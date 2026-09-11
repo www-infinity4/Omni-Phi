@@ -13,20 +13,25 @@
   <meta name="twitter:image" content="https://www-infinity4.github.io/Omni-Phi/assets/omni-phi-share.svg" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="assets/style.css" />
+  <link rel="stylesheet" href="assets/index-v2.css" />
 </head>
 <body class="index-page">
   <main class="index-hero" id="indexHero">
     <header class="index-head">
-      <span class="index-spacer" aria-hidden="true"></span>
       <div class="index-title">
         <h1>OMNI PHI</h1>
         <p>proportional search</p>
         <small>all things connect · in proportion</small>
       </div>
-      <span class="index-spacer" aria-hidden="true"></span>
     </header>
 
     <section class="cloud-wrap" aria-label="Interactive Omni Phi proportional field">
+      <span class="field-word word-people">People</span>
+      <span class="field-word word-places">Places</span>
+      <span class="field-word word-ideas">Ideas</span>
+      <span class="field-word right word-concepts">Concepts</span>
+      <span class="field-word right word-knowledge">Knowledge</span>
+      <span class="field-word right word-possibilities">Possibilities</span>
       <canvas id="omniCloud"></canvas>
       <div class="cloud-caption">3D proportional field · drag to rotate</div>
     </section>
@@ -50,6 +55,8 @@
   <script src="assets/omni-family.js"></script>
   <script src="assets/indexer.js"></script>
   <script src="assets/app.js"></script>
+  <script src="assets/capability-router.js"></script>
+  <script src="assets/smart-search.js"></script>
   <script>
     const hero = document.getElementById('indexHero');
     const input = document.getElementById('searchInput');
