@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Omni Phi — Omni Tool</title>
+  <meta name="theme-color" content="#07071c" />
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body class="content-page">
+  <div id="topbar"></div>
+  <main class="site-shell">
+    <section class="page-hero">
+      <div class="page-kicker">Omni capability realm</div>
+      <h1 class="page-title" id="productName">Omni</h1>
+      <p class="page-subtitle" id="productTagline"></p>
+      <nav class="pill-nav"><a href="../ecosystem/">← Omni Line</a><a href="../">Search Omni Phi</a></nav>
+    </section>
+
+    <section class="product-hero">
+      <article class="panel panel-pad">
+        <div class="page-kicker">Purpose</div>
+        <h2 class="section-title">What this realm does</h2>
+        <p class="section-copy" id="productDescription"></p>
+        <div id="repoArea"></div>
+      </article>
+      <article class="panel panel-pad">
+        <div class="page-kicker">Tool set</div>
+        <h2 class="section-title">Capabilities indexed by Omni Phi</h2>
+        <div class="tool-list" id="toolList"></div>
+      </article>
+    </section>
+
+    <section class="panel panel-pad" style="margin-top:14px">
+      <div class="page-kicker">Connection to Omni Phi</div>
+      <h2 class="section-title">Use this realm as a search arm</h2>
+      <p class="section-copy">The product does not replace the core search field. Omni Phi can pull this capability inward when a query needs it, send a structured research packet into the tool, then preserve the result as another evidence-backed node in the user's field.</p>
+      <form class="query-strip" id="realmSearch">
+        <span>φ</span><input id="realmInput" aria-label="Search using this Omni realm" /><button>Search with realm</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="../assets/omni-family.js"></script>
+  <script src="../assets/indexer.js"></script>
+  <script src="../assets/app.js"></script>
+  <script>
+    document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'capability realm');
+    OmniPhi.setupMenu();
+    const id = new URLSearchParams(location.search).get('id') || 'field';
+    const item = OMNI_FAMILY.find(x => x.id === id) || OMNI_FAMILY.find(x => x.id === 'field') || OMNI_FAMILY[0];
+    document.title = `Omni Phi — ${item.name}`;
+    document.getElementById('productName').textContent = item.name;
+    document.getElementById('productTagline').textContent = item.tagline;
+    document.getElementById('productDescription').textContent = item.description;
+    document.getElementById('toolList').innerHTML = item.tools.map(t=>`<div class="tool-item">${OmniPhi.escapeHtml(t)}</div>`).join('');
+    if (item.repo) document.getElementById('repoArea').innerHTML = `<a class="repo-link" href="${OmniPhi.escapeHtml(item.repo)}" target="_blank" rel="noopener">Open connected GitHub repository ↗</a>`;
+    document.getElementById('realmInput').placeholder = `Search through ${item.name}`;
+    document.getElementById('realmSearch').addEventListener('submit', e => {
+      e.preventDefault(); const q = document.getElementById('realmInput').value.trim(); if(!q) return;
+      location.href = `${OmniPhi.url('overview/')}?${new URLSearchParams({q:`${item.name}: ${q}`, mode:'search'})}`;
+    });
+  </script>
+</body>
+</html>
