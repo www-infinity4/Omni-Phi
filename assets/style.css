@@ -469,3 +469,39 @@ button { -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .001ms !important; animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* Page 3 collected stories and page 4 indexed-data flow */
+.story-feature {
+  margin-bottom: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 157, 58, .42);
+  border-radius: 30px;
+  background: linear-gradient(155deg, rgba(54, 20, 7, .9), rgba(13, 11, 42, .94) 58%);
+  box-shadow: 0 26px 70px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,222,183,.08);
+}
+.story-image { display: block; width: 100%; height: clamp(230px, 42vw, 520px); object-fit: cover; background: #09071e; }
+.story-image-fallback { display: grid; place-items: center; background: radial-gradient(circle at 50% 50%, rgba(220,79,255,.38), transparent 25%), linear-gradient(145deg,#140731,#071534); }
+.story-image-fallback span { font: clamp(5rem,18vw,11rem)/1 Georgia,serif; text-shadow: 0 0 38px #bd45ff; }
+.story-body { padding: clamp(20px, 5vw, 48px); }
+.story-number { color: #ffae62; font-size: .75rem; font-weight: 850; letter-spacing: .2em; text-transform: uppercase; }
+.story-body h2 { max-width: 850px; margin: 10px 0 7px; font-size: clamp(2rem, 7vw, 4.8rem); line-height: 1; letter-spacing: -.035em; }
+.story-source { margin: 0 0 24px; color: #d7b398; font-size: .82rem; letter-spacing: .08em; text-transform: uppercase; }
+.story-copy { max-width: 850px; color: #eee8f4; font-size: clamp(1.05rem, 2.7vw, 1.2rem); line-height: 1.82; }
+.story-copy p:first-child { font-size: clamp(1.18rem, 3.2vw, 1.5rem); color: white; }
+.story-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 26px; }
+.story-actions a, .story-next a, .empty-stories a { padding: 12px 16px; border: 1px solid rgba(255,164,76,.48); border-radius: 15px; color: white; background: rgba(135,60,9,.25); text-decoration: none; font-weight: 800; }
+.story-next { margin: 26px 0 8px; text-align: center; }
+.story-next a { display: inline-flex; border-color: rgba(200,133,255,.5); background: rgba(108,45,198,.25); }
+.empty-stories { min-height: 420px; padding: 42px 24px; display: grid; justify-items: center; align-content: center; text-align: center; }
+.empty-stories h2 { margin: 22px 0 5px; }
+.empty-stories p { max-width: 560px; color: var(--muted); line-height: 1.65; }
+.steering-card { width: 100%; color: white; text-align: left; font: inherit; }
+.steering-card p { padding-bottom: 34px; }
+.steering-card:focus-visible { outline: 2px solid #f3c5ff; outline-offset: 3px; }
+@media (max-width:640px) {
+  .story-feature { border-radius: 23px; }
+  .story-image { height: 240px; }
+  .story-body { padding: 22px 18px 26px; }
+  .story-body h2 { font-size: clamp(2rem, 11vw, 3.2rem); }
+  .story-copy { font-size: 1.03rem; line-height: 1.72; }
+}

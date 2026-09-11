@@ -3,60 +3,27 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Omni Phi — Structured Research</title>
-  <meta name="description" content="Machine-readable Omni Phi structured research with a 3D proportional relationship field." />
+  <title>Omni Phi — Collected Stories</title>
+  <meta name="description" content="Full reads created from the orange source cards collected in Omni Phi." />
   <meta name="theme-color" content="#07071c" />
   <link rel="stylesheet" href="../assets/style.css" />
 </head>
-<body class="content-page">
+<body class="content-page stories-page">
   <div id="topbar"></div>
   <main class="site-shell">
     <section class="page-hero">
-      <div class="page-kicker">Structured Research</div>
-      <h1 class="page-title" id="pageTitle">Preparing structured research…</h1>
-      <p class="page-subtitle">This is the machine-readable research view: resolved meaning, proportional nodes, 3D positions, evidence, cross-links, and the user's current weighting field.</p>
+      <div class="page-kicker">Page 3 · Collected Stories</div>
+      <h1 class="page-title" id="pageTitle">Building your full reads…</h1>
+      <p class="page-subtitle">Every orange card you collect becomes its own readable story here. The article stays connected to its evidence while expanding the subject into a clean reading path.</p>
       <nav class="pill-nav" aria-label="Research views">
         <a id="overviewLink" href="../overview/">AI Overview</a>
-        <a class="active" href="./">Structured Research</a>
-        <a id="cardsLink" href="../cards/">Purple Cards</a>
+        <a class="active" href="./">Full Stories</a>
+        <a id="cardsLink" href="../cards/">Indexed Data</a>
         <a href="../ecosystem/">Omni Line</a>
       </nav>
     </section>
 
-    <section class="structured-grid">
-      <article class="panel panel-pad">
-        <div class="page-kicker">Core and inner field</div>
-        <h2 class="section-title" id="coreTitle">Core concept</h2>
-        <div class="data-list" id="nearList"><div class="loading">Reading proportional nodes</div></div>
-      </article>
-      <article class="panel" style="min-height:420px;padding:10px">
-        <canvas id="structuredCloud" style="width:100%;height:100%;min-height:400px"></canvas>
-      </article>
-    </section>
-
-    <section class="grid two" style="margin-top:14px">
-      <article class="panel panel-pad">
-        <div class="page-kicker">Resolved intent</div>
-        <h2 class="section-title">Meaning Omni Phi used</h2>
-        <div class="data-list" id="intentList"><div class="loading">Resolving meaning</div></div>
-      </article>
-      <article class="panel panel-pad">
-        <div class="page-kicker">Evidence</div>
-        <h2 class="section-title">Source trail</h2>
-        <div class="data-list" id="sourceList"><div class="loading">Loading evidence</div></div>
-      </article>
-    </section>
-
-    <section class="panel panel-pad" style="margin-top:14px">
-      <div class="page-kicker">AI-readable record</div>
-      <h2 class="section-title">Omni Phi JSON</h2>
-      <pre class="json-box" id="jsonBox">Preparing structured record…</pre>
-      <div class="action-row">
-        <button id="copyJson" type="button">Copy for AI</button>
-        <button id="downloadJson" type="button">Download JSON</button>
-        <a id="purpleLink" href="../cards/">Open Purple Cards</a>
-      </div>
-    </section>
+    <section id="stories"><div class="panel loading">Opening collected cards</div></section>
   </main>
 
   <script src="../assets/omni-family.js"></script>
@@ -65,99 +32,95 @@
   <script src="../assets/capability-router.js"></script>
   <script src="../assets/smart-search.js"></script>
   <script>
-    document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'structured research');
+    document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'collected stories');
     OmniPhi.setupMenu();
 
     const params = new URLSearchParams(location.search);
     const q = (params.get('q') || OmniPhi.activeResearch()?.query || 'Corn').trim();
     const mode = params.get('mode') || OmniPhi.activeResearch()?.mode || 'search';
     const navParams = new URLSearchParams({q, mode});
+    const stories = document.getElementById('stories');
 
-    document.getElementById('pageTitle').textContent = q;
-    document.getElementById('coreTitle').textContent = `# ${q}`;
+    document.getElementById('pageTitle').textContent = `${q} — collected stories`;
     document.getElementById('overviewLink').href = `${OmniPhi.url('overview/')}?${navParams}`;
     document.getElementById('cardsLink').href = `${OmniPhi.url('cards/')}?${navParams}`;
-    document.getElementById('purpleLink').href = `${OmniPhi.url('cards/')}?${navParams}`;
 
-    function safePercent(value) {
-      return `${Math.round((Number(value) || 0) * 100)}%`;
-    }
+    const keyOf = (source) => source.url || source.id || source.title || '';
+    const sentences = (text) => String(text || '').replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s+/).filter(Boolean);
 
-    function render(record) {
-      const resolved = record.resolvedIntent || (OmniPhi.resolveIntent ? OmniPhi.resolveIntent(q) : null) || {};
-      const resolvedTitle = resolved.resolvedTitle || record.source?.label || q;
-      document.getElementById('pageTitle').textContent = resolvedTitle;
-      document.getElementById('coreTitle').textContent = `# ${resolvedTitle}`;
-
-      const near = [...(record.nodes || [])].sort((a,b)=>(b.affinity||0)-(a.affinity||0)).slice(0,16);
-      document.getElementById('nearList').innerHTML = near.length ? near.map(n => `<div class="data-row"><strong>${OmniPhi.escapeHtml(n.hash || '##')} ${OmniPhi.escapeHtml(n.label)}</strong><span class="score">${safePercent(n.affinity)}</span></div>`).join('') : '<p class="muted">No proportional nodes were available yet.</p>';
-
-      const intentRows = [];
-      if (resolved.type) intentRows.push(['Type', resolved.type]);
-      if (resolved.atomicNumber) intentRows.push(['Atomic number', String(resolved.atomicNumber)]);
-      if (resolved.resolvedTitle) intentRows.push(['Resolved title', resolved.resolvedTitle]);
-      if (record.capabilityRoute?.categories?.length) intentRows.push(['Capability route', record.capabilityRoute.categories.join(' · ')]);
-      const profile = record.profileSnapshot || {};
-      intentRows.push(['Collected sources', String(profile.collectedCount || 0)]);
-      intentRows.push(['Searches in profile', String(profile.searches || 0)]);
-      document.getElementById('intentList').innerHTML = intentRows.map(([label,value]) => `<div class="data-row"><strong>${OmniPhi.escapeHtml(label)}</strong><span class="score">${OmniPhi.escapeHtml(value)}</span></div>`).join('');
-
-      document.getElementById('sourceList').innerHTML = (record.sources || []).slice(0,12).map((s,i)=>`<div class="data-row"><strong>${i+1}. ${OmniPhi.escapeHtml(s.title || 'Source')}</strong><span class="score">${safePercent((s.intentScore || 0) + (s.personalWeight || 0) * .25)}</span></div>`).join('') || '<p class="muted">No evidence sources are attached yet.</p>';
-
-      const compactRecord = {
-        schema: 'omni-phi-research/v1',
-        query: record.query,
-        mode: record.mode,
-        createdAt: record.createdAt,
-        resolvedIntent: record.resolvedIntent || null,
-        capabilityRoute: record.capabilityRoute || null,
-        overview: record.overview,
-        source: record.source,
-        nodes: record.nodes,
-        sources: (record.sources || []).map(({id,title,url,domain,provider,intentScore,personalWeight})=>({id,title,url,domain,provider,intentScore,personalWeight})),
-        profileSnapshot: record.profileSnapshot
-      };
-      const json = JSON.stringify(compactRecord, null, 2);
-      document.getElementById('jsonBox').textContent = json;
-
-      const copy = document.getElementById('copyJson');
-      copy.onclick = async () => {
-        try { await navigator.clipboard.writeText(json); copy.textContent = 'Copied ✓'; }
-        catch { copy.textContent = 'Copy unavailable'; }
-      };
-      document.getElementById('downloadJson').onclick = () => {
-        const blob = new Blob([json], {type:'application/json'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `omni-phi-${q.toLowerCase().replace(/[^a-z0-9]+/g,'-') || 'research'}.json`;
-        a.click();
-        setTimeout(()=>URL.revokeObjectURL(a.href), 500);
-      };
-
-      OmniPhi.renderCloud(document.getElementById('structuredCloud'), record);
-    }
-
-    async function loadResearch() {
-      try {
-        let record = OmniPhi.activeResearch();
-        if (!record || String(record.query || '').toLowerCase() !== q.toLowerCase()) {
-          let sources = [];
-          try { sources = await OmniPhi.fetchWikipedia(q); }
-          catch (error) { console.warn(error); }
-          if (!sources.length) sources = OmniPhi.fallbackSources(q);
-          record = OmniPhi.createResearch(q, mode, sources);
-        } else {
-          record = OmniPhi.refreshResearchWithProfile(record);
-        }
-        render(record);
-      } catch (error) {
-        console.error(error);
-        const fallback = OmniPhi.createResearch(q, mode, OmniPhi.fallbackSources(q));
-        render(fallback);
+    function storyTitle(source, index, used) {
+      const text = `${source.title || ''} ${source.extract || ''}`.toLowerCase();
+      let title = String(source.title || `${q} study`).replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
+      if (/\bhydrogen\b/i.test(q)) {
+        const choices = [
+          [/engine|combustion|vehicle/, 'Hydrogen Engine'],
+          [/gas|gaseous|molecule|properties/, 'Hydrogen Gas Studies'],
+          [/fuel cell|electrochemical/, 'Hydrogen Fuel Cells'],
+          [/produc|electrolysis|reform/, 'Hydrogen Production'],
+          [/stor|tank|hydride/, 'Hydrogen Storage Systems'],
+          [/safe|flamm|explos/, 'Hydrogen Safety'],
+          [/transport|pipeline|distribution/, 'Hydrogen Transportation']
+        ];
+        title = choices.find(([pattern]) => pattern.test(text))?.[1] || title;
       }
+      if (!title || /\bmeaning\b|\boverview\b|\bdefinition\b/i.test(title)) title = `${q} Study ${index + 1}`;
+      if (used.has(title)) title = `${title}: ${String(source.title || `Study ${index + 1}`).replace(/\s*\([^)]*\)\s*/g, '').trim()}`;
+      used.add(title);
+      return title;
     }
 
-    loadResearch();
+    function articleCopy(source, title) {
+      const parts = sentences(source.extract);
+      if (!parts.length) return `<p>This collected card is ready for a fuller evidence source. Its current place in the reading set connects <strong>${OmniPhi.escapeHtml(title)}</strong> directly to ${OmniPhi.escapeHtml(q)}.</p>`;
+      const groups = [];
+      for (let i = 0; i < parts.length; i += 3) groups.push(parts.slice(i, i + 3).join(' '));
+      return groups.map((paragraph) => `<p>${OmniPhi.escapeHtml(paragraph)}</p>`).join('');
+    }
+
+    function render(record, availableSources) {
+      const profile = OmniPhi.profile();
+      const available = new Map(availableSources.map((source) => [keyOf(source), source]));
+      const selected = (profile.collected || []).map((saved) => ({...saved, ...(available.get(keyOf(saved)) || {})})).filter((source) => {
+        const haystack = `${source.title || ''} ${source.extract || ''}`.toLowerCase();
+        return haystack.includes(q.toLowerCase()) || (record.sources || []).some((candidate) => keyOf(candidate) === keyOf(source));
+      });
+
+      if (!selected.length) {
+        stories.innerHTML = `<section class="panel empty-stories"><div class="topic-orb">φ</div><h2>Choose the stories you want to read</h2><p>Collect one or more orange cards on page two. Each selected card will open here as a full story.</p><a href="${OmniPhi.url('overview/')}?${navParams}">Return to orange cards</a></section>`;
+        return;
+      }
+
+      const used = new Set();
+      stories.innerHTML = selected.map((source, index) => {
+        const title = storyTitle(source, index, used);
+        return `<article class="story-feature">
+          ${source.image ? `<img class="story-image" src="${OmniPhi.escapeHtml(source.image)}" alt="" loading="lazy" />` : `<div class="story-image story-image-fallback"><span>φ</span></div>`}
+          <div class="story-body">
+            <div class="story-number">Collected card ${String(index + 1).padStart(2, '0')}</div>
+            <h2>${OmniPhi.escapeHtml(title)}</h2>
+            <p class="story-source">${OmniPhi.escapeHtml(source.provider || source.domain || 'Evidence source')}</p>
+            <div class="story-copy">${articleCopy(source, title)}</div>
+            <div class="story-actions">
+              ${source.url ? `<a href="${OmniPhi.escapeHtml(source.url)}" target="_blank" rel="noopener">Open evidence source</a>` : ''}
+              <a href="${OmniPhi.url('cards/')}?${new URLSearchParams({q:title, mode})}">Index this story</a>
+            </div>
+          </div>
+        </article>`;
+      }).join('') + `<div class="story-next"><a href="${OmniPhi.url('cards/')}?${navParams}">Open indexed data and purple next-search cards →</a></div>`;
+    }
+
+    async function load() {
+      let record = OmniPhi.activeResearch();
+      let sources = record && String(record.query || '').toLowerCase() === q.toLowerCase() ? (record.sources || []) : [];
+      if (!sources.length) {
+        try { sources = await OmniPhi.fetchWikipedia(q); } catch (error) { console.warn(error); }
+      }
+      if (!sources.length) sources = OmniPhi.fallbackSources(q);
+      if (!record || String(record.query || '').toLowerCase() !== q.toLowerCase()) record = OmniPhi.createResearch(q, mode, sources);
+      render(record, [...sources, ...(record.sources || [])]);
+    }
+
+    load();
   </script>
 </body>
 </html>

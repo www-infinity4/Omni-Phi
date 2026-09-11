@@ -3,78 +3,130 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Omni Phi — Purple Research Cards</title>
-  <meta name="description" content="Dynamic purple research cards organized by Omni Phi proportional proximity shells." />
+  <title>Omni Phi — Indexed Data</title>
+  <meta name="description" content="Omni Phi indexed research data and purple cards that steer the next search." />
   <meta name="theme-color" content="#080620" />
   <link rel="stylesheet" href="../assets/style.css" />
 </head>
-<body class="content-page">
+<body class="content-page index-data-page">
   <div id="topbar"></div>
   <main class="site-shell">
     <section class="page-hero">
-      <div class="page-kicker">Page 4 · Purple Cards</div>
-      <h1 class="page-title" id="pageTitle">Research cards</h1>
-      <p class="page-subtitle">The hash count is a readable shell label. The real structure underneath it is the dynamic 3D affinity field. Strong relationships stay close; weaker or more contextual relationships drift outward and can still reconnect through cross-links.</p>
+      <div class="page-kicker">Page 4 · Indexed Data</div>
+      <h1 class="page-title" id="pageTitle">Preparing indexed data…</h1>
+      <p class="page-subtitle">The complete research record lives here. Purple cards are forward paths: tap one to steer the next Omni Phi search.</p>
       <nav class="pill-nav" aria-label="Research views">
         <a id="overviewLink" href="../overview/">AI Overview</a>
-        <a id="structuredLink" href="../structured/">Structured Research</a>
-        <a class="active" href="./">Purple Cards</a>
+        <a id="structuredLink" href="../structured/">Full Stories</a>
+        <a class="active" href="./">Indexed Data</a>
         <a href="../ecosystem/">Omni Line</a>
       </nav>
     </section>
 
-    <section class="panel panel-pad">
-      <div class="page-kicker">Core</div>
-      <h2 class="section-title" id="coreHeading"># Core</h2>
-      <p class="section-copy" id="coreCopy"></p>
+    <section>
+      <div class="shell-banner"><div><div class="page-kicker">Steer the next search</div><h2>Purple next-search cards</h2></div><small>Tap any path to continue</small></div>
+      <div class="cards-grid steering-grid" id="steeringCards"><div class="panel loading">Finding the strongest next paths</div></div>
     </section>
 
-    <div id="cardShells"></div>
+    <section class="structured-grid" style="margin-top:24px">
+      <article class="panel panel-pad">
+        <div class="page-kicker">Core and proportional nodes</div>
+        <h2 class="section-title" id="coreTitle"># Core</h2>
+        <div class="data-list" id="nodeList"></div>
+      </article>
+      <article class="panel panel-pad">
+        <div class="page-kicker">Collected evidence</div>
+        <h2 class="section-title">Source index</h2>
+        <div class="data-list" id="sourceList"></div>
+      </article>
+    </section>
+
+    <section class="panel panel-pad" style="margin-top:14px">
+      <div class="page-kicker">Machine-readable index</div>
+      <h2 class="section-title">Omni Phi JSON</h2>
+      <pre class="json-box" id="jsonBox">Preparing indexed record…</pre>
+      <div class="action-row">
+        <button id="copyJson" type="button">Copy for AI</button>
+        <button id="downloadJson" type="button">Download index</button>
+      </div>
+    </section>
   </main>
 
   <script src="../assets/omni-family.js"></script>
   <script src="../assets/indexer.js"></script>
   <script src="../assets/app.js"></script>
+  <script src="../assets/capability-router.js"></script>
+  <script src="../assets/smart-search.js"></script>
   <script>
-    document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'purple cards');
+    document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'indexed data');
     OmniPhi.setupMenu();
-    const params = new URLSearchParams(location.search);
-    const q = params.get('q') || OmniPhi.activeResearch()?.query || 'Corn';
-    const mode = params.get('mode') || OmniPhi.activeResearch()?.mode || 'search';
-    let record = OmniPhi.activeResearch();
-    if (!record || record.query.toLowerCase() !== q.toLowerCase()) record = OmniPhi.createResearch(q, mode, []);
-    record = OmniPhi.refreshResearchWithProfile(record);
 
-    document.getElementById('pageTitle').textContent = q;
-    document.getElementById('coreHeading').textContent = `# ${q}`;
-    document.getElementById('coreCopy').textContent = record.overview || `${q} is the center of this Omni Phi field.`;
+    const params = new URLSearchParams(location.search);
+    const q = (params.get('q') || OmniPhi.activeResearch()?.query || 'Corn').trim();
+    const mode = params.get('mode') || OmniPhi.activeResearch()?.mode || 'search';
     const navParams = new URLSearchParams({q, mode});
+    document.getElementById('pageTitle').textContent = `${q} — indexed data`;
+    document.getElementById('coreTitle').textContent = `# ${q}`;
     document.getElementById('overviewLink').href = `${OmniPhi.url('overview/')}?${navParams}`;
     document.getElementById('structuredLink').href = `${OmniPhi.url('structured/')}?${navParams}`;
 
-    const shellNames = {2:'Inner relations',3:'Connected systems',4:'Extended web',5:'Outer field'};
-    const byShell = {};
-    (record.nodes || []).forEach(n => (byShell[n.shell] ||= []).push(n));
-    const root = document.getElementById('cardShells');
-    root.innerHTML = Object.keys(byShell).sort((a,b)=>Number(a)-Number(b)).map(shell => {
-      const nodes = byShell[shell].sort((a,b)=>b.affinity-a.affinity);
-      return `<section>
-        <div class="shell-banner"><h2>${'#'.repeat(Number(shell))} ${shellNames[shell] || 'Research shell'}</h2><small>${nodes.length} node${nodes.length===1?'':'s'}</small></div>
-        <div class="cards-grid">${nodes.map(n => `<article class="research-card" data-node="${OmniPhi.escapeHtml(n.id)}">
-          <span class="hash">${OmniPhi.escapeHtml(n.hash)}</span>
-          <h3>${OmniPhi.escapeHtml(n.label)}</h3>
-          <p>${OmniPhi.escapeHtml(n.category)} · ${Math.round(n.affinity*100)}% proportional affinity. ${n.crossLinks?.length ? `Cross-linked to ${n.crossLinks.length} nearby node${n.crossLinks.length===1?'':'s'}.` : ''}</p>
-          <div class="card-foot"><span>${OmniPhi.escapeHtml(n.category)}</span><span>${Math.round(n.affinity*100)}%</span></div>
-        </article>`).join('')}</div>
-      </section>`;
-    }).join('');
+    function nextIdeas(record) {
+      const ideas = /\bhydrogen\b/i.test(q) ? [
+        'Hydrogen Engine', 'Hydrogen Gas Studies', 'Hydrogen Fuel Cells',
+        'Hydrogen Production Systems', 'Hydrogen Storage Materials',
+        'Hydrogen Combustion Safety', 'Hydrogen Transportation', 'Hydrogen Energy Economics'
+      ] : [];
+      (record.sources || []).forEach((source) => ideas.push(source.title));
+      (record.nodes || []).filter((node) => !/meaning|definition|overview|origins/i.test(node.label)).forEach((node) => {
+        ideas.push(node.label.toLowerCase().includes(q.toLowerCase()) ? node.label : `${q} ${node.label}`);
+      });
+      return [...new Set(ideas.filter(Boolean))].slice(0, 12);
+    }
 
-    root.querySelectorAll('[data-node]').forEach(card => card.addEventListener('click', () => {
-      const node = record.nodes.find(n => n.id === card.dataset.node);
-      if (!node) return;
-      const next = new URLSearchParams({q: `${q} ${node.label}`, mode});
-      location.href = `${OmniPhi.url('overview/')}?${next}`;
-    }));
+    function render(record) {
+      const ideas = nextIdeas(record);
+      document.getElementById('steeringCards').innerHTML = ideas.map((idea, index) => `<button class="research-card steering-card" type="button" data-idea="${OmniPhi.escapeHtml(idea)}"><span class="hash">${'#'.repeat(2 + (index % 4))}</span><h3>${OmniPhi.escapeHtml(idea)}</h3><p>Open this path as the next focused Omni Phi search.</p><div class="card-foot"><span>Next search</span><span>φ</span></div></button>`).join('');
+      document.querySelectorAll('[data-idea]').forEach((card) => card.addEventListener('click', () => {
+        location.href = `${OmniPhi.url('overview/')}?${new URLSearchParams({q:card.dataset.idea, mode})}`;
+      }));
+
+      document.getElementById('nodeList').innerHTML = (record.nodes || []).sort((a,b)=>(b.affinity||0)-(a.affinity||0)).slice(0,20).map((node) => `<div class="data-row"><strong>${OmniPhi.escapeHtml(node.hash)} ${OmniPhi.escapeHtml(node.label)}</strong><span class="score">${Math.round((node.affinity || 0) * 100)}%</span></div>`).join('') || '<p class="muted">No nodes indexed yet.</p>';
+      document.getElementById('sourceList').innerHTML = (record.sources || []).map((source, index) => `<div class="data-row"><strong>${index + 1}. ${OmniPhi.escapeHtml(source.title)}</strong><span class="score">${OmniPhi.escapeHtml(source.domain || source.provider || 'source')}</span></div>`).join('') || '<p class="muted">No evidence sources indexed yet.</p>';
+
+      const indexed = {
+        schema: 'omni-phi-index/v2', query: record.query, mode: record.mode,
+        createdAt: record.createdAt, resolvedIntent: record.resolvedIntent || null,
+        capabilityRoute: record.capabilityRoute || null, source: record.source,
+        nodes: record.nodes, sources: record.sources,
+        collectedCards: OmniPhi.profile().collected || [], nextSearchIdeas: ideas,
+        profileSnapshot: record.profileSnapshot
+      };
+      const json = JSON.stringify(indexed, null, 2);
+      document.getElementById('jsonBox').textContent = json;
+      const copy = document.getElementById('copyJson');
+      copy.onclick = async () => { try { await navigator.clipboard.writeText(json); copy.textContent = 'Copied ✓'; } catch { copy.textContent = 'Copy unavailable'; } };
+      document.getElementById('downloadJson').onclick = () => {
+        const blob = new Blob([json], {type:'application/json'});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `omni-phi-index-${q.toLowerCase().replace(/[^a-z0-9]+/g,'-') || 'research'}.json`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(link.href), 500);
+      };
+    }
+
+    async function load() {
+      let record = OmniPhi.activeResearch();
+      if (!record || String(record.query || '').toLowerCase() !== q.toLowerCase()) {
+        let sources = [];
+        try { sources = await OmniPhi.fetchWikipedia(q); } catch (error) { console.warn(error); }
+        if (!sources.length) sources = OmniPhi.fallbackSources(q);
+        record = OmniPhi.createResearch(q, mode, sources);
+      } else record = OmniPhi.refreshResearchWithProfile(record);
+      render(record);
+    }
+
+    load();
   </script>
 </body>
 </html>

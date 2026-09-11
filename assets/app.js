@@ -38,7 +38,20 @@
 
   function collectSource(source) {
     const p = profile();
-    if (!p.collected.some((x) => x.url === source.url)) p.collected.push({ title: source.title, url: source.url, domain: source.domain, collectedAt: new Date().toISOString() });
+    const key = source.url || source.id || source.title;
+    const saved = {
+      id: source.id || "",
+      title: source.title || "Collected source",
+      url: source.url || "",
+      domain: source.domain || "",
+      provider: source.provider || "",
+      extract: source.extract || "",
+      image: source.image || "",
+      collectedAt: new Date().toISOString()
+    };
+    const existing = p.collected.find((item) => (item.url || item.id || item.title) === key);
+    if (existing) Object.assign(existing, saved, { collectedAt: existing.collectedAt || saved.collectedAt });
+    else p.collected.push(saved);
     if (source.domain) p.domains[source.domain] = (p.domains[source.domain] || 0) + 1;
     addWords(p.keywords, `${source.title || ""} ${source.extract || ""}`, 1);
     saveProfile(p);
@@ -70,8 +83,8 @@
         <nav class="drawer-nav">
           <a href="${url()}">Search</a>
           <a href="${url("overview/")}">AI Overview</a>
-          <a href="${url("structured/")}">Structured Research</a>
-          <a href="${url("cards/")}">Purple Cards</a>
+          <a href="${url("structured/")}">Full Stories</a>
+          <a href="${url("cards/")}">Indexed Data</a>
           <a href="${url("ecosystem/")}">Omni Line</a>
           <a href="https://github.com/www-infinity4/Omni-Phi">GitHub repository</a>
         </nav>`;
