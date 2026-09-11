@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Omni Phi — AI Overview</title>
-  <meta name="description" content="Source-grounded Omni Phi overview with collectible source cards and user-weighted search memory." />
+  <meta name="description" content="Intent-aware Omni Phi overview with collectible evidence cards and proportional research memory." />
   <meta name="theme-color" content="#07071c" />
   <link rel="stylesheet" href="../assets/style.css" />
 </head>
@@ -12,9 +12,10 @@
   <div id="topbar"></div>
   <main class="site-shell">
     <section class="page-hero">
-      <div class="page-kicker">Page 2 · AI Overview</div>
-      <h1 class="page-title" id="pageTitle">Building your proportional overview…</h1>
-      <p class="page-subtitle">Sources arrive as orange evidence cards. Collect the ones that matter to you; Omni Phi uses that choice as a personal weighting signal for future searches while keeping the wider source field available.</p>
+      <div class="page-kicker">AI Overview</div>
+      <h1 class="page-title" id="pageTitle">Reading your search…</h1>
+      <div id="intentLine" style="display:none;margin:.65rem 0 0;padding:.6rem .85rem;width:max-content;max-width:100%;border:1px solid rgba(190,132,255,.32);border-radius:999px;background:rgba(124,60,255,.10);color:#d7c8ff;font-weight:750;font-size:.82rem"></div>
+      <p class="page-subtitle">Omni Phi first resolves what you asked for, then gathers evidence. Orange cards can be collected to shape your personal search field without replacing the meaning of the current query.</p>
 
       <form class="query-strip" id="queryForm">
         <span aria-hidden="true">⌕</span>
@@ -31,9 +32,9 @@
 
     <section class="overview-layout">
       <article class="panel panel-pad">
-        <div class="page-kicker">Source-grounded synthesis</div>
+        <div class="page-kicker">Resolved synthesis</div>
         <h2 class="section-title" id="overviewHeading">AI Overview</h2>
-        <div class="overview-copy" id="overviewCopy"><div class="loading">Collecting evidence and building the Omni field</div></div>
+        <div class="overview-copy" id="overviewCopy"><div class="loading">Resolving intent before collecting evidence</div></div>
       </article>
       <aside class="panel topic-visual" id="topicVisual" aria-label="Topic visual">
         <div class="topic-orb">φ</div>
@@ -50,14 +51,16 @@
         <div class="meter"><span id="profileMeter"></span></div>
       </div>
     </div>
-    <section class="sources-grid" id="sourcesGrid"><div class="panel loading">Finding sources</div></section>
+    <section class="sources-grid" id="sourcesGrid"><div class="panel loading">Finding sources that match the resolved request</div></section>
 
-    <div class="notice">Pages 3 and 4 are prepared from this same search record even if you never open them. They are designed primarily as structured material that your own AI can read later.</div>
+    <div class="notice">Structured Research and Purple Cards are produced from the same resolved search record. Opening them is optional; their main job is to become machine-readable research for the user's own AI.</div>
   </main>
 
   <script src="../assets/omni-family.js"></script>
   <script src="../assets/indexer.js"></script>
   <script src="../assets/app.js"></script>
+  <script src="../assets/capability-router.js"></script>
+  <script src="../assets/smart-search.js"></script>
   <script>
     document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'AI Overview');
     OmniPhi.setupMenu();
@@ -71,9 +74,16 @@
     const copy = document.getElementById('overviewCopy');
     const heading = document.getElementById('overviewHeading');
     const visual = document.getElementById('topicVisual');
+    const intentLine = document.getElementById('intentLine');
+    const initialIntent = OmniPhi.resolveIntent ? OmniPhi.resolveIntent(query) : null;
+
     input.value = query;
     pageTitle.textContent = query;
     heading.textContent = `${query} — overview`;
+    if (initialIntent?.atomicNumber) {
+      intentLine.style.display = 'block';
+      intentLine.textContent = `Interpreting this as chemical element · atomic number ${initialIntent.atomicNumber}`;
+    }
 
     function routeLinks() {
       const p = new URLSearchParams({ q: query, mode });
@@ -112,14 +122,14 @@
           <div>
             <div class="source-domain">${OmniPhi.escapeHtml(s.domain || s.provider || 'source')}</div>
             <h3>${OmniPhi.escapeHtml(s.title)}</h3>
-            <p>${OmniPhi.escapeHtml((s.extract || '').slice(0, 190))}${(s.extract || '').length > 190 ? '…' : ''}</p>
+            <p>${OmniPhi.escapeHtml((s.extract || '').slice(0, 220))}${(s.extract || '').length > 220 ? '…' : ''}</p>
           </div>
           <div class="source-actions">
             <button type="button" class="${isCollected ? 'collected' : ''}" data-collect="${i}">${isCollected ? 'Collected ✓' : 'Collect'}</button>
             ${s.url ? `<a href="${OmniPhi.escapeHtml(s.url)}" target="_blank" rel="noopener">Read</a>` : `<span></span>`}
           </div>
         </article>`;
-      }).join('') : '<div class="panel panel-pad">No public sources were returned. The local proportional field is still available.</div>';
+      }).join('') : '<div class="panel panel-pad">No sufficiently relevant public sources were returned. Omni Phi kept the query intact instead of substituting unrelated material.</div>';
 
       grid.querySelectorAll('[data-collect]').forEach(btn => btn.addEventListener('click', () => {
         const source = record.sources[Number(btn.dataset.collect)];
@@ -137,9 +147,16 @@
       catch (error) { console.warn(error); sources = OmniPhi.fallbackSources(query); }
       if (!sources.length) sources = OmniPhi.fallbackSources(query);
       let record = OmniPhi.createResearch(query, mode, sources);
+
+      if (record.resolvedIntent?.resolvedTitle && record.resolvedIntent.atomicNumber) {
+        intentLine.style.display = 'block';
+        intentLine.textContent = `Resolved: ${record.resolvedIntent.resolvedTitle} · atomic number ${record.resolvedIntent.atomicNumber}`;
+        heading.textContent = `${record.resolvedIntent.resolvedTitle} — overview`;
+      }
+
       copy.innerHTML = paragraphs(record.overview);
       const heroImage = record.sources.find(s => s.image)?.image;
-      if (heroImage) visual.insertAdjacentHTML('afterbegin', `<img src="${OmniPhi.escapeHtml(heroImage)}" alt="Visual source for ${OmniPhi.escapeHtml(query)}" />`);
+      if (heroImage) visual.insertAdjacentHTML('afterbegin', `<img src="${OmniPhi.escapeHtml(heroImage)}" alt="Visual source for ${OmniPhi.escapeHtml(record.resolvedIntent?.resolvedTitle || query)}" />`);
       renderSources(record);
       profileUI();
     }
