@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Omni Phi — Structured Research</title>
+  <meta name="description" content="Machine-readable Omni Phi structured research with a 3D proportional relationship field." />
+  <meta name="theme-color" content="#07071c" />
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body class="content-page">
+  <div id="topbar"></div>
+  <main class="site-shell">
+    <section class="page-hero">
+      <div class="page-kicker">Page 3 · Structured Research</div>
+      <h1 class="page-title" id="pageTitle">Structured research</h1>
+      <p class="page-subtitle">This view is designed for another AI to read. It preserves the core concept, dynamic proximity shells, 3D coordinates, source evidence, cross-links, and the user's current weighting profile.</p>
+      <nav class="pill-nav" aria-label="Research views">
+        <a id="overviewLink" href="../overview/">AI Overview</a>
+        <a class="active" href="./">Structured Research</a>
+        <a id="cardsLink" href="../cards/">Purple Cards</a>
+        <a href="../ecosystem/">Omni Line</a>
+      </nav>
+    </section>
+
+    <section class="structured-grid">
+      <article class="panel panel-pad">
+        <div class="page-kicker">Core and inner field</div>
+        <h2 class="section-title" id="coreTitle">Core concept</h2>
+        <div class="data-list" id="nearList"></div>
+      </article>
+      <article class="panel" style="min-height:420px;padding:10px">
+        <canvas id="structuredCloud" style="width:100%;height:100%;min-height:400px"></canvas>
+      </article>
+    </section>
+
+    <section class="grid two" style="margin-top:14px">
+      <article class="panel panel-pad">
+        <div class="page-kicker">User-weighted meanings</div>
+        <h2 class="section-title">Personal context</h2>
+        <div class="data-list" id="profileList"></div>
+      </article>
+      <article class="panel panel-pad">
+        <div class="page-kicker">Evidence</div>
+        <h2 class="section-title">Source trail</h2>
+        <div class="data-list" id="sourceList"></div>
+      </article>
+    </section>
+
+    <section class="panel panel-pad" style="margin-top:14px">
+      <div class="page-kicker">AI-readable record</div>
+      <h2 class="section-title">Omni Phi JSON</h2>
+      <pre class="json-box" id="jsonBox"></pre>
+      <div class="action-row">
+        <button id="copyJson" type="button">Copy for AI</button>
+        <button id="downloadJson" type="button">Download JSON</button>
+        <a id="purpleLink" href="../cards/">Open Purple Cards</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="../assets/omni-family.js"></script>
+  <script src="../assets/indexer.js"></script>
+  <script src="../assets/app.js"></script>
+  <script>
+    document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'structured research');
+    OmniPhi.setupMenu();
+    const params = new URLSearchParams(location.search);
+    const q = params.get('q') || OmniPhi.activeResearch()?.query || 'Corn';
+    const mode = params.get('mode') || OmniPhi.activeResearch()?.mode || 'search';
+    let record = OmniPhi.activeResearch();
+    if (!record || record.query.toLowerCase() !== q.toLowerCase()) record = OmniPhi.createResearch(q, mode, []);
+    record = OmniPhi.refreshResearchWithProfile(record);
+
+    document.getElementById('pageTitle').textContent = q;
+    document.getElementById('coreTitle').textContent = `# ${q}`;
+    const navParams = new URLSearchParams({q, mode});
+    document.getElementById('overviewLink').href = `${OmniPhi.url('overview/')}?${navParams}`;
+    document.getElementById('cardsLink').href = `${OmniPhi.url('cards/')}?${navParams}`;
+    document.getElementById('purpleLink').href = `${OmniPhi.url('cards/')}?${navParams}`;
+
+    const near = [...(record.nodes || [])].sort((a,b)=>b.affinity-a.affinity).slice(0,12);
+    document.getElementById('nearList').innerHTML = near.map(n => `<div class="data-row"><strong>${OmniPhi.escapeHtml(n.hash)} ${OmniPhi.escapeHtml(n.label)}</strong><span class="score">${Math.round(n.affinity*100)}%</span></div>`).join('') || '<p class="muted">No nodes yet.</p>';
+
+    const profile = record.profileSnapshot || {};
+    const top = profile.topKeywords || [];
+    document.getElementById('profileList').innerHTML = top.length ? top.slice(0,10).map(([word,count])=>`<div class="data-row"><strong>${OmniPhi.escapeHtml(word)}</strong><span class="score">${count}</span></div>`).join('') : '<p class="muted">Collect orange source cards to begin forming a personal weighting field.</p>';
+
+    document.getElementById('sourceList').innerHTML = (record.sources || []).slice(0,10).map((s,i)=>`<div class="data-row"><strong>${i+1}. ${OmniPhi.escapeHtml(s.title)}</strong><span class="score">${Math.round((s.personalWeight||0)*100)}%</span></div>`).join('') || '<p class="muted">Open the AI Overview to gather public evidence sources.</p>';
+
+    const compactRecord = {
+      version: record.version,
+      query: record.query,
+      mode: record.mode,
+      createdAt: record.createdAt,
+      overview: record.overview,
+      source: record.source,
+      nodes: record.nodes,
+      sources: (record.sources || []).map(({id,title,url,domain,provider,personalWeight})=>({id,title,url,domain,provider,personalWeight})),
+      profileSnapshot: record.profileSnapshot
+    };
+    const json = JSON.stringify(compactRecord, null, 2);
+    document.getElementById('jsonBox').textContent = json;
+
+    document.getElementById('copyJson').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(json); document.getElementById('copyJson').textContent = 'Copied ✓'; }
+      catch { document.getElementById('copyJson').textContent = 'Copy unavailable'; }
+    });
+    document.getElementById('downloadJson').addEventListener('click', () => {
+      const blob = new Blob([json], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `omni-phi-${q.toLowerCase().replace(/[^a-z0-9]+/g,'-') || 'research'}.json`;
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 500);
+    });
+
+    OmniPhi.renderCloud(document.getElementById('structuredCloud'), record);
+  </script>
+</body>
+</html>
