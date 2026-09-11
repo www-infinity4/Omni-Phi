@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Omni Phi — Purple Research Cards</title>
+  <meta name="description" content="Dynamic purple research cards organized by Omni Phi proportional proximity shells." />
+  <meta name="theme-color" content="#080620" />
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body class="content-page">
+  <div id="topbar"></div>
+  <main class="site-shell">
+    <section class="page-hero">
+      <div class="page-kicker">Page 4 · Purple Cards</div>
+      <h1 class="page-title" id="pageTitle">Research cards</h1>
+      <p class="page-subtitle">The hash count is a readable shell label. The real structure underneath it is the dynamic 3D affinity field. Strong relationships stay close; weaker or more contextual relationships drift outward and can still reconnect through cross-links.</p>
+      <nav class="pill-nav" aria-label="Research views">
+        <a id="overviewLink" href="../overview/">AI Overview</a>
+        <a id="structuredLink" href="../structured/">Structured Research</a>
+        <a class="active" href="./">Purple Cards</a>
+        <a href="../ecosystem/">Omni Line</a>
+      </nav>
+    </section>
+
+    <section class="panel panel-pad">
+      <div class="page-kicker">Core</div>
+      <h2 class="section-title" id="coreHeading"># Core</h2>
+      <p class="section-copy" id="coreCopy"></p>
+    </section>
+
+    <div id="cardShells"></div>
+  </main>
+
+  <script src="../assets/omni-family.js"></script>
+  <script src="../assets/indexer.js"></script>
+  <script src="../assets/app.js"></script>
+  <script>
+    document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'purple cards');
+    OmniPhi.setupMenu();
+    const params = new URLSearchParams(location.search);
+    const q = params.get('q') || OmniPhi.activeResearch()?.query || 'Corn';
+    const mode = params.get('mode') || OmniPhi.activeResearch()?.mode || 'search';
+    let record = OmniPhi.activeResearch();
+    if (!record || record.query.toLowerCase() !== q.toLowerCase()) record = OmniPhi.createResearch(q, mode, []);
+    record = OmniPhi.refreshResearchWithProfile(record);
+
+    document.getElementById('pageTitle').textContent = q;
+    document.getElementById('coreHeading').textContent = `# ${q}`;
+    document.getElementById('coreCopy').textContent = record.overview || `${q} is the center of this Omni Phi field.`;
+    const navParams = new URLSearchParams({q, mode});
+    document.getElementById('overviewLink').href = `${OmniPhi.url('overview/')}?${navParams}`;
+    document.getElementById('structuredLink').href = `${OmniPhi.url('structured/')}?${navParams}`;
+
+    const shellNames = {2:'Inner relations',3:'Connected systems',4:'Extended web',5:'Outer field'};
+    const byShell = {};
+    (record.nodes || []).forEach(n => (byShell[n.shell] ||= []).push(n));
+    const root = document.getElementById('cardShells');
+    root.innerHTML = Object.keys(byShell).sort((a,b)=>Number(a)-Number(b)).map(shell => {
+      const nodes = byShell[shell].sort((a,b)=>b.affinity-a.affinity);
+      return `<section>
+        <div class="shell-banner"><h2>${'#'.repeat(Number(shell))} ${shellNames[shell] || 'Research shell'}</h2><small>${nodes.length} node${nodes.length===1?'':'s'}</small></div>
+        <div class="cards-grid">${nodes.map(n => `<article class="research-card" data-node="${OmniPhi.escapeHtml(n.id)}">
+          <span class="hash">${OmniPhi.escapeHtml(n.hash)}</span>
+          <h3>${OmniPhi.escapeHtml(n.label)}</h3>
+          <p>${OmniPhi.escapeHtml(n.category)} · ${Math.round(n.affinity*100)}% proportional affinity. ${n.crossLinks?.length ? `Cross-linked to ${n.crossLinks.length} nearby node${n.crossLinks.length===1?'':'s'}.` : ''}</p>
+          <div class="card-foot"><span>${OmniPhi.escapeHtml(n.category)}</span><span>${Math.round(n.affinity*100)}%</span></div>
+        </article>`).join('')}</div>
+      </section>`;
+    }).join('');
+
+    root.querySelectorAll('[data-node]').forEach(card => card.addEventListener('click', () => {
+      const node = record.nodes.find(n => n.id === card.dataset.node);
+      if (!node) return;
+      const next = new URLSearchParams({q: `${q} ${node.label}`, mode});
+      location.href = `${OmniPhi.url('overview/')}?${next}`;
+    }));
+  </script>
+</body>
+</html>
