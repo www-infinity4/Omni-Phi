@@ -77,7 +77,7 @@ Omni-Phi/
 │   ├── app.js
 │   ├── indexer.js
 │   ├── omni-family.js
-│   └── omni-phi-index.jpg
+│   └── omni-phi-share.svg
 ├── data/
 │   └── omni-schema.json
 └── .github/workflows/pages.yml
