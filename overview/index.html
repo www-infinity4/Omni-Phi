@@ -85,12 +85,23 @@
       intentLine.textContent = `Interpreting this as chemical element · atomic number ${initialIntent.atomicNumber}`;
     }
 
+    function researchParams() {
+      return new URLSearchParams({ q: query, mode });
+    }
+
     function routeLinks() {
-      const p = new URLSearchParams({ q: query, mode });
+      const p = researchParams();
       document.getElementById('structuredLink').href = `${OmniPhi.url('structured/')}?${p}`;
       document.getElementById('cardsLink').href = `${OmniPhi.url('cards/')}?${p}`;
     }
     routeLinks();
+
+    // Android browsers have occasionally left the computed relative link inert after
+    // the overview is updated. Make this an explicit navigation as well as a real href.
+    document.getElementById('structuredLink').addEventListener('click', (event) => {
+      event.preventDefault();
+      window.location.assign(`${OmniPhi.url('structured/')}?${researchParams()}`);
+    });
 
     document.getElementById('queryForm').addEventListener('submit', (event) => {
       event.preventDefault();
