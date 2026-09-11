@@ -34,6 +34,46 @@
   border: 0 !important;
 }
 
+.cosmic-brand {
+  position: fixed;
+  z-index: 5;
+  top: 13.6vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(90%, 800px);
+  text-align: center;
+  text-shadow: 0 0 9px #fff, 0 0 25px #b442ff;
+}
+
+.cosmic-brand h1 {
+  margin: 0;
+  color: white;
+  font-size: clamp(3rem, 5.1vw, 5.2rem);
+  font-weight: 300;
+  letter-spacing: .22em;
+  text-indent: .22em;
+  line-height: 1;
+}
+
+.cosmic-brand p {
+  margin: 12px 0 0;
+  color: #eee9ff;
+  font-size: clamp(1rem, 1.6vw, 1.5rem);
+  font-weight: 300;
+  letter-spacing: .32em;
+}
+
+.cosmic-brand small {
+  display: block;
+  margin-top: 17px;
+  color: #c5bddc;
+  font-size: clamp(.68rem, .85vw, .86rem);
+  letter-spacing: .31em;
+  text-transform: uppercase;
+}
+
+.cosmic-brand b { padding: 0 .55rem; color: white; }
+
 .cosmic-menu {
   position: fixed;
   z-index: 15;
@@ -169,6 +209,8 @@
   box-shadow: 0 9px 24px rgba(0, 0, 0, .42), 0 0 13px rgba(80, 70, 255, .28);
 }
 
+.search-deck:not(.suggestions-open) .suggestion-panel { display: none; }
+
 .suggestion-head { display: none; }
 .suggestion { width: 100%; min-height: 43px; padding: 8px 18px; border: 0; border-bottom: 1px solid rgba(127, 125, 219, .35); color: #e9e5fa; background: transparent; display: grid; grid-template-columns: 26px minmax(0, 1fr) 20px; align-items: center; gap: 10px; text-align: left; font-size: .98rem; }
 .suggestion:last-child { border-bottom: 0; }
@@ -180,16 +222,22 @@
   .cosmic-art img { object-position: 50% 50%; }
   .cosmic-menu { top: max(3.1vh, env(safe-area-inset-top)); left: 5.1vw; width: 70px; }
   .cosmic-menu span { width: 31px; }
-  .cosmic-modes { top: 33.45vh; width: 87%; gap: 2.1vw; }
+  .cosmic-brand { top: 14.3vh; width: 94%; }
+  .cosmic-brand h1 { font-size: clamp(2.8rem, 12vw, 4rem); }
+  .cosmic-brand p { margin-top: 12px; font-size: clamp(.9rem, 4.4vw, 1.25rem); }
+  .cosmic-brand small { margin-top: 17px; font-size: clamp(.58rem, 2.3vw, .72rem); letter-spacing: .24em; }
+  .cosmic-modes { top: 30.7vh; width: 87%; gap: 2.1vw; }
   .cosmic-modes .mode-button { min-height: 84px; border-radius: 20px; gap: .5rem; padding: 8px 5px; }
   .cosmic-modes b { font-size: clamp(1.6rem, 7vw, 2.1rem); }
   .cosmic-modes span { font-size: clamp(.85rem, 4.4vw, 1.17rem); }
-  .search-deck { top: 43.18vh; width: 87.1%; }
-  .search-shell { min-height: 168px; padding: 22px 88px 35px 77px; align-items: flex-start; border-radius: 31px; }
-  .search-icon { top: 39px; left: 25px; width: 40px; height: 40px; }
-  .search-input { min-height: 104px; font-size: clamp(1rem, 5vw, 1.37rem); line-height: 1.55; }
+  .search-deck { top: 40.35vh; width: 87.1%; }
+  .search-shell { min-height: 82px; padding: 13px 88px 13px 70px; align-items: center; border-radius: 31px; }
+  .search-icon { top: 24px; left: 25px; width: 34px; height: 34px; }
+  .search-input { min-height: 34px; font-size: clamp(1rem, 5vw, 1.37rem); line-height: 1.48; }
   .search-submit { width: 69px; right: 13px; }
-  .query-count { right: 89px; bottom: 13px; }
+  .query-count { right: 89px; bottom: 7px; opacity: 0; }
+  .search-deck:focus-within .query-count,
+  .search-deck.has-query .query-count { opacity: 1; }
   .suggestion-panel { width: 100%; border-radius: 0 0 26px 26px; }
   .suggestion-head { min-height: 52px; padding: 0 26px; display: flex; justify-content: space-between; align-items: center; color: #a9a0d1; font-size: .72rem; letter-spacing: .22em; text-transform: uppercase; }
   .suggestion { min-height: 64px; padding: 9px 24px; grid-template-columns: 35px minmax(0, 1fr) 18px; font-size: clamp(.9rem, 4.15vw, 1.15rem); }
@@ -199,11 +247,17 @@
 @media (max-width: 420px) {
   .cosmic-menu { width: 58px; }
   .cosmic-menu span { width: 25px; height: 2px; gap: 5px; }
-  .cosmic-modes .mode-button { min-height: 70px; }
+  .cosmic-brand { top: 13.8vh; }
+  .cosmic-brand h1 { font-size: 2.55rem; }
+  .cosmic-brand p { font-size: .95rem; }
+  .cosmic-brand small { font-size: .54rem; }
+  .cosmic-modes { top: 29.5vh; }
+  .cosmic-modes .mode-button { min-height: 64px; }
   .cosmic-modes b { font-size: 1.45rem; }
   .cosmic-modes span { font-size: .83rem; }
-  .search-shell { min-height: 145px; padding-left: 62px; padding-right: 71px; }
-  .search-icon { left: 19px; width: 32px; height: 32px; }
+  .search-deck { top: 38.7vh; }
+  .search-shell { min-height: 72px; padding-left: 57px; padding-right: 71px; }
+  .search-icon { top: 20px; left: 17px; width: 30px; height: 30px; }
   .search-submit { width: 56px; }
   .query-count { right: 74px; }
   .suggestion { min-height: 56px; padding-left: 18px; padding-right: 18px; }
