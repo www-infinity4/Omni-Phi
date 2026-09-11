@@ -3,7 +3,8 @@
     profile: "omniPhi:profile:v1",
     research: "omniPhi:lastResearch:v1",
     history: "omniPhi:history:v1",
-    mode: "omniPhi:mode:v1"
+    mode: "omniPhi:mode:v1",
+    sharedCollection: "phiShared:collection:v1"
   };
 
   const jsonGet = (key, fallback) => {
@@ -47,6 +48,8 @@
       provider: source.provider || "",
       extract: source.extract || "",
       image: source.image || "",
+      searchQuery: activeResearch()?.query || "",
+      storyKey: source.url || source.id || String(source.title || "card").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
       collectedAt: new Date().toISOString()
     };
     const existing = p.collected.find((item) => (item.url || item.id || item.title) === key);
@@ -55,6 +58,11 @@
     if (source.domain) p.domains[source.domain] = (p.domains[source.domain] || 0) + 1;
     addWords(p.keywords, `${source.title || ""} ${source.extract || ""}`, 1);
     saveProfile(p);
+    const shared = jsonGet(STORAGE.sharedCollection, []);
+    const sharedExisting = shared.find((item) => (item.storyKey || item.url || item.id || item.title) === saved.storyKey);
+    if (sharedExisting) Object.assign(sharedExisting, saved, { collectedAt: sharedExisting.collectedAt || saved.collectedAt });
+    else shared.unshift(saved);
+    jsonSet(STORAGE.sharedCollection, shared);
     return p;
   }
 
