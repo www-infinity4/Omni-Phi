@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Omni Phi — Omni Line</title>
+  <meta name="description" content="The Omni line: connected tools, projects, and capabilities indexed through Omni Phi." />
+  <meta name="theme-color" content="#07071c" />
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body class="content-page">
+  <div id="topbar"></div>
+  <main class="site-shell">
+    <section class="page-hero">
+      <div class="page-kicker">Omni ecosystem</div>
+      <h1 class="page-title">The Omni line</h1>
+      <p class="page-subtitle">Each Omni project is a capability realm connected back into Omni Phi. Existing repositories stay independently usable while Omni Phi indexes their purpose, tools, and relationships so the right capability can be pulled inward when a search needs it.</p>
+      <nav class="pill-nav">
+        <a href="../">Search</a>
+        <a href="../overview/">AI Overview</a>
+        <a href="../structured/">Structured Research</a>
+        <a href="../cards/">Purple Cards</a>
+        <a class="active" href="./">Omni Line</a>
+      </nav>
+    </section>
+    <section class="ecosystem-grid" id="ecoGrid"></section>
+  </main>
+
+  <script src="../assets/omni-family.js"></script>
+  <script src="../assets/indexer.js"></script>
+  <script src="../assets/app.js"></script>
+  <script>
+    document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'Omni line');
+    OmniPhi.setupMenu();
+    const grid = document.getElementById('ecoGrid');
+    grid.innerHTML = OMNI_FAMILY.map((item, i) => `<a class="panel eco-card" href="${OmniPhi.url('omni/')}?id=${encodeURIComponent(item.id)}">
+      <div class="eco-icon">${i % 3 === 0 ? 'φ' : i % 3 === 1 ? '◉' : '✦'}</div>
+      <h2>${OmniPhi.escapeHtml(item.name)}</h2>
+      <p>${OmniPhi.escapeHtml(item.tagline)}</p>
+      <div class="eco-tools">${item.tools.slice(0,4).map(t=>`<span>${OmniPhi.escapeHtml(t)}</span>`).join('')}</div>
+    </a>`).join('');
+  </script>
+</body>
+</html>
