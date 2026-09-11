@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Omni Phi — Proportional Search</title>
+  <meta name="description" content="Omni Phi proportional search: a 3D user-weighted research field that turns search into structured knowledge." />
+  <meta name="theme-color" content="#05071a" />
+  <meta property="og:title" content="Omni Phi — Proportional Search" />
+  <meta property="og:description" content="Explore a 3D proportional web of concepts, sources, structured research, and purple research cards." />
+  <meta property="og:image" content="https://www-infinity4.github.io/Omni-Phi/assets/omni-phi-share.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www-infinity4.github.io/Omni-Phi/assets/omni-phi-share.svg" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="index-page">
+  <main class="index-hero" id="indexHero">
+    <header class="index-head">
+      <button class="icon-button" data-open-menu aria-label="Open Omni Phi menu">☰</button>
+      <div class="index-title">
+        <h1>OMNI PHI</h1>
+        <p>proportional search</p>
+        <small>all things connect · in proportion</small>
+      </div>
+      <span class="index-spacer"></span>
+    </header>
+
+    <section class="cloud-wrap" aria-label="Interactive Omni Phi proportional field">
+      <canvas id="omniCloud"></canvas>
+      <div class="cloud-caption">3D proportional field · drag to rotate</div>
+    </section>
+
+    <section class="index-controls" aria-label="Omni Phi search controls">
+      <div class="mode-row" role="group" aria-label="Search mode">
+        <button class="mode-button active" type="button" data-mode="search">Search <span>φ</span></button>
+        <button class="mode-button" type="button" data-mode="code">Code <span>φ</span></button>
+        <button class="mode-button" type="button" data-mode="create">Create <span>φ</span></button>
+      </div>
+
+      <form class="search-shell" id="searchForm">
+        <button class="search-menu" type="button" data-open-menu aria-label="Open Omni Phi menu">☰</button>
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="m16.5 16.5 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input class="search-input" id="searchInput" name="q" autocomplete="off" placeholder="Search Omni Phi" aria-label="Search Omni Phi" />
+        <button class="search-submit" type="submit" aria-label="Run Omni Phi search">φ</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="assets/omni-family.js"></script>
+  <script src="assets/indexer.js"></script>
+  <script src="assets/app.js"></script>
+  <script>
+    const hero = document.getElementById('indexHero');
+    const input = document.getElementById('searchInput');
+    const form = document.getElementById('searchForm');
+    const modeButtons = [...document.querySelectorAll('[data-mode]')];
+    let mode = localStorage.getItem(OmniPhi.STORAGE.mode) || 'search';
+
+    function setMode(next, shouldFocus = true) {
+      mode = next;
+      localStorage.setItem(OmniPhi.STORAGE.mode, mode);
+      modeButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
+      input.placeholder = mode === 'code' ? 'What do you want to code?' : mode === 'create' ? 'What do you want to create?' : 'Search Omni Phi';
+      if (shouldFocus) input.focus();
+    }
+
+    modeButtons.forEach(btn => btn.addEventListener('click', () => setMode(btn.dataset.mode)));
+    setMode(mode, false);
+
+    input.addEventListener('focus', () => hero.classList.add('search-focused'));
+    input.addEventListener('blur', () => { if (!input.value.trim()) hero.classList.remove('search-focused'); });
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const q = input.value.trim();
+      if (!q) { input.focus(); return; }
+      const params = new URLSearchParams({ q, mode });
+      location.href = `${OmniPhi.url('overview/')}?${params}`;
+    });
+
+    OmniPhi.setupMenu();
+    OmniPhi.renderCloud(document.getElementById('omniCloud'), 'Omni Phi');
+  </script>
+</body>
+</html>
