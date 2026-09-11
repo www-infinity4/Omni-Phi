@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Omni Phi — AI Overview</title>
+  <meta name="description" content="Source-grounded Omni Phi overview with collectible source cards and user-weighted search memory." />
+  <meta name="theme-color" content="#07071c" />
+  <link rel="stylesheet" href="../assets/style.css" />
+</head>
+<body class="content-page">
+  <div id="topbar"></div>
+  <main class="site-shell">
+    <section class="page-hero">
+      <div class="page-kicker">Page 2 · AI Overview</div>
+      <h1 class="page-title" id="pageTitle">Building your proportional overview…</h1>
+      <p class="page-subtitle">Sources arrive as orange evidence cards. Collect the ones that matter to you; Omni Phi uses that choice as a personal weighting signal for future searches while keeping the wider source field available.</p>
+
+      <form class="query-strip" id="queryForm">
+        <span aria-hidden="true">⌕</span>
+        <input id="queryInput" aria-label="Search Omni Phi again" />
+        <button type="submit">Search φ</button>
+      </form>
+      <nav class="pill-nav" aria-label="Research views">
+        <a class="active" href="./">AI Overview</a>
+        <a id="structuredLink" href="../structured/">Structured Research</a>
+        <a id="cardsLink" href="../cards/">Purple Cards</a>
+        <a href="../ecosystem/">Omni Line</a>
+      </nav>
+    </section>
+
+    <section class="overview-layout">
+      <article class="panel panel-pad">
+        <div class="page-kicker">Source-grounded synthesis</div>
+        <h2 class="section-title" id="overviewHeading">AI Overview</h2>
+        <div class="overview-copy" id="overviewCopy"><div class="loading">Collecting evidence and building the Omni field</div></div>
+      </article>
+      <aside class="panel topic-visual" id="topicVisual" aria-label="Topic visual">
+        <div class="topic-orb">φ</div>
+      </aside>
+    </section>
+
+    <div class="source-head">
+      <div>
+        <div class="page-kicker">Evidence field</div>
+        <h2>Orange source cards</h2>
+      </div>
+      <div class="profile-meter">
+        <span id="profileLabel">Personal search profile</span>
+        <div class="meter"><span id="profileMeter"></span></div>
+      </div>
+    </div>
+    <section class="sources-grid" id="sourcesGrid"><div class="panel loading">Finding sources</div></section>
+
+    <div class="notice">Pages 3 and 4 are prepared from this same search record even if you never open them. They are designed primarily as structured material that your own AI can read later.</div>
+  </main>
+
+  <script src="../assets/omni-family.js"></script>
+  <script src="../assets/indexer.js"></script>
+  <script src="../assets/app.js"></script>
+  <script>
+    document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'AI Overview');
+    OmniPhi.setupMenu();
+
+    const params = new URLSearchParams(location.search);
+    const query = (params.get('q') || OmniPhi.activeResearch()?.query || 'Corn').trim();
+    const mode = params.get('mode') || localStorage.getItem(OmniPhi.STORAGE.mode) || 'search';
+    const pageTitle = document.getElementById('pageTitle');
+    const input = document.getElementById('queryInput');
+    const grid = document.getElementById('sourcesGrid');
+    const copy = document.getElementById('overviewCopy');
+    const heading = document.getElementById('overviewHeading');
+    const visual = document.getElementById('topicVisual');
+    input.value = query;
+    pageTitle.textContent = query;
+    heading.textContent = `${query} — overview`;
+
+    function routeLinks() {
+      const p = new URLSearchParams({ q: query, mode });
+      document.getElementById('structuredLink').href = `${OmniPhi.url('structured/')}?${p}`;
+      document.getElementById('cardsLink').href = `${OmniPhi.url('cards/')}?${p}`;
+    }
+    routeLinks();
+
+    document.getElementById('queryForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const q = input.value.trim();
+      if (!q) return;
+      location.href = `${OmniPhi.url('overview/')}?${new URLSearchParams({q, mode})}`;
+    });
+
+    function profileUI() {
+      const p = OmniPhi.profile();
+      const count = p.collected?.length || 0;
+      document.getElementById('profileLabel').textContent = `${count} collected source${count === 1 ? '' : 's'} shaping future searches`;
+      document.getElementById('profileMeter').style.width = `${Math.min(100, 8 + count * 7)}%`;
+    }
+
+    function paragraphs(text) {
+      const sentences = String(text || '').split(/(?<=[.!?])\s+/).filter(Boolean);
+      const groups = [];
+      for (let i=0; i<sentences.length; i+=3) groups.push(sentences.slice(i,i+3).join(' '));
+      return groups.map(p => `<p>${OmniPhi.escapeHtml(p)}</p>`).join('');
+    }
+
+    function renderSources(record) {
+      const collected = new Set((OmniPhi.profile().collected || []).map(x => x.url));
+      grid.innerHTML = record.sources.length ? record.sources.map((s, i) => {
+        const isCollected = s.url && collected.has(s.url);
+        return `<article class="source-card" data-source="${i}">
+          ${s.image ? `<img src="${OmniPhi.escapeHtml(s.image)}" alt="" loading="lazy" />` : `<div class="topic-orb" style="width:92px;height:92px;font-size:2.2rem">φ</div>`}
+          <div>
+            <div class="source-domain">${OmniPhi.escapeHtml(s.domain || s.provider || 'source')}</div>
+            <h3>${OmniPhi.escapeHtml(s.title)}</h3>
+            <p>${OmniPhi.escapeHtml((s.extract || '').slice(0, 190))}${(s.extract || '').length > 190 ? '…' : ''}</p>
+          </div>
+          <div class="source-actions">
+            <button type="button" class="${isCollected ? 'collected' : ''}" data-collect="${i}">${isCollected ? 'Collected ✓' : 'Collect'}</button>
+            ${s.url ? `<a href="${OmniPhi.escapeHtml(s.url)}" target="_blank" rel="noopener">Read</a>` : `<span></span>`}
+          </div>
+        </article>`;
+      }).join('') : '<div class="panel panel-pad">No public sources were returned. The local proportional field is still available.</div>';
+
+      grid.querySelectorAll('[data-collect]').forEach(btn => btn.addEventListener('click', () => {
+        const source = record.sources[Number(btn.dataset.collect)];
+        OmniPhi.collectSource(source);
+        record = OmniPhi.refreshResearchWithProfile(record);
+        profileUI();
+        renderSources(record);
+      }));
+    }
+
+    async function run() {
+      profileUI();
+      let sources;
+      try { sources = await OmniPhi.fetchWikipedia(query); }
+      catch (error) { console.warn(error); sources = OmniPhi.fallbackSources(query); }
+      if (!sources.length) sources = OmniPhi.fallbackSources(query);
+      let record = OmniPhi.createResearch(query, mode, sources);
+      copy.innerHTML = paragraphs(record.overview);
+      const heroImage = record.sources.find(s => s.image)?.image;
+      if (heroImage) visual.insertAdjacentHTML('afterbegin', `<img src="${OmniPhi.escapeHtml(heroImage)}" alt="Visual source for ${OmniPhi.escapeHtml(query)}" />`);
+      renderSources(record);
+      profileUI();
+    }
+    run();
+  </script>
+</body>
+</html>
