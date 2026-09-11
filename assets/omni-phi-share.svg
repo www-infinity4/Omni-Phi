@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="48%" r="72%"><stop offset="0" stop-color="#29105a"/><stop offset=".42" stop-color="#0a1235"/><stop offset="1" stop-color="#02040f"/></radialGradient>
+    <radialGradient id="orb" cx="45%" cy="38%" r="62%"><stop offset="0" stop-color="#ff9af2"/><stop offset=".35" stop-color="#a743ff"/><stop offset="1" stop-color="#2c0b68"/></radialGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g opacity=".65" stroke="#6f8cff" fill="none">
+    <ellipse cx="600" cy="350" rx="330" ry="210"/><ellipse cx="600" cy="350" rx="265" ry="165"/><ellipse cx="600" cy="350" rx="190" ry="115"/>
+  </g>
+  <g stroke="#ad78ff" stroke-opacity=".45">
+    <line x1="600" y1="350" x2="325" y2="240"/><line x1="600" y1="350" x2="430" y2="485"/><line x1="600" y1="350" x2="760" y2="190"/><line x1="600" y1="350" x2="888" y2="305"/><line x1="600" y1="350" x2="815" y2="475"/><line x1="600" y1="350" x2="470" y2="205"/>
+  </g>
+  <g fill="url(#orb)" stroke="#d9bcff" filter="url(#glow)">
+    <circle cx="325" cy="240" r="23"/><circle cx="430" cy="485" r="16"/><circle cx="760" cy="190" r="18"/><circle cx="888" cy="305" r="26"/><circle cx="815" cy="475" r="14"/><circle cx="470" cy="205" r="13"/>
+  </g>
+  <circle cx="600" cy="350" r="92" fill="url(#orb)" stroke="#ffceff" stroke-width="2" filter="url(#glow)"/>
+  <text x="600" y="388" text-anchor="middle" font-family="Georgia,serif" font-size="128" fill="white" filter="url(#glow)">φ</text>
+  <text x="600" y="105" text-anchor="middle" font-family="Arial,sans-serif" font-size="70" letter-spacing="22" fill="#fff">OMNI PHI</text>
+  <text x="600" y="150" text-anchor="middle" font-family="Arial,sans-serif" font-size="22" letter-spacing="10" fill="#cabaff">PROPORTIONAL SEARCH</text>
+  <text x="600" y="585" text-anchor="middle" font-family="Arial,sans-serif" font-size="18" letter-spacing="7" fill="#b9b0dd">ALL THINGS CONNECT · IN PROPORTION</text>
+</svg>
