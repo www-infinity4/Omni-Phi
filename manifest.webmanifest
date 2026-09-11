@@ -1,0 +1,9 @@
+{
+  "name": "Omni Phi",
+  "short_name": "Omni Phi",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#040716",
+  "theme_color": "#6f2bff",
+  "description": "Proportional search, structured research, and user-weighted knowledge."
+}
