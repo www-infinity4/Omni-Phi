@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Omni Phi Research Record",
+  "type": "object",
+  "required": ["version", "query", "mode", "createdAt", "nodes", "sources"],
+  "properties": {
+    "version": {"type": "string"},
+    "query": {"type": "string"},
+    "mode": {"enum": ["search", "code", "create"]},
+    "createdAt": {"type": "string"},
+    "overview": {"type": "string"},
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "affinity", "shell", "position"],
+        "properties": {
+          "id": {"type": "string"},
+          "label": {"type": "string"},
+          "category": {"type": "string"},
+          "affinity": {"type": "number", "minimum": 0, "maximum": 1},
+          "shell": {"type": "integer", "minimum": 1},
+          "hash": {"type": "string"},
+          "position": {
+            "type": "object",
+            "required": ["x", "y", "z"],
+            "properties": {
+              "x": {"type": "number"},
+              "y": {"type": "number"},
+              "z": {"type": "number"}
+            }
+          },
+          "parent": {"type": ["string", "null"]},
+          "crossLinks": {"type": "array", "items": {"type": "string"}},
+          "evidence": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "sources": {"type": "array"},
+    "profileSnapshot": {"type": "object"}
+  }
+}
