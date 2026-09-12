@@ -138,9 +138,15 @@
           <div class="source-actions">
             <button type="button" class="${isCollected ? 'collected' : ''}" data-collect="${i}">${isCollected ? 'Collected ✓' : 'Collect'}</button>
             ${s.url ? `<a href="${OmniPhi.escapeHtml(s.url)}" target="_blank" rel="noopener">Read</a>` : `<span></span>`}
+            <button type="button" data-share="${i}">Share card · +1/10 ⭐</button>
           </div>
         </article>`;
       }).join('') : '<div class="panel panel-pad">No sufficiently relevant public sources were returned. Omni Phi kept the query intact instead of substituting unrelated material.</div>';
+
+      grid.querySelectorAll('[data-share]').forEach(btn => btn.addEventListener('click', async () => {
+        const result = await OmniPhi.shareCard(record.sources[Number(btn.dataset.share)]);
+        btn.textContent = result.awarded ? 'Shared · 1 StarCoin!' : result.progressToNextCoin != null ? `Shared · ${result.progressToNextCoin}/10 ⭐` : result.copied ? 'Link copied' : 'Share card · +1/10 ⭐';
+      }));
 
       grid.querySelectorAll('[data-collect]').forEach(btn => btn.addEventListener('click', () => {
         const source = record.sources[Number(btn.dataset.collect)];
