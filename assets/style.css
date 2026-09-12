@@ -505,3 +505,5 @@ button { -webkit-tap-highlight-color: transparent; }
   .story-body h2 { font-size: clamp(2rem, 11vw, 3.2rem); }
   .story-copy { font-size: 1.03rem; line-height: 1.72; }
 }
+
+.source-actions button[data-share]{border-color:rgba(255,210,96,.72);background:linear-gradient(135deg,rgba(145,65,8,.52),rgba(72,24,3,.5))}
