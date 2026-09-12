@@ -279,6 +279,45 @@
     window.addEventListener("resize",resize,{passive:true}); resize(); draw();
   }
 
+  function awardStarCoinShare(reference) {
+    const attemptId=`phi-share-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+    const session=jsonGet("starquest_session",null);
+    const users=jsonGet("starquest_users",{});
+    const signedIn=session&&session.key&&users[session.key];
+    const wallet=signedIn||jsonGet("starquest_guest_profile_v1",{key:"__guest__",username:"Guest",tokens:0,shareCount:0,pendingShareCredits:0,shareEvents:[],ledger:[],watchHistory:[],watchPositions:{},unlockedContent:{}});
+    wallet.tokens=Math.max(0,Number(wallet.tokens)||0);
+    wallet.shareCount=Math.max(0,Number(wallet.shareCount)||0)+1;
+    wallet.pendingShareCredits=Math.max(0,Number(wallet.pendingShareCredits)||0)+1;
+    wallet.shareEvents=Array.isArray(wallet.shareEvents)?wallet.shareEvents:[];
+    wallet.ledger=Array.isArray(wallet.ledger)?wallet.ledger:[];
+    wallet.shareEvents.push({id:attemptId,attemptId,contentId:reference,method:"web_share_api",confirmed:true,verified:true,createdAt:Date.now()});
+    let awarded=0;
+    while(wallet.pendingShareCredits>=10){wallet.pendingShareCredits-=10;wallet.tokens+=1;awarded+=1}
+    wallet.ledger.push({id:`tx-${attemptId}`,type:awarded?"share_reward":"share_credit",amount:awarded,balance:wallet.tokens,pendingShareCredits:wallet.pendingShareCredits,reason:awarded?"Share reward: 10 completed shares":`Confirmed share receipt ${wallet.pendingShareCredits}/10`,referenceId:attemptId,createdAt:Date.now()});
+    wallet.shareEvents=wallet.shareEvents.slice(-250);wallet.ledger=wallet.ledger.slice(-500);
+    if(signedIn){users[session.key]=wallet;jsonSet("starquest_users",users)}else jsonSet("starquest_guest_profile_v1",wallet);
+    window.dispatchEvent(new CustomEvent("starquest:share-progress",{detail:{progressToNextCoin:wallet.pendingShareCredits,awarded,balance:wallet.tokens}}));
+    return {progressToNextCoin:wallet.pendingShareCredits,awarded,balance:wallet.tokens};
+  }
+
+  async function shareCard(card) {
+    const storyKey=card.storyKey||card.url||card.id||String(card.title||"card").toLowerCase().replace(/[^a-z0-9]+/g,"-");
+    const params=new URLSearchParams({
+      sharedTitle:card.title||"Shared orange card",
+      sharedBody:String(card.extract||card.body||"").slice(0,1200),
+      sharedUrl:card.url||"",
+      sharedImage:card.image||card.imageUrl||"",
+      sharedDomain:card.domain||card.provider||"Omni Phi",
+      sharedQuery:activeResearch()?.query||""
+    });
+    const shareUrl=`https://www-infinity4.github.io/News-Phi/?${params}#story=${encodeURIComponent(storyKey)}`;
+    if(!navigator.share){try{await navigator.clipboard.writeText(shareUrl);return {copied:true}}catch{return {error:true}}}
+    try{
+      await navigator.share({title:card.title||"Omni Phi card",text:String(card.extract||card.body||"").slice(0,320),url:shareUrl});
+      return awardStarCoinShare(shareUrl);
+    }catch(error){return error&&error.name==="AbortError"?{cancelled:true}:{error:true}}
+  }
+
   function topbar(title, subtitle) {
     return `<header class="topbar"><button class="icon-button" data-open-menu aria-label="Open Omni Phi menu">☰</button><a class="brandmark" href="${url()}"><strong>${escapeHtml(title || "OMNI PHI")}</strong><small>${escapeHtml(subtitle || "proportional search")}</small></a><span></span></header>`;
   }
@@ -286,6 +325,6 @@
   window.OmniPhi = {
     STORAGE, base, url, queryParam, profile, saveProfile, activeResearch, saveResearch,
     collectSource, sourceWeight, setupMenu, fetchWikipedia, fallbackSources,
-    createResearch, refreshResearchWithProfile, renderCloud, topbar, escapeHtml
+    createResearch, refreshResearchWithProfile, renderCloud, awardStarCoinShare, shareCard, topbar, escapeHtml
   };
 })();
