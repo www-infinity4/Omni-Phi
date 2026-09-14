@@ -3,52 +3,73 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Omni Phi — Indexed Data</title>
-  <meta name="description" content="Omni Phi indexed research data and purple cards that steer the next search." />
+  <title>Omni Phi — Website Index</title>
+  <meta name="description" content="GPT website build instructions generated from Omni Phi evidence and orange-card reactions." />
   <meta name="theme-color" content="#080620" />
   <link rel="stylesheet" href="../assets/style.css" />
+  <style>
+    .blueprint-card{display:block;text-align:left;width:100%;cursor:default}
+    .blueprint-card .build-section{display:inline-block;margin-bottom:8px;padding:5px 9px;border:1px solid rgba(225,180,255,.35);border-radius:999px;color:#ebc9ff;font-size:.7rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+    .blueprint-card .why{margin-top:10px;color:#bda7e6;font-size:.8rem}
+    .build-panel{margin-top:24px;padding:22px;border:1px solid rgba(211,126,255,.48);border-radius:24px;background:linear-gradient(145deg,rgba(58,12,90,.92),rgba(18,10,50,.96));box-shadow:0 18px 55px rgba(0,0,0,.28)}
+    .build-panel h2{margin:.35rem 0 .55rem;color:#fff}
+    .build-panel p{color:#d9cbef;line-height:1.6}
+    .build-button{width:100%;min-height:58px;margin-top:12px;border:1px solid #f4c6ff;border-radius:17px;background:linear-gradient(135deg,#9b35d5,#5120a8);color:white;font-weight:950;font-size:1rem;cursor:pointer;box-shadow:0 0 25px rgba(170,75,255,.25)}
+    .build-button:disabled{opacity:.62;cursor:wait}
+    .site-token-list{display:grid;gap:9px;margin-top:16px}
+    .site-token{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 13px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(5,6,25,.35)}
+    .site-token strong{color:#fff}.site-token small{display:block;color:#ad9ec6;margin-top:3px}.site-token a{color:#f1d3ff;font-weight:850;text-decoration:none}
+  </style>
 </head>
 <body class="content-page index-data-page">
   <div id="topbar"></div>
   <main class="site-shell">
     <section class="page-hero">
-      <div class="page-kicker">Page 4 · Indexed Data</div>
-      <h1 class="page-title" id="pageTitle">Preparing indexed data…</h1>
-      <p class="page-subtitle">The complete research record lives here. Purple cards are forward paths: tap one to steer the next Omni Phi search.</p>
+      <div class="page-kicker">Page 4 · Website Index</div>
+      <h1 class="page-title" id="pageTitle">Preparing website instructions…</h1>
+      <p class="page-subtitle">Orange-card reactions become indexed signals. GPT combines those signals with the evidence and turns the purple cards into instructions for the one-click website generator.</p>
       <nav class="pill-nav" aria-label="Research views">
         <a id="overviewLink" href="../overview/">AI Overview</a>
         <a id="structuredLink" href="../structured/">Full Stories</a>
-        <a class="active" href="./">Indexed Data</a>
+        <a class="active" href="./">Website Index</a>
         <a href="../ecosystem/">Omni Line</a>
       </nav>
     </section>
 
     <section>
-      <div class="shell-banner"><div><div class="page-kicker">Steer the next search</div><h2>Purple next-search cards</h2></div><small>Tap any path to continue</small></div>
-      <div class="cards-grid steering-grid" id="steeringCards"><div class="panel loading">Finding the strongest next paths</div></div>
+      <div class="shell-banner"><div><div class="page-kicker">GPT build logic</div><h2>Purple website-story cards</h2></div><small id="blueprintStatus">Reading indexed reactions…</small></div>
+      <div class="cards-grid steering-grid" id="steeringCards"><div class="panel loading">GPT is turning the search index into website instructions</div></div>
     </section>
 
     <section class="structured-grid" style="margin-top:24px">
       <article class="panel panel-pad">
-        <div class="page-kicker">Core and proportional nodes</div>
+        <div class="page-kicker">Reaction-weighted index</div>
         <h2 class="section-title" id="coreTitle"># Core</h2>
         <div class="data-list" id="nodeList"></div>
       </article>
       <article class="panel panel-pad">
-        <div class="page-kicker">Collected evidence</div>
+        <div class="page-kicker">Evidence used by the builder</div>
         <h2 class="section-title">Source index</h2>
         <div class="data-list" id="sourceList"></div>
       </article>
     </section>
 
     <section class="panel panel-pad" style="margin-top:14px">
-      <div class="page-kicker">Machine-readable index</div>
+      <div class="page-kicker">Machine-readable website index</div>
       <h2 class="section-title">Omni Phi JSON</h2>
       <pre class="json-box" id="jsonBox">Preparing indexed record…</pre>
       <div class="action-row">
         <button id="copyJson" type="button">Copy for AI</button>
         <button id="downloadJson" type="button">Download index</button>
       </div>
+    </section>
+
+    <section class="build-panel" id="buildPanel">
+      <div class="page-kicker">One click from indexed search → website</div>
+      <h2 id="sitePlanTitle">Website plan loading…</h2>
+      <p id="sitePlanSummary">GPT is combining the orange evidence, your reactions, and the purple build cards.</p>
+      <button class="build-button" id="buildWebsite" type="button" disabled>Build website + create site token</button>
+      <div class="site-token-list" id="siteTokenList"></div>
     </section>
   </main>
 
@@ -57,48 +78,55 @@
   <script src="../assets/app.js"></script>
   <script src="../assets/capability-router.js"></script>
   <script src="../assets/smart-search.js"></script>
+  <script src="../assets/card-pipeline.js"></script>
+  <script src="../assets/site-intelligence.js"></script>
   <script>
-    document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'indexed data');
+    document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'website index');
     OmniPhi.setupMenu();
 
     const params = new URLSearchParams(location.search);
     const q = (params.get('q') || OmniPhi.activeResearch()?.query || 'Corn').trim();
     const mode = params.get('mode') || OmniPhi.activeResearch()?.mode || 'search';
     const navParams = new URLSearchParams({q, mode});
-    document.getElementById('pageTitle').textContent = `${q} — indexed data`;
+    const buildButton = document.getElementById('buildWebsite');
+    let currentRecord = null;
+    let currentBlueprint = null;
+
+    document.getElementById('pageTitle').textContent = `${q} — website index`;
     document.getElementById('coreTitle').textContent = `# ${q}`;
     document.getElementById('overviewLink').href = `${OmniPhi.url('overview/')}?${navParams}`;
     document.getElementById('structuredLink').href = `${OmniPhi.url('structured/')}?${navParams}`;
 
-    function nextIdeas(record) {
-      const ideas = /\bhydrogen\b/i.test(q) ? [
-        'Hydrogen Engine', 'Hydrogen Gas Studies', 'Hydrogen Fuel Cells',
-        'Hydrogen Production Systems', 'Hydrogen Storage Materials',
-        'Hydrogen Combustion Safety', 'Hydrogen Transportation', 'Hydrogen Energy Economics'
-      ] : [];
-      (record.sources || []).forEach((source) => ideas.push(source.title));
-      (record.nodes || []).filter((node) => !/meaning|definition|overview|origins/i.test(node.label)).forEach((node) => {
-        ideas.push(node.label.toLowerCase().includes(q.toLowerCase()) ? node.label : `${q} ${node.label}`);
-      });
-      return [...new Set(ideas.filter(Boolean))].slice(0, 12);
+    function renderTokens() {
+      const sites = (window.OmniWebsiteIntelligence?.generatedSites() || []).filter(site => String(site.query || '').toLowerCase() === q.toLowerCase()).slice(0, 8);
+      const list = document.getElementById('siteTokenList');
+      list.innerHTML = sites.length ? sites.map(site => `<div class="site-token"><div><strong>${OmniPhi.escapeHtml(site.title)}</strong><small>${OmniPhi.escapeHtml(site.id)} · ${new Date(site.createdAt).toLocaleString()}</small></div><a href="${OmniPhi.escapeHtml(site.url)}">Open</a></div>`).join('') : '<div class="muted">No website token has been created from this search yet.</div>';
     }
 
-    function render(record) {
-      const ideas = nextIdeas(record);
-      document.getElementById('steeringCards').innerHTML = ideas.map((idea, index) => `<button class="research-card steering-card" type="button" data-idea="${OmniPhi.escapeHtml(idea)}"><span class="hash">${'#'.repeat(2 + (index % 4))}</span><h3>${OmniPhi.escapeHtml(idea)}</h3><p>Open this path as the next focused Omni Phi search.</p><div class="card-foot"><span>Next search</span><span>φ</span></div></button>`).join('');
-      document.querySelectorAll('[data-idea]').forEach((card) => card.addEventListener('click', () => {
-        location.href = `${OmniPhi.url('overview/')}?${new URLSearchParams({q:card.dataset.idea, mode})}`;
-      }));
-
+    function renderIndex(record, blueprint) {
+      const reactions = window.OmniWebsiteIntelligence?.reactionSummary(q) || [];
+      const reactionByKey = new Map(reactions.map(item => [item.cardKey, item]));
       document.getElementById('nodeList').innerHTML = (record.nodes || []).sort((a,b)=>(b.affinity||0)-(a.affinity||0)).slice(0,20).map((node) => `<div class="data-row"><strong>${OmniPhi.escapeHtml(node.hash)} ${OmniPhi.escapeHtml(node.label)}</strong><span class="score">${Math.round((node.affinity || 0) * 100)}%</span></div>`).join('') || '<p class="muted">No nodes indexed yet.</p>';
-      document.getElementById('sourceList').innerHTML = (record.sources || []).map((source, index) => `<div class="data-row"><strong>${index + 1}. ${OmniPhi.escapeHtml(source.title)}</strong><span class="score">${OmniPhi.escapeHtml(source.domain || source.provider || 'source')}</span></div>`).join('') || '<p class="muted">No evidence sources indexed yet.</p>';
+      document.getElementById('sourceList').innerHTML = (record.sources || []).map((source, index) => {
+        const key = window.OmniWebsiteIntelligence?.cardKey(source) || source.url || source.id || source.title;
+        const score = reactionByKey.get(key)?.score || 0;
+        return `<div class="data-row"><strong>${index + 1}. ${OmniPhi.escapeHtml(source.title)}</strong><span class="score">${score ? `signal ${score > 0 ? '+' : ''}${score}` : OmniPhi.escapeHtml(source.domain || source.provider || 'source')}</span></div>`;
+      }).join('') || '<p class="muted">No evidence sources indexed yet.</p>';
 
       const indexed = {
-        schema: 'omni-phi-index/v2', query: record.query, mode: record.mode,
-        createdAt: record.createdAt, resolvedIntent: record.resolvedIntent || null,
-        capabilityRoute: record.capabilityRoute || null, source: record.source,
-        nodes: record.nodes, sources: record.sources,
-        collectedCards: OmniPhi.profile().collected || [], nextSearchIdeas: ideas,
+        schema: 'omni-phi-website-index/v3',
+        query: record.query,
+        mode: record.mode,
+        createdAt: record.createdAt,
+        resolvedIntent: record.resolvedIntent || null,
+        capabilityRoute: record.capabilityRoute || null,
+        source: record.source,
+        nodes: record.nodes,
+        sources: record.sources,
+        orangeCardReactions: reactions,
+        purpleWebsiteCards: blueprint?.cards || [],
+        websitePlan: blueprint?.site || null,
+        collectedCards: OmniPhi.profile().collected || [],
         profileSnapshot: record.profileSnapshot
       };
       const json = JSON.stringify(indexed, null, 2);
@@ -109,11 +137,36 @@
         const blob = new Blob([json], {type:'application/json'});
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `omni-phi-index-${q.toLowerCase().replace(/[^a-z0-9]+/g,'-') || 'research'}.json`;
+        link.download = `omni-phi-site-index-${q.toLowerCase().replace(/[^a-z0-9]+/g,'-') || 'research'}.json`;
         link.click();
         setTimeout(() => URL.revokeObjectURL(link.href), 500);
       };
     }
+
+    function renderBlueprint(blueprint) {
+      const cards = Array.isArray(blueprint?.cards) ? blueprint.cards : [];
+      document.getElementById('steeringCards').innerHTML = cards.length ? cards.map((card, index) => `<article class="research-card steering-card blueprint-card"><span class="hash">${'#'.repeat(2 + (index % 4))}</span><span class="build-section">${OmniPhi.escapeHtml(card.section || `Section ${index + 1}`)}</span><h3>${OmniPhi.escapeHtml(card.title || `Website section ${index + 1}`)}</h3><p>${OmniPhi.escapeHtml(card.instruction || '')}</p><div class="why">${OmniPhi.escapeHtml(card.reason || '')}</div><div class="card-foot"><span>GPT build instruction</span><span>φ</span></div></article>`).join('') : '<div class="panel panel-pad">No purple website instructions were produced yet.</div>';
+      document.getElementById('blueprintStatus').textContent = blueprint?.generatedBy === 'gpt' ? 'Built by GPT from evidence + reactions' : 'Safe fallback plan';
+      document.getElementById('sitePlanTitle').textContent = blueprint?.site?.title || `${q} — generated website`;
+      document.getElementById('sitePlanSummary').textContent = blueprint?.site?.summary || blueprint?.site?.subtitle || 'Ready to generate from the indexed search.';
+      buildButton.disabled = false;
+      buildButton.textContent = 'Build website + create site token';
+    }
+
+    buildButton.addEventListener('click', async () => {
+      if (!currentRecord || !currentBlueprint) return;
+      buildButton.disabled = true;
+      buildButton.textContent = 'Building website…';
+      try {
+        const site = await OmniWebsiteIntelligence.generateWebsite(currentRecord, currentBlueprint);
+        renderTokens();
+        location.href = site.url;
+      } catch (error) {
+        console.error(error);
+        buildButton.disabled = false;
+        buildButton.textContent = 'Build failed · try again';
+      }
+    });
 
     async function load() {
       let record = OmniPhi.activeResearch();
@@ -121,9 +174,15 @@
         let sources = [];
         try { sources = await OmniPhi.fetchWikipedia(q); } catch (error) { console.warn(error); }
         if (!sources.length) sources = OmniPhi.fallbackSources(q);
+        if (OmniPhi.ensureCardImages) sources = await OmniPhi.ensureCardImages(q, sources);
         record = OmniPhi.createResearch(q, mode, sources);
       } else record = OmniPhi.refreshResearchWithProfile(record);
-      render(record);
+      currentRecord = record;
+      renderTokens();
+      const blueprint = await OmniWebsiteIntelligence.buildBlueprint(record);
+      currentBlueprint = blueprint;
+      renderBlueprint(blueprint);
+      renderIndex(record, blueprint);
     }
 
     load();
