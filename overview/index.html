@@ -7,6 +7,16 @@
   <meta name="description" content="Intent-aware Omni Phi overview with collectible evidence cards and proportional research memory." />
   <meta name="theme-color" content="#07071c" />
   <link rel="stylesheet" href="../assets/style.css" />
+  <style>
+    .raw-overview-card{margin:8px 0 24px;padding:20px;border:2px solid #ff8a1f;border-radius:24px;background:radial-gradient(circle at 88% 8%,rgba(255,179,31,.13),transparent 34%),linear-gradient(145deg,#8f1111,#5b0606);box-shadow:0 0 30px rgba(255,85,15,.18),inset 0 1px 0 rgba(255,235,92,.12)}
+    .raw-overview-card .raw-label{color:#ffc928;font-size:.7rem;font-weight:950;letter-spacing:.18em;text-transform:uppercase}
+    .raw-overview-card h2{margin:.55rem 0 .75rem;color:#ffe94c;font-size:clamp(1.35rem,4.5vw,2.2rem)}
+    .raw-overview-card .overview-copy,.raw-overview-card .overview-copy p{color:#fff06a}
+    .raw-overview-card .overview-copy{font-size:clamp(1rem,2.7vw,1.12rem);line-height:1.75}
+    .raw-overview-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+    .raw-overview-actions button{min-height:44px;padding:10px 14px;border:1px solid #ffd35a;border-radius:14px;color:#fff6a0;background:#380000;font-weight:850;cursor:pointer}
+    .source-card.shared-focus{outline:3px solid #ffe04c;outline-offset:4px;box-shadow:0 0 34px rgba(255,224,76,.42)}
+  </style>
 </head>
 <body class="content-page">
   <div id="topbar"></div>
@@ -15,7 +25,7 @@
       <div class="page-kicker">AI Overview</div>
       <h1 class="page-title" id="pageTitle">Reading your search…</h1>
       <div id="intentLine" style="display:none;margin:.65rem 0 0;padding:.6rem .85rem;width:max-content;max-width:100%;border:1px solid rgba(190,132,255,.32);border-radius:999px;background:rgba(124,60,255,.10);color:#d7c8ff;font-weight:750;font-size:.82rem"></div>
-      <p class="page-subtitle">Omni Phi first resolves what you asked for, then gathers evidence. Orange cards can be collected to shape your personal search field without replacing the meaning of the current query.</p>
+      <p class="page-subtitle">The red/yellow card is the raw AI overview of the query. Orange cards below combine that query data with individual source websites so each card stays tied to evidence.</p>
 
       <form class="query-strip" id="queryForm">
         <span aria-hidden="true">⌕</span>
@@ -30,16 +40,14 @@
       </nav>
     </section>
 
-    <section class="overview-layout">
-      <article class="panel panel-pad">
-        <div class="page-kicker">Resolved synthesis</div>
-        <h2 class="section-title" id="overviewHeading">AI Overview</h2>
-        <div class="overview-copy" id="overviewCopy"><div class="loading">Resolving intent before collecting evidence</div></div>
-      </article>
-      <aside class="panel topic-visual" id="topicVisual" aria-label="Topic visual">
-        <div class="topic-orb">φ</div>
-      </aside>
-    </section>
+    <article class="raw-overview-card" id="rawOverviewCard">
+      <div class="raw-label">Raw data · AI Overview</div>
+      <h2 id="overviewHeading">AI Overview</h2>
+      <div class="overview-copy" id="overviewCopy"><div class="loading">Resolving intent before collecting evidence</div></div>
+      <div class="raw-overview-actions">
+        <button type="button" id="shareOverview">Share overview · +1/10 ⭐</button>
+      </div>
+    </article>
 
     <div class="source-head">
       <div>
@@ -53,7 +61,7 @@
     </div>
     <section class="sources-grid" id="sourcesGrid"><div class="panel loading">Finding sources that match the resolved request</div></section>
 
-    <div class="notice">Collected orange cards become full stories on page three. Page four keeps the indexed record and purple paths that can steer the next search.</div>
+    <div class="notice">Each orange card keeps its own source website and image. Sharing a card now points to that exact card/search instead of a generic Phi preview.</div>
   </main>
 
   <script src="../assets/omni-family.js"></script>
@@ -61,6 +69,7 @@
   <script src="../assets/app.js"></script>
   <script src="../assets/capability-router.js"></script>
   <script src="../assets/smart-search.js"></script>
+  <script src="../assets/card-pipeline.js"></script>
   <script>
     document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'AI Overview');
     OmniPhi.setupMenu();
@@ -73,13 +82,14 @@
     const grid = document.getElementById('sourcesGrid');
     const copy = document.getElementById('overviewCopy');
     const heading = document.getElementById('overviewHeading');
-    const visual = document.getElementById('topicVisual');
     const intentLine = document.getElementById('intentLine');
+    const shareOverviewButton = document.getElementById('shareOverview');
     const initialIntent = OmniPhi.resolveIntent ? OmniPhi.resolveIntent(query) : null;
+    let currentRecord = null;
 
     input.value = query;
     pageTitle.textContent = query;
-    heading.textContent = `${query} — overview`;
+    heading.textContent = `${query} — raw overview`;
     if (initialIntent?.atomicNumber) {
       intentLine.style.display = 'block';
       intentLine.textContent = `Interpreting this as chemical element · atomic number ${initialIntent.atomicNumber}`;
@@ -96,8 +106,6 @@
     }
     routeLinks();
 
-    // Android browsers have occasionally left the computed relative link inert after
-    // the overview is updated. Make this an explicit navigation as well as a real href.
     document.getElementById('structuredLink').addEventListener('click', (event) => {
       event.preventDefault();
       window.location.assign(`${OmniPhi.url('structured/')}?${researchParams()}`);
@@ -108,6 +116,12 @@
       const q = input.value.trim();
       if (!q) return;
       location.href = `${OmniPhi.url('overview/')}?${new URLSearchParams({q, mode})}`;
+    });
+
+    shareOverviewButton.addEventListener('click', async () => {
+      if (!currentRecord) return;
+      const result = await OmniPhi.shareOverview(currentRecord);
+      shareOverviewButton.textContent = result.awarded ? 'Shared · 1 StarCoin!' : result.progressToNextCoin != null ? `Shared · ${result.progressToNextCoin}/10 ⭐` : result.copied ? 'Link copied' : 'Share overview · +1/10 ⭐';
     });
 
     function profileUI() {
@@ -124,12 +138,29 @@
       return groups.map(p => `<p>${OmniPhi.escapeHtml(p)}</p>`).join('');
     }
 
+    function keyOf(source) {
+      return source.storyKey || source.url || source.id || String(source.title || 'card').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    }
+
+    function focusSharedCard(record) {
+      if (!location.hash.startsWith('#card=')) return;
+      const key = decodeURIComponent(location.hash.slice(6));
+      const index = record.sources.findIndex(source => keyOf(source) === key);
+      if (index < 0) return;
+      const card = grid.querySelector(`[data-source="${index}"]`);
+      if (!card) return;
+      card.classList.add('shared-focus');
+      setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    }
+
     function renderSources(record) {
       const collected = new Set((OmniPhi.profile().collected || []).map(x => x.url));
+      const fallbackImage = `${location.origin}${OmniPhi.url('assets/omni-phi-index-wide.jpg?v=2')}`;
       grid.innerHTML = record.sources.length ? record.sources.map((s, i) => {
         const isCollected = s.url && collected.has(s.url);
+        const image = s.image || fallbackImage;
         return `<article class="source-card" data-source="${i}">
-          ${s.image ? `<img src="${OmniPhi.escapeHtml(s.image)}" alt="" loading="lazy" />` : `<div class="topic-orb" style="width:92px;height:92px;font-size:2.2rem">φ</div>`}
+          <img src="${OmniPhi.escapeHtml(image)}" data-fallback="${OmniPhi.escapeHtml(fallbackImage)}" alt="Visual for ${OmniPhi.escapeHtml(s.title)}" loading="lazy" />
           <div>
             <div class="source-domain">${OmniPhi.escapeHtml(s.domain || s.provider || 'source')}</div>
             <h3>${OmniPhi.escapeHtml(s.title)}</h3>
@@ -137,24 +168,31 @@
           </div>
           <div class="source-actions">
             <button type="button" class="${isCollected ? 'collected' : ''}" data-collect="${i}">${isCollected ? 'Collected ✓' : 'Collect'}</button>
-            ${s.url ? `<a href="${OmniPhi.escapeHtml(s.url)}" target="_blank" rel="noopener">Read</a>` : `<span></span>`}
-            <button type="button" data-share="${i}">Share card · +1/10 ⭐</button>
+            ${s.url ? `<a href="${OmniPhi.escapeHtml(s.url)}" target="_blank" rel="noopener">Read source</a>` : `<span></span>`}
+            <button type="button" data-share="${i}">Share exact card · +1/10 ⭐</button>
           </div>
         </article>`;
       }).join('') : '<div class="panel panel-pad">No sufficiently relevant public sources were returned. Omni Phi kept the query intact instead of substituting unrelated material.</div>';
 
+      grid.querySelectorAll('img[data-fallback]').forEach(img => img.addEventListener('error', () => {
+        if (img.src !== img.dataset.fallback) img.src = img.dataset.fallback;
+      }, { once: true }));
+
       grid.querySelectorAll('[data-share]').forEach(btn => btn.addEventListener('click', async () => {
         const result = await OmniPhi.shareCard(record.sources[Number(btn.dataset.share)]);
-        btn.textContent = result.awarded ? 'Shared · 1 StarCoin!' : result.progressToNextCoin != null ? `Shared · ${result.progressToNextCoin}/10 ⭐` : result.copied ? 'Link copied' : 'Share card · +1/10 ⭐';
+        btn.textContent = result.awarded ? 'Shared · 1 StarCoin!' : result.progressToNextCoin != null ? `Shared · ${result.progressToNextCoin}/10 ⭐` : result.copied ? 'Link copied' : 'Share exact card · +1/10 ⭐';
       }));
 
       grid.querySelectorAll('[data-collect]').forEach(btn => btn.addEventListener('click', () => {
         const source = record.sources[Number(btn.dataset.collect)];
         OmniPhi.collectSource(source);
         record = OmniPhi.refreshResearchWithProfile(record);
+        currentRecord = record;
         profileUI();
         renderSources(record);
       }));
+
+      focusSharedCard(record);
     }
 
     async function run() {
@@ -163,17 +201,17 @@
       try { sources = await OmniPhi.fetchWikipedia(query); }
       catch (error) { console.warn(error); sources = OmniPhi.fallbackSources(query); }
       if (!sources.length) sources = OmniPhi.fallbackSources(query);
+      if (OmniPhi.ensureCardImages) sources = await OmniPhi.ensureCardImages(query, sources);
       let record = OmniPhi.createResearch(query, mode, sources);
+      currentRecord = record;
 
       if (record.resolvedIntent?.resolvedTitle && record.resolvedIntent.atomicNumber) {
         intentLine.style.display = 'block';
         intentLine.textContent = `Resolved: ${record.resolvedIntent.resolvedTitle} · atomic number ${record.resolvedIntent.atomicNumber}`;
-        heading.textContent = `${record.resolvedIntent.resolvedTitle} — overview`;
+        heading.textContent = `${record.resolvedIntent.resolvedTitle} — raw overview`;
       }
 
       copy.innerHTML = paragraphs(record.overview);
-      const heroImage = record.sources.find(s => s.image)?.image;
-      if (heroImage) visual.insertAdjacentHTML('afterbegin', `<img src="${OmniPhi.escapeHtml(heroImage)}" alt="Visual source for ${OmniPhi.escapeHtml(record.resolvedIntent?.resolvedTitle || query)}" />`);
       renderSources(record);
       profileUI();
     }
