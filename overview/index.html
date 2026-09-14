@@ -15,7 +15,7 @@
       <div class="page-kicker">AI Overview</div>
       <h1 class="page-title" id="pageTitle">Reading your search…</h1>
       <div id="intentLine" style="display:none;margin:.65rem 0 0;padding:.6rem .85rem;width:max-content;max-width:100%;border:1px solid rgba(190,132,255,.32);border-radius:999px;background:rgba(124,60,255,.10);color:#d7c8ff;font-weight:750;font-size:.82rem"></div>
-      <p class="page-subtitle">Omni Phi first resolves what you asked for, then gathers evidence. Orange cards can be collected to shape your personal search field without replacing the meaning of the current query.</p>
+      <p class="page-subtitle">The AI answers the exact request first, then the orange cards provide complete source pages. Store sends only the useful topic words into News Phi, never a copy of this source card.</p>
 
       <form class="query-strip" id="queryForm">
         <span aria-hidden="true">⌕</span>
@@ -53,7 +53,7 @@
     </div>
     <section class="sources-grid" id="sourcesGrid"><div class="panel loading">Finding sources that match the resolved request</div></section>
 
-    <div class="notice">Collected orange cards become full stories on page three. Page four keeps the indexed record and purple paths that can steer the next search.</div>
+    <div class="notice">View Source opens the original page. Create expands this source into new orange cards. Store teaches News Phi the subject without repeating this card. Share earns 1/10 Star Coin after a completed Android share.</div>
   </main>
 
   <script src="../assets/omni-family.js"></script>
@@ -136,16 +136,23 @@
             <p>${OmniPhi.escapeHtml((s.extract || '').slice(0, 220))}${(s.extract || '').length > 220 ? '…' : ''}</p>
           </div>
           <div class="source-actions">
-            <button type="button" class="${isCollected ? 'collected' : ''}" data-collect="${i}">${isCollected ? 'Collected ✓' : 'Collect'}</button>
-            ${s.url ? `<a href="${OmniPhi.escapeHtml(s.url)}" target="_blank" rel="noopener">Read</a>` : `<span></span>`}
-            <button type="button" data-share="${i}">Share card · +1/10 ⭐</button>
+            ${s.url ? `<a href="${OmniPhi.escapeHtml(s.url)}" target="_blank" rel="noopener">View Source</a>` : `<span></span>`}
+            <button type="button" data-create="${i}">Create</button>
+            <button type="button" class="${isCollected ? 'collected' : ''}" data-collect="${i}">${isCollected ? 'Stored ✓' : 'Store'}</button>
+            <button type="button" data-share="${i}">Share · +1/10 Star Coin</button>
           </div>
         </article>`;
       }).join('') : '<div class="panel panel-pad">No sufficiently relevant public sources were returned. Omni Phi kept the query intact instead of substituting unrelated material.</div>';
 
       grid.querySelectorAll('[data-share]').forEach(btn => btn.addEventListener('click', async () => {
         const result = await OmniPhi.shareCard(record.sources[Number(btn.dataset.share)]);
-        btn.textContent = result.awarded ? 'Shared · 1 StarCoin!' : result.progressToNextCoin != null ? `Shared · ${result.progressToNextCoin}/10 ⭐` : result.copied ? 'Link copied' : 'Share card · +1/10 ⭐';
+        btn.textContent = result.awarded ? 'Shared · 1 Star Coin!' : result.progressToNextCoin != null ? `Shared · ${result.progressToNextCoin}/10` : result.copied ? 'Link copied' : 'Share · +1/10 Star Coin';
+      }));
+
+      grid.querySelectorAll('[data-create]').forEach(btn => btn.addEventListener('click', () => {
+        const source = record.sources[Number(btn.dataset.create)];
+        const q = OmniPhi.createQueryFromSource(source, record.query);
+        location.href = `${OmniPhi.url('overview/')}?${new URLSearchParams({q, mode:'search', fromSource:source.url || source.id || ''})}`;
       }));
 
       grid.querySelectorAll('[data-collect]').forEach(btn => btn.addEventListener('click', () => {
@@ -176,6 +183,16 @@
       if (heroImage) visual.insertAdjacentHTML('afterbegin', `<img src="${OmniPhi.escapeHtml(heroImage)}" alt="Visual source for ${OmniPhi.escapeHtml(record.resolvedIntent?.resolvedTitle || query)}" />`);
       renderSources(record);
       profileUI();
+      try {
+        record.overview = await OmniPhi.generateAIOverview(query, record.sources);
+        record.tutorial.aiOverviewStatus = 'completed';
+        OmniPhi.saveResearch(record);
+        copy.innerHTML = paragraphs(record.overview);
+      } catch (error) {
+        record.tutorial.aiOverviewStatus = 'gateway-fallback';
+        record.tutorial.error = String(error?.message || error);
+        OmniPhi.saveResearch(record);
+      }
     }
     run();
   </script>

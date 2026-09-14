@@ -4,7 +4,8 @@
     research: "omniPhi:lastResearch:v1",
     history: "omniPhi:history:v1",
     mode: "omniPhi:mode:v1",
-    sharedCollection: "phiShared:collection:v1"
+    sharedCollection: "phiShared:collection:v1",
+    interestSignals: "phiShared:interestSignals:v1"
   };
 
   const jsonGet = (key, fallback) => {
@@ -46,7 +47,7 @@
       url: source.url || "",
       domain: source.domain || "",
       provider: source.provider || "",
-      extract: source.extract || "",
+      extract: "",
       image: source.image || "",
       searchQuery: activeResearch()?.query || "",
       storyKey: source.url || source.id || String(source.title || "card").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
@@ -58,12 +59,46 @@
     if (source.domain) p.domains[source.domain] = (p.domains[source.domain] || 0) + 1;
     addWords(p.keywords, `${source.title || ""} ${source.extract || ""}`, 1);
     saveProfile(p);
-    const shared = jsonGet(STORAGE.sharedCollection, []);
-    const sharedExisting = shared.find((item) => (item.storyKey || item.url || item.id || item.title) === saved.storyKey);
-    if (sharedExisting) Object.assign(sharedExisting, saved, { collectedAt: sharedExisting.collectedAt || saved.collectedAt });
-    else shared.unshift(saved);
-    jsonSet(STORAGE.sharedCollection, shared);
+    const signal = buildInterestSignal(source, activeResearch()?.query || "");
+    const signals = jsonGet(STORAGE.interestSignals, []);
+    const existingSignal = signals.find((item) => item.topicKey === signal.topicKey);
+    if (existingSignal) Object.assign(existingSignal, signal, { hits: (Number(existingSignal.hits) || 1) + 1 });
+    else signals.unshift(signal);
+    jsonSet(STORAGE.interestSignals, signals.slice(0, 500));
+    window.dispatchEvent(new CustomEvent("newsphi:interest", { detail: signal }));
     return p;
+  }
+
+  const INTEREST_STOP = new Set("the a an and or of in on for to from with about what which who how is are was were be been being this that these those show find search give tell list top best read source website page article overview create store share more news original".split(" "));
+  function interestTerms(text, limit = 9) {
+    const counts = new Map();
+    String(text || "").toLowerCase().match(/[a-z0-9]+/g)?.forEach((word, index) => {
+      if (word.length < 3 || INTEREST_STOP.has(word) || /^\d+$/.test(word)) return;
+      counts.set(word, (counts.get(word) || 0) + (index < 14 ? 2 : 1));
+    });
+    return [...counts].sort((a,b) => b[1] - a[1] || b[0].length - a[0].length).slice(0, limit).map(([word]) => word);
+  }
+
+  function buildInterestSignal(source, query) {
+    const terms = interestTerms(`${query} ${source.title || ""} ${source.extract || ""}`);
+    const topicKey = terms.slice(0, 5).join("-") || String(source.title || "interest").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    return {
+      id: `omni-store-${Date.now().toString(36)}`,
+      kind: "store",
+      topicKey,
+      terms,
+      query: terms.join(" "),
+      excludedSourceUrl: source.url || "",
+      originQuery: query,
+      createdAt: new Date().toISOString(),
+      hits: 1
+    };
+  }
+
+  function createQueryFromSource(source, query) {
+    const terms = interestTerms(`${source.title || ""} ${source.extract || ""}`, 6);
+    const base = interestTerms(query, 4);
+    return [...new Set([...base, ...terms])].slice(0, 9).join(" ") || source.title || query;
   }
 
   function sourceWeight(source) {
@@ -152,6 +187,28 @@
     return `${intro} Omni Phi uses these sources as evidence, then separates general source structure from the user's collected-source profile so future searches can be weighted without erasing the wider field.`;
   }
 
+  async function generateAIOverview(query, sources) {
+    const evidence = sources.slice(0, 8).map((source, index) => ({
+      number: index + 1,
+      title: source.title,
+      excerpt: String(source.extract || "").slice(0, 700),
+      url: source.url
+    }));
+    const response = await fetch("https://infinity-rogers.marvaseater.workers.dev/v1/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({
+        input: `Answer the user's exact question directly. Do not merely describe the topic. Preserve constraints such as era, quantity, genre, location, and comparison. If the request asks for a large ranked list, situate the answer, explain the ranking ambiguity, and summarize useful subsets while the source cards provide the full paths. Use only the supplied evidence and say when evidence is incomplete.\n\nQuestion: ${query}\n\nEvidence: ${JSON.stringify(evidence)}`,
+        context: { application: "Omni Phi", assistant: "gpt", interface_mode: "ai_overview", verified_context: { query, evidence } }
+      })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.message || payload.error || `HTTP ${response.status}`);
+    const answer = String(payload.output_text || payload.output || "").trim();
+    if (!answer) throw new Error("empty_response");
+    return answer;
+  }
+
   function createResearch(query, mode, sources) {
     const p = profile();
     p.searches = (p.searches || 0) + 1;
@@ -173,6 +230,11 @@
         searches: p.searches || 0,
         collectedCount: p.collected?.length || 0,
         topKeywords: Object.entries(p.keywords || {}).sort((a,b)=>b[1]-a[1]).slice(0,16)
+      },
+      tutorial: {
+        version: "overview-workflow-v1",
+        observableSteps: ["resolve the exact request", "expand it into complementary searches", "rank source pages by constraint coverage", "write a source-grounded direct answer", "keep source content separate from stored interest terms"],
+        sourceCount: rankedSources.length
       }
     };
     saveResearch(record);
@@ -324,7 +386,7 @@
 
   window.OmniPhi = {
     STORAGE, base, url, queryParam, profile, saveProfile, activeResearch, saveResearch,
-    collectSource, sourceWeight, setupMenu, fetchWikipedia, fallbackSources,
-    createResearch, refreshResearchWithProfile, renderCloud, awardStarCoinShare, shareCard, topbar, escapeHtml
+    collectSource, sourceWeight, setupMenu, fetchWikipedia, fallbackSources, generateAIOverview,
+    buildInterestSignal, createQueryFromSource, interestTerms, createResearch, refreshResearchWithProfile, renderCloud, awardStarCoinShare, shareCard, topbar, escapeHtml
   };
 })();
