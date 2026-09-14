@@ -15,6 +15,7 @@
     .raw-overview-card .overview-copy{font-size:clamp(1rem,2.7vw,1.12rem);line-height:1.75}
     .raw-overview-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
     .raw-overview-actions button{min-height:44px;padding:10px 14px;border:1px solid #ffd35a;border-radius:14px;color:#fff6a0;background:#380000;font-weight:850;cursor:pointer}
+    .source-card{cursor:pointer}
     .source-card.shared-focus{outline:3px solid #ffe04c;outline-offset:4px;box-shadow:0 0 34px rgba(255,224,76,.42)}
   </style>
 </head>
@@ -25,7 +26,7 @@
       <div class="page-kicker">AI Overview</div>
       <h1 class="page-title" id="pageTitle">Reading your search…</h1>
       <div id="intentLine" style="display:none;margin:.65rem 0 0;padding:.6rem .85rem;width:max-content;max-width:100%;border:1px solid rgba(190,132,255,.32);border-radius:999px;background:rgba(124,60,255,.10);color:#d7c8ff;font-weight:750;font-size:.82rem"></div>
-      <p class="page-subtitle">The red/yellow card is the raw AI overview of the query. Orange cards below combine that query data with individual source websites. Every collect, read, and share becomes an indexed signal that tells GPT how to build the purple website-story cards.</p>
+      <p class="page-subtitle">The red/yellow card is the raw AI overview of the query. Orange cards below combine that query data with individual source websites. Every tap, collect, read, and share becomes an indexed signal that tells GPT how to build the purple website-story cards.</p>
 
       <form class="query-strip" id="queryForm">
         <span aria-hidden="true">⌕</span>
@@ -61,7 +62,7 @@
     </div>
     <section class="sources-grid" id="sourcesGrid"><div class="panel loading">Finding sources that match the resolved request</div></section>
 
-    <div class="notice">Every orange card keeps its source website and an image. The Share button uses the exact card preview route; your interactions also become instructions for the GPT-built purple website plan.</div>
+    <div class="notice">Every orange card keeps its source website and an image. Tapping the card itself feeds the purple storyboard; Read, Collect, and Share add stronger signals. The Share button uses the exact produced-card preview route.</div>
   </main>
 
   <script src="../assets/omni-family.js"></script>
@@ -161,7 +162,7 @@
       grid.innerHTML = record.sources.length ? record.sources.map((s, i) => {
         const isCollected = s.url && collected.has(s.url);
         const image = s.image || fallbackImage;
-        return `<article class="source-card" data-source="${i}">
+        return `<article class="source-card" data-source="${i}" tabindex="0" aria-label="Research card: ${OmniPhi.escapeHtml(s.title)}">
           <img src="${OmniPhi.escapeHtml(image)}" data-fallback="${OmniPhi.escapeHtml(fallbackImage)}" alt="Visual for ${OmniPhi.escapeHtml(s.title)}" loading="lazy" />
           <div>
             <div class="source-domain">${OmniPhi.escapeHtml(s.domain || s.provider || 'source')}</div>
@@ -179,6 +180,19 @@
       grid.querySelectorAll('img[data-fallback]').forEach(img => img.addEventListener('error', () => {
         if (img.src !== img.dataset.fallback) img.src = img.dataset.fallback;
       }, { once: true }));
+
+      const inspectCard = (card) => {
+        const source = record.sources[Number(card.dataset.source)];
+        if (!source) return;
+        window.OmniWebsiteIntelligence?.recordReaction(source, 'inspect', record);
+        card.classList.add('shared-focus');
+        setTimeout(() => card.classList.remove('shared-focus'), 450);
+        profileUI();
+      };
+      grid.querySelectorAll('.source-card[data-source]').forEach(card => {
+        card.addEventListener('click', event => { if (!event.target.closest('button,a')) inspectCard(card); });
+        card.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('button,a')) { event.preventDefault(); inspectCard(card); } });
+      });
 
       grid.querySelectorAll('[data-share]').forEach(btn => btn.addEventListener('click', async () => {
         const source = record.sources[Number(btn.dataset.share)];
