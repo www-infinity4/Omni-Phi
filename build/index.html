@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Omni Phi — Generated Website</title>
+  <meta name="description" content="A one-click website generated from Omni Phi search evidence and indexed reactions." />
+  <meta name="theme-color" content="#090611" />
+  <link rel="stylesheet" href="../assets/style.css" />
+  <style>
+    body.generated-site{background:radial-gradient(circle at 50% -10%,rgba(155,63,222,.24),transparent 32%),#090611;color:#f8f4ff}
+    .generated-shell{width:min(1040px,94vw);margin:0 auto;padding:22px 0 70px}
+    .generated-hero{overflow:hidden;border:1px solid rgba(239,201,255,.34);border-radius:30px;background:linear-gradient(145deg,rgba(71,21,100,.94),rgba(18,9,39,.98));box-shadow:0 30px 90px rgba(0,0,0,.35)}
+    .generated-hero img{display:block;width:100%;height:min(46vw,430px);min-height:240px;object-fit:cover;background:#160d22}
+    .generated-hero-copy{padding:clamp(22px,5vw,48px)}
+    .generated-kicker{color:#dda8ff;font-size:.72rem;font-weight:950;letter-spacing:.18em;text-transform:uppercase}
+    .generated-hero h1{margin:.5rem 0 .75rem;font-size:clamp(2rem,7vw,4.7rem);line-height:.98;color:#fff}
+    .generated-hero p{max-width:780px;color:#dfd3eb;font-size:clamp(1rem,2.7vw,1.2rem);line-height:1.7}
+    .generated-sections{display:grid;gap:18px;margin-top:24px}
+    .generated-section{overflow:hidden;border:1px solid rgba(255,255,255,.13);border-radius:24px;background:rgba(20,12,35,.9)}
+    .generated-section img{display:block;width:100%;max-height:360px;object-fit:cover;background:#160d22}
+    .generated-copy{padding:22px}.generated-copy h2{margin:.15rem 0 .75rem;color:#fff;font-size:clamp(1.45rem,4vw,2.5rem)}
+    .generated-copy p{color:#d9cfdf;line-height:1.72}.source-links{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.source-links a{padding:9px 12px;border:1px solid rgba(230,188,255,.35);border-radius:12px;color:#efd5ff;text-decoration:none;font-weight:850}
+    .token-strip{margin-top:24px;padding:17px 19px;border:1px solid rgba(198,117,255,.36);border-radius:20px;background:rgba(57,17,80,.44)}
+    .token-strip strong{display:block;color:#fff}.token-strip small{color:#baa9c8}.token-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.token-actions a{padding:10px 13px;border-radius:13px;background:#4e1873;color:#fff;text-decoration:none;font-weight:900}
+    .missing{width:min(700px,92vw);margin:12vh auto;padding:28px;border:1px solid rgba(255,255,255,.16);border-radius:24px;background:#171020;text-align:center}.missing a{color:#e7bfff}
+  </style>
+</head>
+<body class="generated-site">
+  <div id="app"><div class="missing">Opening generated website token…</div></div>
+
+  <script src="../assets/omni-family.js"></script>
+  <script src="../assets/indexer.js"></script>
+  <script src="../assets/app.js"></script>
+  <script src="../assets/site-intelligence.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const siteId = params.get('site') || '';
+    const site = window.OmniWebsiteIntelligence?.getSite(siteId);
+    const app = document.getElementById('app');
+
+    function e(value) { return OmniPhi.escapeHtml(value == null ? '' : value); }
+    function sourceAt(index) { return site?.sources?.find(source => Number(source.index) === Number(index)); }
+
+    if (!site) {
+      app.innerHTML = `<div class="missing"><h1>Website token not found on this device</h1><p>This generated site is tracked by its site token in the Omni Phi/StarCoin wallet data. Open the Website Index on the same signed-in browser that created it.</p><a href="${OmniPhi.url('cards/')}">Return to Website Index</a></div>`;
+    } else {
+      document.title = `${site.title} — Omni Phi`;
+      const spec = site.spec || {};
+      const sections = Array.isArray(spec.sections) ? spec.sections : [];
+      const heroSource = site.sources?.find(source => source.image) || site.sources?.[0];
+      const heroImage = heroSource?.image || OmniWebsiteIntelligence.FALLBACK_IMAGE;
+
+      const sectionHtml = sections.map((section, sectionIndex) => {
+        const indexes = Array.isArray(section.sourceIndexes) ? section.sourceIndexes : [];
+        const sources = indexes.map(sourceAt).filter(Boolean);
+        const lead = sources.find(source => source.image) || sources[0] || site.sources?.[sectionIndex] || site.sources?.[0];
+        const links = sources.length ? sources : lead ? [lead] : [];
+        return `<article class="generated-section">
+          ${lead?.image ? `<img src="${e(lead.image)}" alt="Visual for ${e(section.heading || lead.title)}" loading="lazy">` : ''}
+          <div class="generated-copy">
+            <div class="generated-kicker">Story ${String(sectionIndex + 1).padStart(2, '0')}</div>
+            <h2>${e(section.heading || lead?.title || `Section ${sectionIndex + 1}`)}</h2>
+            <p>${e(section.copy || lead?.text || '')}</p>
+            <div class="source-links">${links.filter(source => source?.url).map(source => `<a href="${e(source.url)}" target="_blank" rel="noopener">${e(source.domain || 'Evidence source')}</a>`).join('')}</div>
+          </div>
+        </article>`;
+      }).join('');
+
+      app.innerHTML = `<main class="generated-shell">
+        <header class="generated-hero">
+          <img src="${e(heroImage)}" alt="">
+          <div class="generated-hero-copy">
+            <div class="generated-kicker">Generated by Omni Phi · reaction-weighted evidence</div>
+            <h1>${e(spec.title || site.title)}</h1>
+            <p>${e(spec.subtitle || spec.summary || '')}</p>
+          </div>
+        </header>
+        <section class="generated-sections">${sectionHtml || `<article class="generated-section"><div class="generated-copy"><h2>${e(site.query)}</h2><p>${e(spec.summary || 'This site was generated from the indexed search evidence.')}</p></div></article>`}</section>
+        <footer class="token-strip">
+          <strong>Website token · ${e(site.id)}</strong>
+          <small>Created ${new Date(site.createdAt).toLocaleString()} from “${e(site.query)}”. The token tracks this generated website separately from spendable StarCoin.</small>
+          <div class="token-actions">
+            <a href="${OmniPhi.url('cards/')}?${new URLSearchParams({q:site.query, mode:'search'})}">Open website index</a>
+            <a href="${OmniPhi.url('overview/')}?${new URLSearchParams({q:site.query, mode:'search'})}">Open source search</a>
+          </div>
+        </footer>
+      </main>`;
+    }
+  </script>
+</body>
+</html>
