@@ -112,7 +112,14 @@
         title: `${record?.query || 'Omni Phi'} — generated research site`,
         subtitle: 'Built from orange-card evidence and the interactions that shaped this search.',
         summary: clean(record?.overview || '', 700),
-        sections: cards.map((card) => ({ heading: card.title, copy: card.instruction, sourceIndexes: card.sourceIndexes }))
+        sections: cards.map((card) => {
+          const source = sources[card.sourceIndexes[0]];
+          return {
+            heading: card.title,
+            copy: clean(source?.extract || `This story section is grounded in ${source?.title || record?.query || 'the selected evidence'}.`, 1500),
+            sourceIndexes: card.sourceIndexes
+          };
+        })
       },
       cards,
       generatedBy: 'fallback'
@@ -141,14 +148,17 @@
     const prompt = [
       'You are GPT operating the purple story-card and one-click website planner for Omni Phi.',
       `Search query: ${query}`,
-      'Orange cards are evidence. Every user interaction with an orange card is a signal for how the generated website should be organized.',
-      'Share and collect are strongest positive signals; read/open are positive; dismiss/less are negative.',
+      'Orange cards are evidence. Every user interaction with an orange card is a signal for how the generated website should be organized and what deserves more explanation.',
+      'Share and collect are strongest positive signals; read/open are positive; inspect is a lighter positive signal; dismiss/less are negative.',
+      'Interaction signals control emphasis and structure only. They never change the underlying facts.',
       'Do not invent facts. Use only supplied evidence for factual claims.',
-      'Purple cards are WEBSITE BUILD INSTRUCTIONS, not generic related-search suggestions.',
+      'Purple cards are WEBSITE STORYBOARD/BUILD INSTRUCTIONS, not generic related-search suggestions and not the finished article prose.',
       'Each purple card must tell the generator what section to build, which evidence cards support it, and why the section belongs.',
-      'Produce a safe website plan made of text, images, headings, and source links. Do not output executable JavaScript.',
+      'The site.sections[].copy fields are the FINISHED READER-FACING ARTICLE TEXT. Write clean explanatory prose derived only from the supplied evidence; never put build instructions in site.sections[].copy.',
+      'Make the reader-facing sections substantial enough to function as a real article while staying inside what the evidence supports. Preserve evidence sourceIndexes so source links remain attached.',
+      'Produce a safe website made of text, images, headings, and source links. Do not output executable JavaScript.',
       'Return JSON only using:',
-      '{"site":{"title":"...","subtitle":"...","summary":"...","sections":[{"heading":"...","copy":"...","sourceIndexes":[0]}]},"cards":[{"title":"...","section":"...","instruction":"...","reason":"...","sourceIndexes":[0]}]}',
+      '{"site":{"title":"...","subtitle":"...","summary":"...","sections":[{"heading":"...","copy":"reader-facing article prose...","sourceIndexes":[0]}]},"cards":[{"title":"...","section":"...","instruction":"storyboard/build instruction...","reason":"...","sourceIndexes":[0]}]}',
       `Reaction summary: ${JSON.stringify(reactions.slice(0, 20))}`,
       `Evidence cards: ${JSON.stringify(evidence)}`
     ].join('\n');
