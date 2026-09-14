@@ -17,10 +17,12 @@
     .generated-hero h1{margin:.5rem 0 .75rem;font-size:clamp(2rem,7vw,4.7rem);line-height:.98;color:#fff}
     .generated-hero p{max-width:780px;color:#dfd3eb;font-size:clamp(1rem,2.7vw,1.2rem);line-height:1.7}
     .generated-sections{display:grid;gap:18px;margin-top:24px}
-    .generated-section{overflow:hidden;border:1px solid rgba(255,255,255,.13);border-radius:24px;background:rgba(20,12,35,.9)}
+    .generated-section{overflow:hidden;border:1px solid rgba(255,255,255,.13);border-radius:24px;background:rgba(20,12,35,.9);cursor:pointer;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+    .generated-section:hover,.generated-section:focus-within{transform:translateY(-2px);border-color:rgba(239,201,255,.48);box-shadow:0 18px 50px rgba(0,0,0,.25)}
     .generated-section img{display:block;width:100%;max-height:360px;object-fit:cover;background:#160d22}
     .generated-copy{padding:22px}.generated-copy h2{margin:.15rem 0 .75rem;color:#fff;font-size:clamp(1.45rem,4vw,2.5rem)}
     .generated-copy p{color:#d9cfdf;line-height:1.72}.source-links{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.source-links a{padding:9px 12px;border:1px solid rgba(230,188,255,.35);border-radius:12px;color:#efd5ff;text-decoration:none;font-weight:850}
+    .expand-search{width:100%;min-height:52px;margin-top:16px;padding:11px 14px;border:1px solid rgba(255,211,90,.58);border-radius:14px;background:linear-gradient(135deg,#7a3a08,#4e1873);color:#fff4bd;font-weight:950;cursor:pointer}.expand-search:disabled{opacity:.72}
     .token-strip{margin-top:24px;padding:17px 19px;border:1px solid rgba(198,117,255,.36);border-radius:20px;background:rgba(57,17,80,.44)}
     .token-strip strong{display:block;color:#fff}.token-strip small{color:#baa9c8}.token-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.token-actions a{padding:10px 13px;border-radius:13px;background:#4e1873;color:#fff;text-decoration:none;font-weight:900}
     .missing{width:min(700px,92vw);margin:12vh auto;padding:28px;border:1px solid rgba(255,255,255,.16);border-radius:24px;background:#171020;text-align:center}.missing a{color:#e7bfff}
@@ -56,13 +58,14 @@
         const sources = indexes.map(sourceAt).filter(Boolean);
         const lead = sources.find(source => source.image) || sources[0] || site.sources?.[sectionIndex] || site.sources?.[0];
         const links = sources.length ? sources : lead ? [lead] : [];
-        return `<article class="generated-section">
+        return `<article class="generated-section" data-site-card="${sectionIndex}" tabindex="0" aria-label="Expand ${e(section.heading || lead?.title || `Section ${sectionIndex + 1}`)} into a new search">
           ${lead?.image ? `<img src="${e(lead.image)}" alt="Visual for ${e(section.heading || lead.title)}" loading="lazy">` : ''}
           <div class="generated-copy">
-            <div class="generated-kicker">Story ${String(sectionIndex + 1).padStart(2, '0')}</div>
+            <div class="generated-kicker">Story ${String(sectionIndex + 1).padStart(2, '0')} · clickable research card</div>
             <h2>${e(section.heading || lead?.title || `Section ${sectionIndex + 1}`)}</h2>
             <p>${e(section.copy || lead?.text || '')}</p>
             <div class="source-links">${links.filter(source => source?.url).map(source => `<a href="${e(source.url)}" target="_blank" rel="noopener">${e(source.domain || 'Evidence source')}</a>`).join('')}</div>
+            <button class="expand-search" type="button" data-expand="${sectionIndex}">Expand card → new search + research token</button>
           </div>
         </article>`;
       }).join('');
@@ -79,13 +82,43 @@
         <section class="generated-sections">${sectionHtml || `<article class="generated-section"><div class="generated-copy"><h2>${e(site.query)}</h2><p>${e(spec.summary || 'This site was generated from the indexed search evidence.')}</p></div></article>`}</section>
         <footer class="token-strip">
           <strong>Website token · ${e(site.id)}</strong>
-          <small>Created ${new Date(site.createdAt).toLocaleString()} from “${e(site.query)}”. The token tracks this generated website separately from spendable StarCoin.</small>
+          <small>Created ${new Date(site.createdAt).toLocaleString()} from “${e(site.query)}”. Each generated story card can branch into another search and immediately mint a research-expansion token in the same wallet data. StarCoin share credit remains 1/10 per confirmed share.</small>
           <div class="token-actions">
             <a href="${OmniPhi.url('cards/')}?${new URLSearchParams({q:site.query, mode:'search'})}">Open website index</a>
             <a href="${OmniPhi.url('overview/')}?${new URLSearchParams({q:site.query, mode:'search'})}">Open source search</a>
           </div>
         </footer>
       </main>`;
+
+      let expanding = false;
+      function expandCard(index, button) {
+        if (expanding) return;
+        const section = sections[index];
+        if (!section) return;
+        const indexes = Array.isArray(section.sourceIndexes) ? section.sourceIndexes : [];
+        const source = indexes.map(sourceAt).filter(Boolean)[0] || site.sources?.[index] || site.sources?.[0] || null;
+        expanding = true;
+        if (button) { button.disabled = true; button.textContent = 'Research token minted ✓ · opening search…'; }
+        const result = OmniWebsiteIntelligence.expandGeneratedCard(site, section, source);
+        location.href = result.url;
+      }
+
+      app.querySelectorAll('[data-expand]').forEach(button => button.addEventListener('click', event => {
+        event.stopPropagation();
+        expandCard(Number(button.dataset.expand), button);
+      }));
+      app.querySelectorAll('[data-site-card]').forEach(card => {
+        card.addEventListener('click', event => {
+          if (event.target.closest('a,button')) return;
+          expandCard(Number(card.dataset.siteCard), card.querySelector('[data-expand]'));
+        });
+        card.addEventListener('keydown', event => {
+          if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('a,button')) {
+            event.preventDefault();
+            expandCard(Number(card.dataset.siteCard), card.querySelector('[data-expand]'));
+          }
+        });
+      });
     }
   </script>
 </body>
