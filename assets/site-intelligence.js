@@ -173,7 +173,7 @@
     const users = jsonGet('starquest_users', {});
     if (session?.key && users[session.key]) return { wallet: users[session.key], users, session, signedIn: true };
     return {
-      wallet: jsonGet('starquest_guest_profile_v1', { key: '__guest__', username: 'Guest', tokens: 0, shareCount: 0, pendingShareCredits: 0, shareEvents: [], ledger: [], siteTokens: [] }),
+      wallet: jsonGet('starquest_guest_profile_v1', { key: '__guest__', username: 'Guest', tokens: 0, shareCount: 0, pendingShareCredits: 0, shareEvents: [], ledger: [], siteTokens: [], researchTokens: [] }),
       users,
       session,
       signedIn: false
@@ -210,6 +210,58 @@
     saveWallet(state);
     window.dispatchEvent(new CustomEvent('starquest:site-token', { detail: token }));
     return token;
+  }
+
+  function mintResearchToken(details = {}) {
+    const state = activeWallet();
+    const wallet = state.wallet;
+    const createdAt = new Date().toISOString();
+    const token = {
+      id: `research-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+      type: 'research-expansion',
+      title: clean(details.title || details.query || 'Expanded research', 220),
+      query: clean(details.query || '', 320),
+      url: clean(details.url || '', 1800),
+      sourceCardKey: clean(details.sourceCardKey || '', 300),
+      siteId: clean(details.siteId || '', 160),
+      createdAt
+    };
+    wallet.researchTokens = Array.isArray(wallet.researchTokens) ? wallet.researchTokens : [];
+    wallet.researchTokens.unshift(token);
+    wallet.researchTokens = wallet.researchTokens.slice(0, 250);
+    wallet.ledger = Array.isArray(wallet.ledger) ? wallet.ledger : [];
+    wallet.ledger.unshift({
+      id: `ledger-${token.id}`,
+      type: 'research-token-mint',
+      assetType: 'research-expansion',
+      assetId: token.id,
+      amount: 0,
+      title: token.title,
+      query: token.query,
+      at: createdAt
+    });
+    wallet.ledger = wallet.ledger.slice(0, 500);
+    saveWallet(state);
+    window.dispatchEvent(new CustomEvent('starquest:research-token', { detail: token }));
+    return token;
+  }
+
+  function expandGeneratedCard(site, section, source = null) {
+    if (!site || !section) throw new Error('generated_card_required');
+    const heading = clean(section.heading || source?.title || site.query || 'Research', 220);
+    const root = clean(site.query || '', 180);
+    const query = heading.toLowerCase().includes(root.toLowerCase()) || !root ? heading : `${root} — ${heading}`;
+    if (source) recordReaction(source, 'open', { query: root || query });
+    const params = new URLSearchParams({ q: query, mode: 'search' });
+    const nextUrl = `${OmniPhi.url('overview/')}?${params}`;
+    const token = mintResearchToken({
+      title: heading,
+      query,
+      url: nextUrl,
+      sourceCardKey: source ? cardKey(source) : '',
+      siteId: site.id
+    });
+    return { token, query, url: nextUrl };
   }
 
   function generatedSites() {
@@ -275,6 +327,8 @@
     buildBlueprint,
     generateWebsite,
     generatedSites,
-    getSite
+    getSite,
+    mintResearchToken,
+    expandGeneratedCard
   };
 })();
