@@ -4,9 +4,26 @@
 
 Instead of treating search as a flat ranked list, Omni Phi builds a three-dimensional relationship field around a source concept. Stronger relationships sit closer to the source, weaker relationships drift outward, and cross-links pull related branches toward each other like a spiderweb. The visible `# / ## / ### / ####` notation is a readable projection of that field, not the primary hard-coded structure.
 
+## Search bar modes
+
+The landing-page field has four modes that share the same input:
+
+1. **Search** — proportional discovery and source-grounded research.
+2. **Code** — routes the request into the build/coding flow.
+3. **Create** — routes the request into the creation flow.
+4. **GPT** — keeps the user on the landing page and opens an in-place conversation with GPT beneath the same search bar.
+
+GPT mode keeps a short session conversation in `sessionStorage`, sends only the active message plus recent conversation context, and uses the existing server-side Infinity/StarQuest AI gateway. No OpenAI API key is placed in GitHub Pages or browser JavaScript.
+
+The public endpoint used by the page is:
+
+`https://infinity-rogers.marvaseater.workers.dev/v1/chat`
+
+The gateway selects the GPT persona when the request identifies `application: "Omni Phi"` or `assistant: "gpt"`. StarQuest traffic continues to receive the Cosmo persona.
+
 ## Four-page research flow
 
-1. **Search** — a 3D proportional cloud and one search field. Search / Code / Create are modes, not immediate navigation links.
+1. **Search** — a 3D proportional cloud and one search field. Search / Code / Create / GPT are modes, not immediate navigation links.
 2. **AI Overview** — a source-grounded overview with orange source cards. Collecting sources strengthens the user's future search profile.
 3. **Structured Research** — machine-readable research for the user's own AI, including nodes, relationships, evidence, and personal weighting.
 4. **Purple Cards** — research cards generated from the proportional field and grouped by dynamic proximity shells.
@@ -75,6 +92,7 @@ Omni-Phi/
 ├── assets/
 │   ├── style.css
 │   ├── app.js
+│   ├── gpt-mode.js
 │   ├── indexer.js
 │   ├── omni-family.js
 │   └── omni-phi-share.svg
@@ -83,9 +101,9 @@ Omni-Phi/
 └── .github/workflows/pages.yml
 ```
 
-## Current prototype limitations
+## AI connector boundary
 
-The first public build uses browser-side retrieval from Wikipedia-compatible APIs for source cards and a deterministic source-grounded overview. It does **not** pretend that this local prototype is a full remote AI model. The architecture is ready for a model connector later while keeping source provenance and user-controlled weighting intact.
+Omni Phi's browser code never stores a provider secret. The embedded GPT panel calls a server-side gateway, and the gateway calls the OpenAI Responses API. This is intentionally different from claiming that the web page is the exact same ongoing conversation as a user's ChatGPT app session: it is an embedded GPT conversation using OpenAI through the project's secure gateway.
 
 ## Working principle
 
