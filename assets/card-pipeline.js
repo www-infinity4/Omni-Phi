@@ -14,37 +14,106 @@
     return card?.storyKey || card?.url || card?.id || clean(card?.sourceTitle || card?.title || 'card', 120).toLowerCase().replace(/[^a-z0-9]+/g, '-');
   }
 
-  async function findWikipediaImage(searchTerm, usedImages) {
+  function unique(values) {
+    return [...new Set(values.filter(Boolean))];
+  }
+
+  function reserveImage(candidates, usedImages) {
+    const image = (candidates || []).find((candidate) => candidate && !usedImages.has(candidate)) || '';
+    if (image) usedImages.add(image);
+    return image;
+  }
+
+  async function wikipediaImageCandidates(searchTerm) {
     const term = clean(searchTerm, 220);
-    if (!term) return '';
-    if (imageCache.has(term)) {
-      const cached = imageCache.get(term);
-      return cached && !usedImages.has(cached) ? cached : '';
-    }
+    if (!term) return [];
+    const cacheKey = `wikipedia:${term.toLowerCase()}`;
+    if (imageCache.has(cacheKey)) return imageCache.get(cacheKey);
+
     const endpoint = new URL('https://en.wikipedia.org/w/api.php');
     endpoint.search = new URLSearchParams({
-      action: 'query', generator: 'search', gsrsearch: term, gsrlimit: '6',
-      prop: 'pageimages', piprop: 'thumbnail', pithumbsize: '900', format: 'json', origin: '*'
+      action: 'query',
+      generator: 'search',
+      gsrsearch: term,
+      gsrlimit: '12',
+      prop: 'pageimages',
+      piprop: 'thumbnail',
+      pithumbsize: '900',
+      format: 'json',
+      origin: '*'
     }).toString();
+
     const response = await fetch(endpoint, { cache: 'force-cache' });
-    if (!response.ok) return '';
+    if (!response.ok) return [];
     const data = await response.json().catch(() => ({}));
-    const candidates = Object.values(data?.query?.pages || {}).map((page) => page?.thumbnail?.source || '').filter(Boolean);
-    const image = candidates.find((candidate) => !usedImages.has(candidate)) || candidates[0] || '';
-    imageCache.set(term, image);
-    return image && !usedImages.has(image) ? image : '';
+    const candidates = unique(Object.values(data?.query?.pages || {}).map((page) => page?.thumbnail?.source || ''));
+    imageCache.set(cacheKey, candidates);
+    return candidates;
+  }
+
+  async function commonsImageCandidates(searchTerm) {
+    const term = clean(searchTerm, 220);
+    if (!term) return [];
+    const cacheKey = `commons:${term.toLowerCase()}`;
+    if (imageCache.has(cacheKey)) return imageCache.get(cacheKey);
+
+    const endpoint = new URL('https://commons.wikimedia.org/w/api.php');
+    endpoint.search = new URLSearchParams({
+      action: 'query',
+      generator: 'search',
+      gsrnamespace: '6',
+      gsrsearch: term,
+      gsrlimit: '20',
+      prop: 'imageinfo',
+      iiprop: 'url',
+      iiurlwidth: '900',
+      format: 'json',
+      origin: '*'
+    }).toString();
+
+    const response = await fetch(endpoint, { cache: 'force-cache' });
+    if (!response.ok) return [];
+    const data = await response.json().catch(() => ({}));
+    const candidates = unique(Object.values(data?.query?.pages || {}).map((page) => {
+      const info = Array.isArray(page?.imageinfo) ? page.imageinfo[0] : null;
+      return info?.thumburl || info?.url || '';
+    }));
+    imageCache.set(cacheKey, candidates);
+    return candidates;
+  }
+
+  function imageSearchTerms(source, query) {
+    const originalTitle = clean(source?.sourceTitle || source?.title || '', 220);
+    const plainTitle = clean(originalTitle.replace(/\s*\([^)]*\)\s*$/, ''), 220);
+    const activeQuery = clean(query, 220);
+    return unique([
+      originalTitle,
+      plainTitle,
+      plainTitle && activeQuery ? `${plainTitle} ${activeQuery}` : '',
+      activeQuery
+    ]);
   }
 
   async function imageForSource(source, query, usedImages) {
-    if (!source || source.image) return source?.image || '';
-    const originalTitle = source.sourceTitle || source.title || '';
-    const searches = [originalTitle, `${originalTitle} ${query || ''}`.trim(), query].filter(Boolean);
-    for (const term of [...new Set(searches)]) {
+    if (!source) return '';
+    if (source.image) {
+      usedImages.add(source.image);
+      return source.image;
+    }
+
+    const searches = imageSearchTerms(source, query);
+    for (const term of searches) {
       try {
-        const image = await findWikipediaImage(term, usedImages);
-        if (image) return image;
+        const wikipediaImage = reserveImage(await wikipediaImageCandidates(term), usedImages);
+        if (wikipediaImage) return wikipediaImage;
+      } catch (_) {}
+
+      try {
+        const commonsImage = reserveImage(await commonsImageCandidates(term), usedImages);
+        if (commonsImage) return commonsImage;
       } catch (_) {}
     }
+
     return '';
   }
 
@@ -66,28 +135,30 @@
     window.dispatchEvent(new CustomEvent('omniphi:card-image', { detail: { query, card: source, key, image } }));
   }
 
-  function ensureCardImages(query, sources) {
+  async function ensureCardImages(query, sources) {
     const list = Array.isArray(sources) ? sources : [];
-    const usedImages = new Set(list.map((source) => source?.image).filter(Boolean));
-    list.forEach((source) => { if (source?.image) source.imageVerified = true; });
+    const usedImages = new Set();
+    list.forEach((source) => {
+      if (source?.image) {
+        source.imageVerified = true;
+        usedImages.add(source.image);
+      }
+    });
 
     const missing = list.filter((source) => source && !source.image);
-    Promise.all(missing.map(async (source) => {
+    await Promise.all(missing.map(async (source) => {
       const image = await imageForSource(source, query, usedImages);
       if (!image) return;
-      usedImages.add(image);
       applyHydratedImage(query, source, image);
-    })).catch((error) => console.warn('Omni Phi image hydration fallback:', error));
+    }));
 
-    // Intentionally return immediately: cards render now, missing images stream into them.
     return list;
   }
 
   OmniPhi.ensureCardImages = ensureCardImages;
-  OmniPhi.fetchWikipedia = async function fetchWikipediaFast(query) {
+  OmniPhi.fetchWikipedia = async function fetchWikipediaWithImages(query) {
     const sources = await originalFetch(query);
-    ensureCardImages(query, sources);
-    return sources;
+    return ensureCardImages(query, sources);
   };
 
   function exactResearchTarget(card) {
