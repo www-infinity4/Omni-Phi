@@ -3,6 +3,7 @@
   if (!window.OmniPhi) return;
 
   const SHARE_ENDPOINT = 'https://infinity-rogers.marvaseater.workers.dev/share/card';
+  const CARD_RENDER = 'https://www-infinity4.github.io/Omni-Phi/share-card/';
   const originalFetch = OmniPhi.fetchWikipedia.bind(OmniPhi);
   const imageCache = new Map();
 
@@ -170,11 +171,30 @@
     return current.toString();
   }
 
+  function previewTone(card) {
+    const value = clean(card?.previewTone || card?.cardColor || card?.kind || '', 40).toLowerCase();
+    if (value.includes('overview') || value === 'red') return 'overview';
+    if (value.includes('yellow')) return 'yellow';
+    return 'orange';
+  }
+
+  function socialCardImage(card) {
+    const renderParams = new URLSearchParams({
+      tone: previewTone(card),
+      title: clean(card?.title || 'Infinity Phi card', 180),
+      body: clean(card?.extract || card?.body || '', 360),
+      image: clean(card?.image || card?.imageUrl || '', 1200),
+      domain: clean(card?.domain || card?.provider || 'Infinity Phi', 120)
+    });
+    const renderUrl = `${CARD_RENDER}?${renderParams}`;
+    return `https://image.thum.io/get/ogImage/?url=${encodeURIComponent(renderUrl)}`;
+  }
+
   function sharePreviewUrl(card) {
     const params = new URLSearchParams({
       title: clean(card?.title || 'Infinity Phi card', 180),
       body: clean(card?.extract || card?.body || '', 700),
-      image: clean(card?.image || card?.imageUrl || '', 1200),
+      image: socialCardImage(card),
       domain: clean(card?.domain || card?.provider || 'Infinity Phi', 120),
       source: clean(card?.url || '', 1200),
       target: exactResearchTarget(card)
@@ -202,9 +222,13 @@
     const image = (record?.sources || []).find((source) => source?.image)?.image || '';
     return OmniPhi.shareCard({
       id: `ai-overview-${clean(record?.query || 'search', 80).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      kind: 'overview',
+      previewTone: 'overview',
       title: `${record?.query || 'Search'} — raw AI overview`,
       extract: record?.overview || '', image, imageVerified: Boolean(image),
       domain: 'Infinity Phi raw data', provider: 'Infinity Phi'
     });
   };
+
+  OmniPhi.socialCardImage = socialCardImage;
 })();
