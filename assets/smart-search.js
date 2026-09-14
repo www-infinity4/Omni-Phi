@@ -37,13 +37,23 @@
       };
     }
 
+    const rankedCount = Number(lower.match(/\b(?:top|best)\s+(\d{1,4})\b/)?.[1] || 0);
+    const decade = lower.match(/\b(19|20)\d0s\b/)?.[0] || "";
+    const rankedSubject = lower.match(/\b(?:top|best)\s+\d{1,4}\s+(.+?)(?:\?|$)/)?.[1]?.trim() || "";
+    const semanticQueries = rankedCount && rankedSubject ? [
+      `best ${rankedSubject}`,
+      `top 10 ${rankedSubject} by genre`,
+      `${decade || rankedSubject} critically acclaimed ${rankedSubject.replace(decade, "").trim()}`,
+      `${decade || rankedSubject} highest grossing ${rankedSubject.replace(decade, "").trim()}`
+    ] : [];
     return {
       type: "general",
       raw,
       atomicNumber: null,
       exactPhrase: quoted[0] || "",
       canonicalQuery: raw,
-      searchQueries: [...new Set([quoted[0] ? `"${quoted[0]}" ${raw}` : raw, raw])],
+      rankedCount,
+      searchQueries: [...new Set([quoted[0] ? `"${quoted[0]}" ${raw}` : raw, ...semanticQueries, raw])],
       mustKeep: tokens(raw).filter((t) => /^\d+$/.test(t)),
       significant
     };
