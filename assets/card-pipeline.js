@@ -42,7 +42,11 @@
 
     // Preserve every curated image exactly where it already is. Only fill blanks.
     for (const source of list) {
-      if (!source || source.image) continue;
+      if (!source) continue;
+      if (source.image) {
+        source.imageVerified = true;
+        continue;
+      }
       const searches = [source.title, `${source.title || ''} ${query || ''}`.trim(), query].filter(Boolean);
       for (const term of [...new Set(searches)]) {
         try {
@@ -77,10 +81,10 @@
   function sharePreviewUrl(card) {
     const params = new URLSearchParams({
       title: clean(card?.title || 'Infinity Phi card', 180),
-      body: clean(card?.extract || card?.body || '', 1500),
-      image: clean(card?.image || card?.imageUrl || '', 1500),
+      body: clean(card?.extract || card?.body || '', 700),
+      image: clean(card?.image || card?.imageUrl || '', 1200),
       domain: clean(card?.domain || card?.provider || 'Infinity Phi', 120),
-      source: clean(card?.url || '', 1500),
+      source: clean(card?.url || '', 1200),
       target: exactResearchTarget(card)
     });
     return `${SHARE_ENDPOINT}?${params}`;
@@ -115,6 +119,7 @@
       title: `${record?.query || 'Search'} — raw AI overview`,
       extract: record?.overview || '',
       image,
+      imageVerified: Boolean(image),
       domain: 'Infinity Phi raw data',
       provider: 'Infinity Phi'
     });
