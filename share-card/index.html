@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Omni Phi Card Preview</title>
+  <meta name="robots" content="noindex,nofollow">
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,system-ui,sans-serif}body{min-height:100vh;display:grid;place-items:center;padding:28px;background:#08070d;color:#fff}.card{width:min(1120px,calc(100vw - 56px));height:min(574px,calc(100vh - 56px));min-height:520px;display:grid;grid-template-columns:43% 57%;overflow:hidden;border:4px solid #ff9b24;border-radius:34px;background:linear-gradient(145deg,#d85a08,#8e2600);box-shadow:0 30px 90px #000a,inset 0 1px 0 #fff5}.art{width:100%;height:100%;object-fit:cover;background:#3a1604}.copy{min-width:0;display:flex;flex-direction:column;padding:40px 42px 34px}.label{font-size:16px;font-weight:950;letter-spacing:.16em;text-transform:uppercase;color:#ffe58a}.copy h1{margin:14px 0 18px;font-size:clamp(34px,4.2vw,62px);line-height:1.02;color:#fff}.copy p{margin:0;font-size:clamp(19px,2vw,27px);line-height:1.42;color:#fff7d0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical}.foot{margin-top:auto;padding-top:20px;display:flex;justify-content:space-between;gap:20px;align-items:end;color:#ffe3a4;font-size:15px;font-weight:850}.card.overview{border-color:#ff8a1f;background:radial-gradient(circle at 90% 5%,#ffb31f22,transparent 34%),linear-gradient(145deg,#8f1111,#5b0606)}.card.overview .label,.card.overview h1,.card.overview p,.card.overview .foot{color:#fff06a}.card.yellow{border-color:#ffe04c;background:linear-gradient(145deg,#ffd51b,#d68b00);color:#271400}.card.yellow .label,.card.yellow h1,.card.yellow p,.card.yellow .foot{color:#271400}@media(max-width:760px){body{padding:14px}.card{width:calc(100vw - 28px);height:auto;min-height:0;grid-template-columns:1fr}.art{height:250px}.copy{padding:24px}.copy h1{font-size:34px}.copy p{font-size:18px}}
+  </style>
+</head>
+<body>
+  <article class="card" id="card">
+    <img class="art" id="art" alt="">
+    <div class="copy">
+      <div class="label" id="label">OMNI PHI · ORANGE SOURCE CARD</div>
+      <h1 id="title">Card preview</h1>
+      <p id="body">The exact produced card appears here for social sharing.</p>
+      <div class="foot"><span id="domain">Omni Phi</span><span>Open card → continue research</span></div>
+    </div>
+  </article>
+  <script>
+    const p=new URLSearchParams(location.search),card=document.getElementById('card');
+    const tone=(p.get('tone')||'orange').toLowerCase();
+    if(tone==='overview'||tone==='red')card.classList.add('overview');else if(tone==='yellow')card.classList.add('yellow');
+    document.getElementById('label').textContent=tone==='overview'||tone==='red'?'RAW DATA · AI OVERVIEW':tone==='yellow'?'OMNI PHI · YELLOW CARD':'OMNI PHI · ORANGE SOURCE CARD';
+    document.getElementById('title').textContent=p.get('title')||'Omni Phi card';
+    document.getElementById('body').textContent=p.get('body')||'Open this card to continue the exact research path.';
+    document.getElementById('domain').textContent=p.get('domain')||'Omni Phi';
+    const image=p.get('image')||'../assets/omni-phi-index-wide.jpg?v=2';document.getElementById('art').src=image;
+  </script>
+</body>
+</html>
