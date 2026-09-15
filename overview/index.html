@@ -80,9 +80,9 @@
   </script>
   <script src="../assets/capability-router.js"></script>
   <script src="../assets/smart-search.js"></script>
-  <script src="../assets/multi-source-search.js?v=20260915-1"></script>
-  <script src="../assets/search-breadth.js?v=20260915-1"></script>
-  <script src="../assets/card-pipeline.js?v=20260915-infinitypreview2"></script>
+  <script src="../assets/multi-source-search.js?v=20260915-2"></script>
+  <script src="../assets/search-breadth.js?v=20260915-2"></script>
+  <script src="../assets/card-pipeline.js?v=20260915-sourceimages3"></script>
   <script src="../assets/site-intelligence.js"></script>
   <script>
     document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'AI Overview');
@@ -235,7 +235,10 @@
     async function run() {
       profileUI();
       let sources;
-      try { sources = await OmniPhi.fetchWikipedia(query); }
+      try {
+        const searchAllSources = OmniPhi.fetchAllSources || OmniPhi.fetchWikipedia;
+        sources = await searchAllSources(query);
+      }
       catch (error) { console.warn(error); sources = OmniPhi.fallbackSources(query); }
       if (!sources.length) sources = OmniPhi.fallbackSources(query);
       if (OmniPhi.ensureCardImages) sources = await OmniPhi.ensureCardImages(query, sources);
