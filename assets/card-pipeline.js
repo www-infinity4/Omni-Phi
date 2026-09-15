@@ -200,6 +200,7 @@
 
   function socialCardImage(card) {
     const renderParams = new URLSearchParams({
+      v: '2',
       tone: previewTone(card),
       title: clean(card?.title || 'Infinity Phi card', 180),
       body: clean(card?.extract || card?.body || '', 360),
@@ -212,6 +213,7 @@
 
   function sharePreviewUrl(card) {
     const params = new URLSearchParams({
+      v: '2',
       title: clean(card?.title || 'Infinity Phi card', 180),
       body: clean(card?.extract || card?.body || '', 700),
       image: socialCardImage(card),
@@ -224,8 +226,6 @@
 
   OmniPhi.shareCard = async function shareExactCard(card) {
     const shareUrl = sharePreviewUrl(card);
-    const title = clean(card?.title || 'Infinity Phi card', 180);
-    const text = clean(card?.extract || card?.body || '', 320);
 
     if (!navigator.share) {
       try {
@@ -237,7 +237,10 @@
     }
 
     try {
-      await navigator.share({ title, text, url: shareUrl });
+      // Share only the preview URL. X/Twitter then renders the actual orange/yellow
+      // card from the Worker metadata instead of turning the card text into a
+      // multi-post thread and leaving the preview as a bare link.
+      await navigator.share({ url: shareUrl });
       return { ...OmniPhi.awardStarCoinShare(shareUrl), shareUrl };
     } catch (error) {
       return error?.name === 'AbortError' ? { cancelled: true } : { error: true };
@@ -260,4 +263,5 @@
   };
 
   OmniPhi.socialCardImage = socialCardImage;
+  OmniPhi.sharePreviewUrl = sharePreviewUrl;
 })();
