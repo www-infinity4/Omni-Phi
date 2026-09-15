@@ -115,6 +115,14 @@
       searchDeck.classList.toggle('has-query', Boolean(input.value));
     }
 
+    function destinationForMode(q) {
+      const params = new URLSearchParams({ q });
+      if (mode === 'code') return `https://www-infinity4.github.io/C13b0/phi/code/?${params}`;
+      if (mode === 'create') return `https://www-infinity4.github.io/C13b0/phi/create/?${params}`;
+      params.set('mode', mode);
+      return `${OmniPhi.url('overview/')}?${params}`;
+    }
+
     modeButtons.forEach((button) => button.addEventListener('click', () => setMode(button.dataset.mode)));
     input.addEventListener('input', updateInput);
     input.addEventListener('focus', () => searchDeck.classList.add('suggestions-open'));
@@ -131,7 +139,7 @@
       event.preventDefault();
       const q = input.value.trim();
       if (!q) { input.focus(); return; }
-      location.href = `${OmniPhi.url('overview/')}?${new URLSearchParams({ q, mode })}`;
+      location.href = destinationForMode(q);
     });
 
     setMode(mode, false);
