@@ -2,6 +2,7 @@
   'use strict';
   if (!window.OmniPhi) return;
 
+  const SHARE_PAGE = 'https://www-infinity4.github.io/Omni-Phi/share/';
   const clean = (value, max = 1800) => String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
 
   function cardKey(card) {
@@ -18,6 +19,12 @@
     return current.toString();
   }
 
+  function sharePreviewUrl(card) {
+    const share = new URL(SHARE_PAGE);
+    share.searchParams.set('target', exactResearchTarget(card));
+    return share.toString();
+  }
+
   function cardTitle(card) {
     return clean(card?.title || card?.sourceTitle || 'Omni Phi card', 220);
   }
@@ -26,12 +33,8 @@
     return clean(card?.extract || card?.body || card?.description || '', 420);
   }
 
-  // Keep the visible/shared address on Omni Phi. The older card pipeline built
-  // a workers.dev URL purely to get crawlable metadata; that made the worker
-  // address the public link in X/Twitter. The page now supplies its own OG/X
-  // fallback metadata, so the shared URL can remain the exact Omni Phi card.
   OmniPhi.shareCard = async function shareExactCard(card) {
-    const shareUrl = exactResearchTarget(card);
+    const shareUrl = sharePreviewUrl(card);
     const title = cardTitle(card);
     const text = cardText(card);
 
@@ -52,7 +55,5 @@
     }
   };
 
-  // Preserve compatibility with callers that ask for a preview URL, but make
-  // that URL the real Omni Phi card target rather than a Cloudflare worker.
-  OmniPhi.sharePreviewUrl = exactResearchTarget;
+  OmniPhi.sharePreviewUrl = sharePreviewUrl;
 })();
