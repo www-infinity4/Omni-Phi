@@ -75,10 +75,11 @@
     return candidates;
   }
 
-  function sourceImageTerms(source) {
+  function sourceImageTerms(query, source) {
     const originalTitle = clean(source?.sourceTitle || source?.title || '', 220);
     const plainTitle = clean(originalTitle.replace(/\s*\([^)]*\)\s*$/, ''), 220);
-    return unique([originalTitle, plainTitle]);
+    const combined = plainTitle && query ? clean(`${plainTitle} ${query}`, 220) : '';
+    return unique([originalTitle, plainTitle, combined]);
   }
 
   function sourcePagePreview(source) {
@@ -87,7 +88,16 @@
     return `https://image.thum.io/get/ogImage/?url=${encodeURIComponent(target)}`;
   }
 
-  async function exactImageForSource(source, usedImages) {
+  function isWikimediaSource(source) {
+    try {
+      const host = new URL(source?.url || '').hostname.toLowerCase();
+      return host.endsWith('wikipedia.org') || host.endsWith('wikimedia.org');
+    } catch {
+      return false;
+    }
+  }
+
+  async function exactImageForSource(query, source, usedImages) {
     if (!source) return '';
     if (source.image) {
       usedImages.add(source.image);
@@ -96,10 +106,21 @@
       return source.image;
     }
 
-    for (const term of sourceImageTerms(source)) {
+    // For ordinary web stories, first show the actual source page rather than a
+    // vaguely related encyclopedia image. This keeps the visual tied to the card.
+    if (!isWikimediaSource(source)) {
+      const preview = sourcePagePreview(source);
+      if (preview && !usedImages.has(preview)) {
+        usedImages.add(preview);
+        source.imageBinding = 'source-page-preview';
+        return preview;
+      }
+    }
+
+    for (const term of sourceImageTerms(query, source)) {
       try {
         const candidates = await wikipediaImageCandidates(term);
-        const image = candidates.find((candidate) => candidate && !usedImages.has(candidate)) || candidates[0] || '';
+        const image = candidates.find((candidate) => candidate && !usedImages.has(candidate)) || '';
         if (image) {
           usedImages.add(image);
           source.imageBinding = 'exact-source-title';
@@ -109,7 +130,7 @@
 
       try {
         const candidates = await commonsImageCandidates(term);
-        const image = candidates.find((candidate) => candidate && !usedImages.has(candidate)) || candidates[0] || '';
+        const image = candidates.find((candidate) => candidate && !usedImages.has(candidate)) || '';
         if (image) {
           usedImages.add(image);
           source.imageBinding = 'exact-source-title';
@@ -119,7 +140,7 @@
     }
 
     const preview = sourcePagePreview(source);
-    if (preview) {
+    if (preview && !usedImages.has(preview)) {
       usedImages.add(preview);
       source.imageBinding = 'source-page-preview';
       return preview;
@@ -155,21 +176,29 @@
     const list = Array.isArray(sources) ? sources : [];
     const usedImages = new Set();
 
+    // Keep a source-provided image when it is unique. When several unrelated
+    // cards arrive with the same generic image, clear later duplicates so they
+    // can be hydrated against their own source/title instead.
     list.forEach((source) => {
       if (!source) return;
       source.sourceLocked = true;
-      if (source.image) {
-        source.imageVerified = true;
-        source.imageBinding = source.imageBinding || 'source-record';
-        usedImages.add(source.image);
+      const image = clean(source.image, 1800);
+      if (!image) return;
+      if (usedImages.has(image)) {
+        source.image = '';
+        source.imageVerified = false;
+        source.imageBinding = 'duplicate-replaced';
+        return;
       }
+      source.image = image;
+      source.imageVerified = true;
+      source.imageBinding = source.imageBinding || 'source-record';
+      usedImages.add(image);
     });
 
-    // Hydrate in source order. This keeps one card, one source and one image bound
-    // together and avoids broad-query image races.
     for (const source of list) {
       if (!source || source.image) continue;
-      const image = await exactImageForSource(source, usedImages);
+      const image = await exactImageForSource(query, source, usedImages);
       if (image) applyHydratedImage(query, source, image);
     }
 
@@ -202,9 +231,6 @@
     return clean(card?.image || card?.imageUrl || INFINITY_SHARE_FALLBACK, 1800);
   }
 
-  // Keep the shared address on Omni Phi while giving X/Twitter a dedicated,
-  // crawlable large-image page. A human tap immediately returns to the exact
-  // research page/card encoded in target.
   function sharePreviewUrl(card) {
     const share = new URL(OMNI_SHARE_PAGE);
     share.searchParams.set('target', exactResearchTarget(card));
