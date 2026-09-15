@@ -50,13 +50,16 @@
       document.title = `${site.title} — Omni Phi`;
       const spec = site.spec || {};
       const sections = Array.isArray(spec.sections) ? spec.sections : [];
-      const heroSource = site.sources?.find(source => source.image) || site.sources?.[0];
+      const firstSectionIndexes = new Set(Array.isArray(sections[0]?.sourceIndexes) ? sections[0].sourceIndexes.map(Number) : []);
+      const heroSource = site.sources?.find(source => source.image && !firstSectionIndexes.has(Number(source.index))) || site.sources?.find(source => source.image) || site.sources?.[0];
       const heroImage = heroSource?.image || OmniWebsiteIntelligence.FALLBACK_IMAGE;
+      const usedSectionImages = new Set();
 
       const sectionHtml = sections.map((section, sectionIndex) => {
         const indexes = Array.isArray(section.sourceIndexes) ? section.sourceIndexes : [];
         const sources = indexes.map(sourceAt).filter(Boolean);
-        const lead = sources.find(source => source.image) || sources[0] || site.sources?.[sectionIndex] || site.sources?.[0];
+        const lead = sources.find(source => source.image && !usedSectionImages.has(source.image)) || sources.find(source => source.image) || sources[0] || site.sources?.[sectionIndex] || site.sources?.[0];
+        if (lead?.image) usedSectionImages.add(lead.image);
         const links = sources.length ? sources : lead ? [lead] : [];
         return `<article class="generated-section" data-site-card="${sectionIndex}" tabindex="0" aria-label="Expand ${e(section.heading || lead?.title || `Section ${sectionIndex + 1}`)} into a new search">
           ${lead?.image ? `<img src="${e(lead.image)}" alt="Visual for ${e(section.heading || lead.title)}" loading="lazy">` : ''}
