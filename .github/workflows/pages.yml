@@ -35,13 +35,26 @@ jobs:
               href = "../assets/infinity-card-skin.css"
               if href not in text:
                   text = text.replace("</head>", f'  <link rel="stylesheet" href="{href}" />\n</head>')
+
+              # The card-depth guard MUST be active before multi-source retrieval
+              # calls GPT enrichment. Loading it at </body> was too late and let
+              # a one-card GPT response collapse the whole orange evidence field.
               runtime = '<script src="../assets/omni-card-parity.js"></script>'
               if runtime not in text:
-                  text = text.replace("</body>", f'  {runtime}\n</body>')
+                  smart = '<script src="../assets/smart-search.js"></script>'
+                  if smart in text:
+                      text = text.replace(smart, f'{smart}\n  {runtime}', 1)
+                  else:
+                      text = text.replace("</body>", f'  {runtime}\n</body>')
+
               if name == "overview/index.html":
                   storyboard = '<script src="../assets/overview-storyboard.js"></script>'
                   if storyboard not in text:
-                      text = text.replace("</body>", f'  {storyboard}\n</body>')
+                      intelligence = '<script src="../assets/site-intelligence.js"></script>'
+                      if intelligence in text:
+                          text = text.replace(intelligence, f'{intelligence}\n  {storyboard}', 1)
+                      else:
+                          text = text.replace("</body>", f'  {storyboard}\n</body>')
               path.write_text(text)
           PY
       - name: Configure and enable Pages
