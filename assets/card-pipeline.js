@@ -7,9 +7,7 @@
   const originalFetch = OmniPhi.fetchWikipedia.bind(OmniPhi);
   const imageCache = new Map();
 
-  function clean(value, max = 1800) {
-    return String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
-  }
+  const clean = (value, max = 1800) => String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
 
   function cardKey(card) {
     return card?.storyKey || card?.url || card?.id || clean(card?.sourceTitle || card?.title || 'card', 120).toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -17,12 +15,6 @@
 
   function unique(values) {
     return [...new Set(values.filter(Boolean))];
-  }
-
-  function reserveImage(candidates, usedImages) {
-    const image = (candidates || []).find((candidate) => candidate && !usedImages.has(candidate)) || '';
-    if (image) usedImages.add(image);
-    return image;
   }
 
   async function wikipediaImageCandidates(searchTerm) {
@@ -35,11 +27,11 @@
     endpoint.search = new URLSearchParams({
       action: 'query',
       generator: 'search',
-      gsrsearch: term,
-      gsrlimit: '12',
+      gsrsearch: `"${term}"`,
+      gsrlimit: '8',
       prop: 'pageimages',
       piprop: 'thumbnail',
-      pithumbsize: '900',
+      pithumbsize: '1000',
       format: 'json',
       origin: '*'
     }).toString();
@@ -63,11 +55,11 @@
       action: 'query',
       generator: 'search',
       gsrnamespace: '6',
-      gsrsearch: term,
-      gsrlimit: '20',
+      gsrsearch: `"${term}"`,
+      gsrlimit: '12',
       prop: 'imageinfo',
       iiprop: 'url',
-      iiurlwidth: '900',
+      iiurlwidth: '1000',
       format: 'json',
       origin: '*'
     }).toString();
@@ -83,75 +75,103 @@
     return candidates;
   }
 
-  function imageSearchTerms(source, query) {
+  function sourceImageTerms(source) {
     const originalTitle = clean(source?.sourceTitle || source?.title || '', 220);
     const plainTitle = clean(originalTitle.replace(/\s*\([^)]*\)\s*$/, ''), 220);
-    const activeQuery = clean(query, 220);
-    return unique([
-      originalTitle,
-      plainTitle,
-      plainTitle && activeQuery ? `${plainTitle} ${activeQuery}` : '',
-      activeQuery
-    ]);
+    return unique([originalTitle, plainTitle]);
   }
 
-  async function imageForSource(source, query, usedImages) {
+  function sourcePagePreview(source) {
+    const target = clean(source?.url || '', 1200);
+    if (!/^https?:\/\//i.test(target)) return '';
+    return `https://image.thum.io/get/ogImage/?url=${encodeURIComponent(target)}`;
+  }
+
+  async function exactImageForSource(source, usedImages) {
     if (!source) return '';
     if (source.image) {
       usedImages.add(source.image);
+      source.imageVerified = true;
+      source.imageBinding = 'source-record';
       return source.image;
     }
 
-    const searches = imageSearchTerms(source, query);
-    for (const term of searches) {
+    for (const term of sourceImageTerms(source)) {
       try {
-        const wikipediaImage = reserveImage(await wikipediaImageCandidates(term), usedImages);
-        if (wikipediaImage) return wikipediaImage;
+        const candidates = await wikipediaImageCandidates(term);
+        const image = candidates.find((candidate) => candidate && !usedImages.has(candidate)) || candidates[0] || '';
+        if (image) {
+          usedImages.add(image);
+          source.imageBinding = 'exact-source-title';
+          return image;
+        }
       } catch (_) {}
 
       try {
-        const commonsImage = reserveImage(await commonsImageCandidates(term), usedImages);
-        if (commonsImage) return commonsImage;
+        const candidates = await commonsImageCandidates(term);
+        const image = candidates.find((candidate) => candidate && !usedImages.has(candidate)) || candidates[0] || '';
+        if (image) {
+          usedImages.add(image);
+          source.imageBinding = 'exact-source-title';
+          return image;
+        }
       } catch (_) {}
     }
 
+    const preview = sourcePagePreview(source);
+    if (preview) {
+      usedImages.add(preview);
+      source.imageBinding = 'source-page-preview';
+      return preview;
+    }
     return '';
   }
 
   function applyHydratedImage(query, source, image) {
     source.image = image;
-    source.imageVerified = true;
+    source.imageVerified = Boolean(image);
     const key = cardKey(source);
     const research = OmniPhi.activeResearch?.();
+
     if (research && String(research.query || '').trim().toLowerCase() === String(query || '').trim().toLowerCase()) {
       const index = (research.sources || []).findIndex((card) => cardKey(card) === key);
       if (index >= 0) {
         research.sources[index].image = image;
-        research.sources[index].imageVerified = true;
+        research.sources[index].imageVerified = Boolean(image);
+        research.sources[index].imageBinding = source.imageBinding || 'source-locked';
+        research.sources[index].sourceLocked = true;
         OmniPhi.saveResearch?.(research);
         const img = document.querySelector(`.source-card[data-source="${index}"] img`);
-        if (img) img.src = image;
+        if (img && image) img.src = image;
       }
     }
-    window.dispatchEvent(new CustomEvent('omniphi:card-image', { detail: { query, card: source, key, image } }));
+
+    window.dispatchEvent(new CustomEvent('omniphi:card-image', {
+      detail: { query, card: source, key, image, binding: source.imageBinding || 'source-locked' }
+    }));
   }
 
   async function ensureCardImages(query, sources) {
     const list = Array.isArray(sources) ? sources : [];
     const usedImages = new Set();
+
     list.forEach((source) => {
-      if (source?.image) {
+      if (!source) return;
+      source.sourceLocked = true;
+      if (source.image) {
         source.imageVerified = true;
+        source.imageBinding = source.imageBinding || 'source-record';
         usedImages.add(source.image);
       }
     });
 
-    const missing = list.filter((source) => source && !source.image);
-    await Promise.all(missing.map(async (source) => {
-      const image = await imageForSource(source, query, usedImages);
-      if (!image) return;
-      applyHydratedImage(query, source, image);
-    }));
+    // Hydrate in source order. This keeps one card, one source and one image bound
+    // together and avoids broad-query image races.
+    for (const source of list) {
+      if (!source || source.image) continue;
+      const image = await exactImageForSource(source, usedImages);
+      if (image) applyHydratedImage(query, source, image);
+    }
 
     return list;
   }
@@ -206,10 +226,16 @@
     const shareUrl = sharePreviewUrl(card);
     const title = clean(card?.title || 'Infinity Phi card', 180);
     const text = clean(card?.extract || card?.body || '', 320);
+
     if (!navigator.share) {
-      try { await navigator.clipboard.writeText(shareUrl); return { copied: true, shareUrl }; }
-      catch (_) { return { error: true }; }
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        return { copied: true, shareUrl };
+      } catch (_) {
+        return { error: true };
+      }
     }
+
     try {
       await navigator.share({ title, text, url: shareUrl });
       return { ...OmniPhi.awardStarCoinShare(shareUrl), shareUrl };
@@ -225,8 +251,11 @@
       kind: 'overview',
       previewTone: 'overview',
       title: `${record?.query || 'Search'} — raw AI overview`,
-      extract: record?.overview || '', image, imageVerified: Boolean(image),
-      domain: 'Infinity Phi raw data', provider: 'Infinity Phi'
+      extract: record?.overview || '',
+      image,
+      imageVerified: Boolean(image),
+      domain: 'Infinity Phi raw data',
+      provider: 'Infinity Phi'
     });
   };
 
