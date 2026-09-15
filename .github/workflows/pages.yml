@@ -23,6 +23,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Apply shared Infinity card skin
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          for name in ("overview/index.html", "cards/index.html", "structured/index.html"):
+              path = Path(name)
+              if not path.exists():
+                  continue
+              text = path.read_text()
+              href = "../assets/infinity-card-skin.css"
+              if href not in text:
+                  text = text.replace("</head>", f'  <link rel="stylesheet" href="{href}" />\n</head>')
+                  path.write_text(text)
+          PY
       - name: Configure and enable Pages
         uses: actions/configure-pages@v5
         with:
