@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Apply shared Infinity card skin, card depth, and storyboard
+      - name: Apply shared Infinity card skin, card depth, source truth, and storyboard
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -46,6 +46,22 @@ jobs:
                       text = text.replace(smart, f'{smart}\n  {runtime}', 1)
                   else:
                       text = text.replace("</body>", f'  {runtime}\n</body>')
+
+              # Preserve original source title/extract/image when a user collects
+              # an orange card so News Phi receives factual source metadata.
+              metadata = '<script src="../assets/collect-source-metadata.js?v=20260915-1"></script>'
+              if metadata not in text:
+                  app = '<script src="../assets/app.js"></script>'
+                  if app in text:
+                      text = text.replace(app, f'{app}\n  {metadata}', 1)
+
+              # Sports/statistical cards keep the original source text after
+              # semantic retrieval instead of publishing rewritten statistics.
+              sports_lock = '<script src="../assets/sports-source-lock.js?v=20260915-1"></script>'
+              if sports_lock not in text:
+                  pipeline = '<script src="../assets/card-pipeline.js"></script>'
+                  if pipeline in text:
+                      text = text.replace(pipeline, f'{sports_lock}\n  {pipeline}', 1)
 
               if name == "overview/index.html":
                   storyboard = '<script src="../assets/overview-storyboard.js"></script>'
