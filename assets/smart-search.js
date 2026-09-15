@@ -1,4 +1,5 @@
 (function () {
+  'use strict';
   if (!window.OmniPhi) return;
 
   const oldFetch = OmniPhi.fetchWikipedia.bind(OmniPhi);
@@ -9,17 +10,18 @@
   const intentByQuery = new Map();
   const STOP = new Set('the a an and or of in on for to from with about what which who how why when where is are was were be been being this that these those tell show find search look give me my please'.split(' '));
 
-  function tokens(text) {
-    return String(text || '').toLowerCase().match(/[a-z0-9]+/g) || [];
-  }
-
-  function normalizeQuery(text) {
-    return String(text || '').trim().toLowerCase();
-  }
-
-  function cleanAiText(value, max) {
-    return String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
-  }
+  const clean = (value, max = 1800) => String(value || '').replace(/\s+/g, ' ').trim().slice(0, max);
+  const normalizeQuery = (value) => clean(value, 600).toLowerCase();
+  const tokens = (value) => normalizeQuery(value).match(/[a-z0-9]+/g) || [];
+  const stem = (word) => {
+    let w = String(word || '').toLowerCase();
+    if (w.length > 5 && w.endsWith('ing')) w = w.slice(0, -3);
+    else if (w.length > 4 && w.endsWith('ies')) w = `${w.slice(0, -3)}y`;
+    else if (w.length > 4 && w.endsWith('es')) w = w.slice(0, -2);
+    else if (w.length > 3 && w.endsWith('s')) w = w.slice(0, -1);
+    return w;
+  };
+  const significant = (value) => [...new Set(tokens(value).filter((t) => !STOP.has(t)).map(stem).filter(Boolean))];
 
   function parseAiJson(text) {
     const raw = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
@@ -30,16 +32,19 @@
   }
 
   function lexicalIntent(query) {
-    const raw = String(query || '').trim();
-    const quoted = [...raw.matchAll(/["“]([^"”]+)["”]/g)].map((m) => m[1].trim()).filter(Boolean);
-    const significant = tokens(raw).filter((t) => !STOP.has(t));
+    const raw = clean(query, 600);
+    const quoted = [...raw.matchAll(/["“]([^"”]+)["”]/g)].map((m) => clean(m[1], 160)).filter(Boolean);
+    const concepts = significant(raw);
     return {
       type: 'general',
       raw,
       summary: raw,
+      canonicalSubject: raw,
+      entityType: 'unknown',
       exactTerms: quoted,
-      requiredConcepts: significant.slice(0, 10),
-      significant,
+      requiredConcepts: concepts.slice(0, 10),
+      excludedMeanings: [],
+      significant: concepts,
       searchQueries: [raw],
       aiPlanned: false
     };
@@ -48,21 +53,22 @@
   async function planQuery(query) {
     const fallback = lexicalIntent(query);
     const instruction = [
-      'You are the query-understanding layer for a general research search engine.',
+      'You are the entity-resolution and query-understanding layer for a general research search engine.',
       `User query: ${query}`,
-      'Interpret the user request without using topic-specific hard-coded rules.',
-      'Preserve the user\'s real meaning. Do not silently replace the subject with a nearby subject.',
-      'For a short concept query, infer the most useful explanatory intent rather than treating it like a keyword dump.',
-      'For a direct question, preserve the question that must be answered.',
-      'Return 2 to 4 concise web-search queries that retrieve evidence for the same intent from distinct angles.',
-      'requiredConcepts should contain concepts that evidence should actually discuss.',
-      'exactTerms should contain quoted names, numbers, formulas, or phrases that must not be lost when relevant.',
+      'Resolve the query to ONE canonical subject before gathering evidence.',
+      'Do not mix homonyms, songs, films, books, people, places, scientific terms, or similarly named subjects into one result set.',
+      'When wording is ambiguous, choose the interpretation most strongly supported by the wording and ordinary usage, then list competing meanings in excludedMeanings so retrieval can reject them.',
+      'Preserve direct questions exactly: the resolved subject should still support the question the user actually asked.',
+      'canonicalSubject must be a concise unambiguous name. Add a parenthetical type when that prevents ambiguity, for example "(film)", "(song)", "(chemical element)", or another accurate type.',
+      'Return 2 to 4 concise web-search queries. Every query must stay anchored to canonicalSubject and retrieve evidence for the same resolved subject from a distinct angle.',
+      'requiredConcepts are concepts evidence should actually discuss. exactTerms are names, numbers, formulas, or phrases that must not be lost.',
+      'excludedMeanings are competing interpretations or adjacent subjects that must not leak into this result set.',
       'Return JSON only.',
-      'Schema: {"summary":"one-sentence interpretation","searchQueries":["..."],"requiredConcepts":["..."],"exactTerms":["..."]}'
+      'Schema: {"summary":"...","canonicalSubject":"...","entityType":"...","searchQueries":["..."],"requiredConcepts":["..."],"exactTerms":["..."],"excludedMeanings":["..."]}'
     ].join('\n');
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 9000);
+    const timer = setTimeout(() => controller.abort(), 10000);
     try {
       const response = await fetch(AI_ENDPOINT, {
         method: 'POST',
@@ -72,8 +78,8 @@
           input: instruction,
           context: {
             application: 'Omni Phi',
-            assistant: 'gpt-query-planner',
-            task: 'general-intent-planning',
+            assistant: 'gpt-entity-resolver',
+            task: 'canonical-subject-resolution',
             verified_context: { query }
           }
         })
@@ -81,16 +87,40 @@
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.message || payload.error || `HTTP ${response.status}`);
       const result = parseAiJson(payload.output_text || payload.output || '');
-      const summary = cleanAiText(result.summary, 500) || fallback.summary;
-      const searchQueries = [...new Set([query, ...(Array.isArray(result.searchQueries) ? result.searchQueries : [])].map((v) => cleanAiText(v, 220)).filter(Boolean))].slice(0, 4);
-      const requiredConcepts = (Array.isArray(result.requiredConcepts) ? result.requiredConcepts : []).map((v) => cleanAiText(v, 90).toLowerCase()).filter(Boolean).slice(0, 12);
-      const exactTerms = (Array.isArray(result.exactTerms) ? result.exactTerms : []).map((v) => cleanAiText(v, 120).toLowerCase()).filter(Boolean).slice(0, 10);
-      const significant = [...new Set([...fallback.significant, ...requiredConcepts.flatMap(tokens), ...exactTerms.flatMap(tokens)])];
-      const intent = { type: 'general', raw: query, summary, searchQueries, requiredConcepts, exactTerms, significant, aiPlanned: true };
+      const canonicalSubject = clean(result.canonicalSubject, 220) || fallback.canonicalSubject;
+      const entityType = clean(result.entityType, 80) || 'unknown';
+      const summary = clean(result.summary, 500) || fallback.summary;
+      const requiredConcepts = (Array.isArray(result.requiredConcepts) ? result.requiredConcepts : [])
+        .map((v) => clean(v, 100).toLowerCase()).filter(Boolean).slice(0, 12);
+      const exactTerms = (Array.isArray(result.exactTerms) ? result.exactTerms : [])
+        .map((v) => clean(v, 140).toLowerCase()).filter(Boolean).slice(0, 10);
+      const excludedMeanings = (Array.isArray(result.excludedMeanings) ? result.excludedMeanings : [])
+        .map((v) => clean(v, 160).toLowerCase()).filter(Boolean).slice(0, 12);
+      const planned = (Array.isArray(result.searchQueries) ? result.searchQueries : [])
+        .map((v) => clean(v, 240)).filter(Boolean);
+      const anchoredQueries = planned.filter((q) => subjectCoverage(q, canonicalSubject) >= 0.45);
+      const searchQueries = [...new Set([
+        canonicalSubject,
+        ...anchoredQueries,
+        `${canonicalSubject} ${requiredConcepts.slice(0, 2).join(' ')}`.trim()
+      ].filter(Boolean))].slice(0, 4);
+      const intent = {
+        type: 'general',
+        raw: query,
+        summary,
+        canonicalSubject,
+        entityType,
+        searchQueries,
+        requiredConcepts,
+        exactTerms,
+        excludedMeanings,
+        significant: [...new Set([...significant(canonicalSubject), ...significant(query), ...requiredConcepts.flatMap(significant), ...exactTerms.flatMap(significant)])],
+        aiPlanned: true
+      };
       intentByQuery.set(normalizeQuery(query), intent);
       return intent;
     } catch (error) {
-      console.warn('Omni Phi query planner fallback:', error);
+      console.warn('Omni Phi entity resolver fallback:', error);
       intentByQuery.set(normalizeQuery(query), fallback);
       return fallback;
     } finally {
@@ -102,52 +132,86 @@
     return intentByQuery.get(normalizeQuery(query)) || lexicalIntent(query);
   }
 
+  function subjectCoverage(text, subject) {
+    const anchor = significant(subject);
+    if (!anchor.length) return 0;
+    const body = new Set(significant(text));
+    const hits = anchor.filter((token) => body.has(token)).length;
+    return hits / anchor.length;
+  }
+
+  function phraseIncluded(text, phrase) {
+    const left = normalizeQuery(text).replace(/[^a-z0-9]+/g, ' ');
+    const right = normalizeQuery(phrase).replace(/[^a-z0-9]+/g, ' ').trim();
+    return Boolean(right && left.includes(right));
+  }
+
   function textOf(source) {
-    return `${source.sourceTitle || source.title || ''} ${source.sourceExtract || source.extract || ''}`.toLowerCase();
+    return `${source.sourceTitle || source.title || ''} ${source.sourceExtract || source.extract || ''}`;
   }
 
   function relevance(source, intent) {
     const text = textOf(source);
-    const title = String(source.sourceTitle || source.title || '').toLowerCase();
-    const terms = [...new Set((intent.significant || []).filter(Boolean))];
-    let score = 0;
-    if (terms.length) {
-      const textHits = terms.filter((t) => text.includes(t)).length;
-      const titleHits = terms.filter((t) => title.includes(t)).length;
-      score += .58 * (textHits / terms.length);
-      score += .24 * (titleHits / terms.length);
-    }
+    const title = String(source.sourceTitle || source.title || '');
+    const canonical = intent.canonicalSubject || intent.raw || '';
+    const anchorCoverage = subjectCoverage(text, canonical);
+    const titleCoverage = subjectCoverage(title, canonical);
+    let score = anchorCoverage * 0.58 + titleCoverage * 0.30;
+
+    if (phraseIncluded(title, canonical)) score += 0.28;
+    else if (phraseIncluded(text, canonical)) score += 0.18;
+
     (intent.exactTerms || []).forEach((term) => {
-      if (term && text.includes(term)) score += .18;
+      if (term && phraseIncluded(text, term)) score += 0.12;
     });
     (intent.requiredConcepts || []).forEach((concept) => {
-      const words = tokens(concept);
-      if (words.length && words.every((word) => text.includes(word))) score += .10;
+      const words = significant(concept);
+      if (words.length && subjectCoverage(text, concept) >= Math.min(1, 2 / words.length)) score += 0.06;
+    });
+    (intent.excludedMeanings || []).forEach((meaning) => {
+      if (meaning && (phraseIncluded(title, meaning) || subjectCoverage(title, meaning) >= 0.75)) score -= 0.45;
+      else if (meaning && phraseIncluded(text, meaning)) score -= 0.20;
     });
     return score;
+  }
+
+  function sourcePassesAnchor(source, intent) {
+    const canonical = intent.canonicalSubject || intent.raw || '';
+    const anchors = significant(canonical);
+    if (!anchors.length) return true;
+    const text = textOf(source);
+    const coverage = subjectCoverage(text, canonical);
+    const titleCoverage = subjectCoverage(source.sourceTitle || source.title || '', canonical);
+    if (anchors.length === 1) return coverage >= 1;
+    return coverage >= 0.5 || titleCoverage >= 0.5 || phraseIncluded(text, canonical);
   }
 
   async function callCardAi(query, intent, sources) {
     const evidence = sources.slice(0, 10).map((source, index) => ({
       index,
       sourceTitle: source.sourceTitle || source.title || `Source ${index + 1}`,
+      sourceUrl: source.url || '',
       domain: source.domain || source.provider || '',
-      evidence: String(source.sourceExtract || source.extract || '').replace(/\s+/g, ' ').trim().slice(0, 1500)
+      evidence: clean(source.sourceExtract || source.extract || '', 1800)
     }));
 
     const instruction = [
-      'You are the intelligence layer for general-purpose research cards.',
+      'You are the grounded intelligence layer for general-purpose research cards.',
       `User query: ${query}`,
+      `Canonical subject: ${intent.canonicalSubject || query}`,
+      `Entity type: ${intent.entityType || 'unknown'}`,
       `Interpreted intent: ${intent.summary || query}`,
-      'Answer the user\'s actual question or explanatory intent using only the supplied evidence.',
-      'Do not turn the card into a generic definition when the query asks how, why, whether, where, when, or what happens.',
-      'For short subject queries, explain the real-world concept, important physical or factual limits, and why it matters when the evidence supports those points.',
-      'Each card must contribute a distinct, useful piece of the answer.',
-      'Keep each card attached to its original source index. Never invent facts or swap sources.',
-      'Rewrite awkward source snippets into natural complete prose. Avoid filler and repeated wording.',
-      'Card title: specific and readable, usually 3–10 words.',
-      'Card text: 2–4 concise sentences, usually 45–90 words when evidence supports it.',
-      'Write one concise overview that directly addresses the query and synthesizes the strongest evidence without merely repeating the cards.',
+      `Competing meanings to exclude: ${(intent.excludedMeanings || []).join(' | ') || 'none supplied'}`,
+      'Use only the supplied evidence.',
+      'First reject any evidence item that is about a different entity or competing meaning, even if it shares words with the query.',
+      'Return cards ONLY for evidence that is genuinely about the canonical subject. Omit off-subject evidence indexes completely.',
+      'Answer the user’s actual question or explanatory intent. Do not manufacture a fixed what/when/where/origin template.',
+      'For a short subject query, choose distinct useful angles naturally supported by each source: mechanism, history, evidence, consequence, design, limitation, comparison, application, or another angle that actually fits.',
+      'Each card must add a distinct piece of information and stay locked to its original source index.',
+      'Never move facts, images, titles, or claims from one source index to another.',
+      'Rewrite awkward source snippets into natural complete prose. Avoid filler and repetition.',
+      'Card title: specific and readable, usually 3–10 words. Card text: 2–4 concise sentences.',
+      'Write one concise overview that directly addresses the query and synthesizes only accepted evidence.',
       'Return JSON only. No markdown.',
       'Schema: {"overview":"...","cards":[{"index":0,"title":"...","text":"..."}]}',
       `Evidence: ${JSON.stringify(evidence)}`
@@ -156,7 +220,7 @@
     let lastError = null;
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 18000);
+      const timer = setTimeout(() => controller.abort(), 20000);
       try {
         const response = await fetch(AI_ENDPOINT, {
           method: 'POST',
@@ -166,9 +230,13 @@
             input: instruction,
             context: {
               application: 'Omni Phi',
-              assistant: 'gpt-card-intelligence',
-              task: 'grounded-card-synthesis',
-              verified_context: { query, intent: intent.summary || query, source_count: evidence.length }
+              assistant: 'gpt-grounded-card-editor',
+              task: 'single-subject-grounded-card-synthesis',
+              verified_context: {
+                query,
+                canonical_subject: intent.canonicalSubject || query,
+                source_count: evidence.length
+              }
             }
           })
         });
@@ -189,55 +257,75 @@
     if (!sources.length) return sources;
     try {
       const result = await callCardAi(query, intent, sources);
-      const byIndex = new Map((Array.isArray(result.cards) ? result.cards : []).map((card) => [Number(card.index), card]));
-      const enriched = sources.map((source, index) => {
+      const cards = Array.isArray(result.cards) ? result.cards : [];
+      const byIndex = new Map(cards.map((card) => [Number(card.index), card]));
+      const enriched = sources.flatMap((source, index) => {
         const card = byIndex.get(index);
-        const title = cleanAiText(card?.title, 140);
-        const text = cleanAiText(card?.text, 900);
-        if (!title || !text) return { ...source, aiGenerated: false };
-        return {
+        const title = clean(card?.title, 150);
+        const text = clean(card?.text, 1000);
+        if (!title || !text) return [];
+        return [{
           ...source,
           sourceTitle: source.sourceTitle || source.title || '',
           sourceExtract: source.sourceExtract || source.extract || '',
           title,
           extract: text,
-          aiGenerated: true
-        };
+          aiGenerated: true,
+          sourceLocked: true,
+          canonicalSubject: intent.canonicalSubject || query
+        }];
       });
-      const overview = cleanAiText(result.overview, 1600);
+      const overview = clean(result.overview, 1800);
       if (overview) aiOverviewByQuery.set(normalizeQuery(query), overview);
-      return enriched;
+      if (enriched.length) return enriched;
     } catch (error) {
-      console.warn('Omni Phi card intelligence fallback:', error);
-      return sources.map((source) => ({ ...source, aiGenerated: false }));
+      console.warn('Omni Phi grounded card intelligence fallback:', error);
     }
+
+    return sources
+      .filter((source) => sourcePassesAnchor(source, intent))
+      .slice(0, 8)
+      .map((source) => ({
+        ...source,
+        sourceTitle: source.sourceTitle || source.title || '',
+        sourceExtract: source.sourceExtract || source.extract || '',
+        aiGenerated: false,
+        sourceLocked: true,
+        canonicalSubject: intent.canonicalSubject || query
+      }));
   }
 
   async function smartFetch(query) {
-    const baseFetch = oldFetch(query).catch(() => []);
-    const planPromise = planQuery(query);
-    const [baseSources, intent] = await Promise.all([baseFetch, planPromise]);
+    const intent = await planQuery(query);
+    const queries = [...new Set([
+      ...(intent.searchQueries || []),
+      intent.canonicalSubject || query
+    ].map((q) => clean(q, 240)).filter(Boolean))].slice(0, 4);
 
-    const extraQueries = (intent.searchQueries || []).filter((q) => normalizeQuery(q) !== normalizeQuery(query)).slice(0, 3);
-    const extraBatches = extraQueries.length ? await Promise.allSettled(extraQueries.map((q) => oldFetch(q))) : [];
+    const batches = await Promise.allSettled(queries.map((q) => oldFetch(q)));
     const merged = [];
     const seen = new Set();
-
-    [baseSources, ...extraBatches.filter((b) => b.status === 'fulfilled').map((b) => b.value)].forEach((batch) => {
-      (batch || []).forEach((source) => {
+    batches.filter((batch) => batch.status === 'fulfilled').forEach((batch) => {
+      (batch.value || []).forEach((source) => {
         const key = source.url || source.id || source.title;
         if (!key || seen.has(key)) return;
         seen.add(key);
-        merged.push(source);
+        merged.push({
+          ...source,
+          sourceTitle: source.sourceTitle || source.title || '',
+          sourceExtract: source.sourceExtract || source.extract || ''
+        });
       });
     });
 
     const ranked = merged
       .map((source) => ({ ...source, intentScore: relevance(source, intent) }))
-      .sort((a, b) => b.intentScore - a.intentScore)
-      .slice(0, 10);
+      .sort((a, b) => b.intentScore - a.intentScore);
 
-    const usable = ranked.length ? ranked : baseSources.slice(0, 10);
+    let usable = ranked.filter((source) => sourcePassesAnchor(source, intent) && source.intentScore >= 0.22).slice(0, 10);
+    if (!usable.length) usable = ranked.filter((source) => sourcePassesAnchor(source, intent)).slice(0, 8);
+    if (!usable.length) usable = ranked.slice(0, 6);
+
     return enrichCardsWithAi(query, intent, usable);
   }
 
@@ -246,21 +334,17 @@
   }
 
   function sentenceSet(source, limit) {
-    return String(source?.extract || '')
-      .split(/(?<=[.!?])\s+/)
-      .filter(Boolean)
-      .slice(0, limit)
-      .join(' ');
+    return String(source?.extract || '').split(/(?<=[.!?])\s+/).filter(Boolean).slice(0, limit).join(' ');
   }
 
   function buildSmartOverview(query, intent, sources) {
     const aiOverview = aiOverviewByQuery.get(normalizeQuery(query));
     if (aiOverview) return aiOverview;
-    const usable = [...sources].filter((s) => s.extract).sort((a, b) => (b.intentScore || 0) - (a.intentScore || 0));
+    const usable = [...sources].filter((source) => source.extract).sort((a, b) => (b.intentScore || 0) - (a.intentScore || 0));
     if (!usable.length) return `${query} is the active research query. No sufficiently relevant public evidence was returned yet.`;
     const primary = usable[0];
     let text = sentenceSet(primary, 4);
-    const secondary = usable.slice(1, 3).filter((s) => (s.intentScore || 0) >= .20).map((s) => sentenceSet(s, 1)).filter(Boolean);
+    const secondary = usable.slice(1, 3).map((source) => sentenceSet(source, 1)).filter(Boolean);
     if (secondary.length) text += ` ${secondary.join(' ')}`;
     return text;
   }
@@ -276,14 +360,28 @@
     record.resolvedIntent = intent;
     record.capabilityRoute = window.OmniCapabilityRouter?.route(query) || null;
     record.sources = [...(record.sources || [])]
-      .map((s) => ({ ...s, intentScore: Number.isFinite(s.intentScore) ? s.intentScore : relevance(s, intent) }))
-      .sort((a, b) => ((b.intentScore || 0) + (b.personalWeight || 0) * .25) - ((a.intentScore || 0) + (a.personalWeight || 0) * .25));
+      .map((source) => ({
+        ...source,
+        intentScore: Number.isFinite(source.intentScore) ? source.intentScore : relevance(source, intent),
+        canonicalSubject: source.canonicalSubject || intent.canonicalSubject || query,
+        sourceLocked: source.sourceLocked !== false
+      }))
+      .filter((source) => sourcePassesAnchor(source, intent))
+      .sort((a, b) => ((b.intentScore || 0) + (b.personalWeight || 0) * 0.15) - ((a.intentScore || 0) + (a.personalWeight || 0) * 0.15));
     record.overview = buildSmartOverview(query, intent, record.sources);
     record.aiCards = record.sources.filter((source) => source.aiGenerated).length;
     record.intentSummary = intent.summary || query;
+    record.canonicalSubject = intent.canonicalSubject || query;
     OmniPhi.saveResearch(record);
     return record;
   };
 
-  window.OmniSmartSearch = { resolveIntent, planQuery, relevance, smartFetch, enrichCardsWithAi };
+  window.OmniSmartSearch = {
+    resolveIntent,
+    planQuery,
+    relevance,
+    smartFetch,
+    enrichCardsWithAi,
+    subjectCoverage
+  };
 })();
