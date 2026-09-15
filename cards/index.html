@@ -146,15 +146,49 @@
     function renderBlueprint(blueprint) {
       const cards = Array.isArray(blueprint?.cards) ? blueprint.cards : [];
       document.getElementById('steeringCards').innerHTML = cards.length ? cards.map((card, index) => `<article class="research-card steering-card blueprint-card"><span class="hash">${'#'.repeat(2 + (index % 4))}</span><span class="build-section">${OmniPhi.escapeHtml(card.section || `Section ${index + 1}`)}</span><h3>${OmniPhi.escapeHtml(card.title || `Website section ${index + 1}`)}</h3><p>${OmniPhi.escapeHtml(card.instruction || '')}</p><div class="why">${OmniPhi.escapeHtml(card.reason || '')}</div><div class="card-foot"><span>GPT build instruction</span><span>φ</span></div></article>`).join('') : '<div class="panel panel-pad">No purple website instructions were produced yet.</div>';
-      document.getElementById('blueprintStatus').textContent = blueprint?.generatedBy === 'gpt' ? 'Built by GPT from evidence + reactions' : 'Safe fallback plan';
+      const reactions = window.OmniWebsiteIntelligence?.reactionSummary(q) || [];
+      const provisional = blueprint?.generatedBy === 'instant';
+      document.getElementById('blueprintStatus').textContent = blueprint?.generatedBy === 'gpt'
+        ? `Built by GPT from evidence + ${reactions.length} reaction${reactions.length === 1 ? '' : 's'}`
+        : provisional
+          ? 'Evidence draft ready · GPT refining in background…'
+          : 'Evidence fallback ready';
       document.getElementById('sitePlanTitle').textContent = blueprint?.site?.title || `${q} — generated website`;
       document.getElementById('sitePlanSummary').textContent = blueprint?.site?.summary || blueprint?.site?.subtitle || 'Ready to generate from the indexed search.';
-      buildButton.disabled = false;
-      buildButton.textContent = 'Build website + create site token';
+      buildButton.disabled = provisional;
+      buildButton.textContent = provisional ? 'GPT refining website…' : 'Build website + create site token';
+    }
+
+    function instantBlueprint(record) {
+      const sources = Array.isArray(record?.sources) ? record.sources.slice(0, 10) : [];
+      const reactions = window.OmniWebsiteIntelligence?.reactionSummary(q) || [];
+      const scores = new Map(reactions.map(item => [item.cardKey, Number(item.score) || 0]));
+      const keyed = sources.map((source, index) => ({source, index, score: scores.get(window.OmniWebsiteIntelligence?.cardKey(source) || source.url || source.id || source.title) || 0}));
+      keyed.sort((a, b) => b.score - a.score || a.index - b.index);
+      const cards = keyed.slice(0, 6).map(({source, index, score}, position) => ({
+        title: source.title || `${q} section ${position + 1}`,
+        section: position === 0 ? 'Lead evidence' : `Story section ${position + 1}`,
+        instruction: `Build a clear reader-facing section around “${source.title || q}”. Keep the facts grounded in this source, explain why they matter to ${q}, preserve its source link, and avoid repeating the same point used by another section.`,
+        reason: score > 0 ? `This orange card carries a +${score} interaction signal, so it should receive stronger emphasis in the website.` : 'This is one of the strongest indexed evidence cards available for the search.',
+        sourceIndexes: [index]
+      }));
+      return {
+        generatedBy: 'instant',
+        site: {
+          title: `${q} — generated research site`,
+          subtitle: 'Built from the indexed orange-card evidence and refined by GPT.',
+          summary: record?.overview || `A source-grounded website about ${q}.`,
+          sections: cards.map(card => {
+            const source = sources[card.sourceIndexes[0]];
+            return { heading: card.title, copy: source?.extract || '', sourceIndexes: card.sourceIndexes };
+          })
+        },
+        cards
+      };
     }
 
     buildButton.addEventListener('click', async () => {
-      if (!currentRecord || !currentBlueprint) return;
+      if (!currentRecord || !currentBlueprint || currentBlueprint.generatedBy === 'instant') return;
       buildButton.disabled = true;
       buildButton.textContent = 'Building website…';
       try {
@@ -179,6 +213,12 @@
       } else record = OmniPhi.refreshResearchWithProfile(record);
       currentRecord = record;
       renderTokens();
+
+      const draft = instantBlueprint(record);
+      currentBlueprint = draft;
+      renderBlueprint(draft);
+      renderIndex(record, draft);
+
       const blueprint = await OmniWebsiteIntelligence.buildBlueprint(record);
       currentBlueprint = blueprint;
       renderBlueprint(blueprint);
