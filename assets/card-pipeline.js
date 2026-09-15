@@ -2,7 +2,6 @@
   'use strict';
   if (!window.OmniPhi) return;
 
-  const SHARE_ENDPOINT = 'https://infinity-rogers.marvaseater.workers.dev/share/phi';
   const INFINITY_SHARE_FALLBACK = 'https://www-infinity4.github.io/C13b0/infinity-phi-share.png';
   const originalFetch = OmniPhi.fetchWikipedia.bind(OmniPhi);
   const imageCache = new Map();
@@ -198,28 +197,20 @@
     return 'orange';
   }
 
-  // Infinity Phi's working share path sends the real card image directly to the
-  // preview Worker. Do the same here instead of asking a screenshot service to
-  // render Omni's JavaScript share-card page first.
   function socialCardImage(card) {
     return clean(card?.image || card?.imageUrl || INFINITY_SHARE_FALLBACK, 1800);
   }
 
+  // Preserve the old API name for callers, but the preview URL is now the
+  // actual Omni Phi page/card URL. No workers.dev URL is exposed to X/Twitter.
   function sharePreviewUrl(card) {
-    const research = OmniPhi.activeResearch?.();
-    const params = new URLSearchParams({
-      title: clean(card?.title || 'Omni Phi card', 220),
-      body: clean(card?.extract || card?.body || '', 1400),
-      source: clean(card?.url || '', 1800),
-      image: socialCardImage(card),
-      q: clean(research?.query || card?.query || card?.title || '', 1000),
-      target: exactResearchTarget(card)
-    });
-    return `${SHARE_ENDPOINT}?${params.toString()}`;
+    return exactResearchTarget(card);
   }
 
   OmniPhi.shareCard = async function shareExactCard(card) {
-    const shareUrl = sharePreviewUrl(card);
+    const shareUrl = exactResearchTarget(card);
+    const title = clean(card?.title || card?.sourceTitle || 'Omni Phi card', 220);
+    const text = clean(card?.extract || card?.body || card?.description || '', 420);
 
     if (!navigator.share) {
       try {
@@ -231,9 +222,7 @@
     }
 
     try {
-      // Share only the preview URL. X/Twitter reads the same preview route that
-      // Infinity Phi uses, with the actual card image supplied in metadata.
-      await navigator.share({ url: shareUrl });
+      await navigator.share({ title, text, url: shareUrl });
       return { ...OmniPhi.awardStarCoinShare(shareUrl), shareUrl };
     } catch (error) {
       return error?.name === 'AbortError' ? { cancelled: true } : { error: true };
