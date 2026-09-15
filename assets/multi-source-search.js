@@ -209,8 +209,24 @@
     return chosen;
   }
 
+  function preserveDepth(preferred, fallback, minimum = 10) {
+    const out = [];
+    const seen = new Set();
+    const add = (source) => {
+      if (!source || out.length >= 12) return;
+      const key = clean(source.url || `${source.provider}:${source.title}`, 1400).toLowerCase();
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      out.push(source);
+    };
+    preferred.forEach(add);
+    fallback.forEach((source) => { if (out.length < minimum) add(source); });
+    return out;
+  }
+
   async function multiSourceSearch(query) {
     const intent = await OmniSmartSearch.planQuery(query).catch(() => OmniSmartSearch.resolveIntent(query));
+    const resolvedIntent = intent || OmniSmartSearch.resolveIntent(query);
     const searchQueries = [...new Set([
       query,
       ...(intent?.searchQueries || []),
@@ -235,12 +251,14 @@
       });
     });
 
-    const selected = diversify(dedupe(merged), intent || OmniSmartSearch.resolveIntent(query));
+    const allUnique = dedupe(merged);
+    const selected = preserveDepth(diversify(allUnique, resolvedIntent), allUnique, 10);
     if (!selected.length) return previousSearch(query);
 
     try {
-      const intelligent = await OmniSmartSearch.enrichCardsWithAi(query, intent || OmniSmartSearch.resolveIntent(query), selected);
-      return diversify(dedupe(intelligent), intent || OmniSmartSearch.resolveIntent(query));
+      const intelligent = await OmniSmartSearch.enrichCardsWithAi(query, resolvedIntent, selected);
+      const reranked = diversify(dedupe(intelligent), resolvedIntent);
+      return preserveDepth(reranked, selected, Math.min(10, selected.length));
     } catch {
       return selected;
     }
@@ -253,6 +271,7 @@
     fetchOpenAlex,
     fetchNasa,
     fetchGdelt,
-    fetchInternetArchive
+    fetchInternetArchive,
+    preserveDepth
   };
 })();
