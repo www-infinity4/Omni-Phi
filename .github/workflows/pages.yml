@@ -23,10 +23,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Apply shared Infinity card skin, card depth, source truth, and storyboard
+      - name: Apply shared Infinity card skin, card depth, source truth, storyboard, and clean sharing
         run: |
           python - <<'PY'
+          import re
           from pathlib import Path
+
+          public_urls = {
+              "overview/index.html": "https://www-infinity4.github.io/Omni-Phi/overview/",
+              "cards/index.html": "https://www-infinity4.github.io/Omni-Phi/cards/",
+              "structured/index.html": "https://www-infinity4.github.io/Omni-Phi/structured/",
+          }
+          share_image = "https://www-infinity4.github.io/C13b0/infinity-phi-share.png?v=20260915-omni-share1"
+
           for name in ("overview/index.html", "cards/index.html", "structured/index.html"):
               path = Path(name)
               if not path.exists():
@@ -35,6 +44,25 @@ jobs:
               href = "../assets/infinity-card-skin.css"
               if href not in text:
                   text = text.replace("</head>", f'  <link rel="stylesheet" href="{href}" />\n</head>')
+
+              # Give X/Twitter and other crawlers a large image and readable
+              # description on the exact Omni page that is being shared.
+              if 'name="twitter:card"' not in text:
+                  public_url = public_urls[name]
+                  social = f'''  <link rel="canonical" href="{public_url}" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Omni Phi" />
+  <meta property="og:url" content="{public_url}" />
+  <meta property="og:title" content="Omni Phi — Proportional Search" />
+  <meta property="og:description" content="A proportional Omni Phi research card with its source context and connected search path." />
+  <meta property="og:image" content="{share_image}" />
+  <meta property="og:image:width" content="1536" />
+  <meta property="og:image:height" content="1024" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Omni Phi — Proportional Search" />
+  <meta name="twitter:description" content="Open the shared Omni Phi research card and continue the connected search." />
+  <meta name="twitter:image" content="{share_image}" />'''
+                  text = text.replace("</head>", f'{social}\n</head>')
 
               # The card-depth guard MUST be active before multi-source retrieval
               # calls GPT enrichment. Loading it at </body> was too late and let
@@ -62,6 +90,15 @@ jobs:
                   pipeline = '<script src="../assets/card-pipeline.js"></script>'
                   if pipeline in text:
                       text = text.replace(pipeline, f'{sports_lock}\n  {pipeline}', 1)
+
+              # Override only the share transport after the existing card/image
+              # pipeline is loaded. Images, semantics, card depth and collection
+              # logic stay untouched; only the public share URL changes.
+              clean_share = '<script src="../assets/share-clean-url.js?v=20260915-clean1"></script>'
+              if clean_share not in text:
+                  match = re.search(r'<script src="\.\./assets/card-pipeline\.js[^\"]*"></script>', text)
+                  if match:
+                      text = text[:match.end()] + f'\n  {clean_share}' + text[match.end():]
 
               if name == "overview/index.html":
                   storyboard = '<script src="../assets/overview-storyboard.js"></script>'
