@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Apply shared Infinity card skin
+      - name: Apply shared Infinity card skin and Omni card depth
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -35,7 +35,10 @@ jobs:
               href = "../assets/infinity-card-skin.css"
               if href not in text:
                   text = text.replace("</head>", f'  <link rel="stylesheet" href="{href}" />\n</head>')
-                  path.write_text(text)
+              runtime = '<script src="../assets/omni-card-parity.js"></script>'
+              if runtime not in text:
+                  text = text.replace("</body>", f'  {runtime}\n</body>')
+              path.write_text(text)
           PY
       - name: Configure and enable Pages
         uses: actions/configure-pages@v5
