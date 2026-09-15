@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Apply shared Infinity card skin and Omni card depth
+      - name: Apply shared Infinity card skin, card depth, and storyboard
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -38,6 +38,10 @@ jobs:
               runtime = '<script src="../assets/omni-card-parity.js"></script>'
               if runtime not in text:
                   text = text.replace("</body>", f'  {runtime}\n</body>')
+              if name == "overview/index.html":
+                  storyboard = '<script src="../assets/overview-storyboard.js"></script>'
+                  if storyboard not in text:
+                      text = text.replace("</body>", f'  {storyboard}\n</body>')
               path.write_text(text)
           PY
       - name: Configure and enable Pages
