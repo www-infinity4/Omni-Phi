@@ -3,8 +3,22 @@
   if (!window.OmniPhi || !window.OmniMultiSourceSearch) return;
 
   const previousSearch = OmniPhi.fetchWikipedia.bind(OmniPhi);
+  const previousCreateResearch = OmniPhi.createResearch.bind(OmniPhi);
+  const previousRefreshResearch = OmniPhi.refreshResearchWithProfile.bind(OmniPhi);
   const VIDEO_INTENT = /\b(video|videos|highlight|highlights|reel|reels|clip|clips|watch|plays|top plays|best plays|recap|footage|tutorial|demo|demonstration)\b/i;
+  const SPORTS = /\b(baseball|mlb|football|nfl|basketball|nba|wnba|hockey|nhl|soccer|mls|fifa|golf|pga|tennis|bowling|nascar|racing|sports?)\b/i;
+  const SCHEDULE = /\b(schedule|schedules|fixture|fixtures|calendar|matchups?)\b/i;
+  const SCORE = /\b(scores?|results?|finals?|box score)\b/i;
+  const STANDINGS = /\b(standings?|rankings?|table)\b/i;
+  const NEWS = /\b(news|headlines?|updates?|latest|breaking|coverage)\b/i;
+  const STATS = /\b(stats?|statistics|leaders?|leaderboard)\b/i;
+  const ROSTER = /\b(roster|lineup|depth chart|squad)\b/i;
   const SKIP = new Set(['the','and','for','with','from','about','into','this','that','what','when','where','which','who','why','how','are','was','were','has','have','had','your','you','its','our']);
+  const AUTHORITY = new Map([
+    ['nfl.com', .34], ['mlb.com', .34], ['nba.com', .32], ['nhl.com', .32],
+    ['espn.com', .31], ['foxsports.com', .29], ['cbssports.com', .27], ['nbcsports.com', .26],
+    ['youtube.com', .19], ['youtu.be', .19]
+  ]);
   const clean = (value, max = 2600) => String(value || '').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim().slice(0, max);
   const domainOf = (value) => { try { return new URL(value).hostname.replace(/^www\./, '').toLowerCase(); } catch { return ''; } };
   const tokens = (value) => [...new Set(clean(value).toLowerCase().match(/[a-z0-9]+/g) || [])].filter((word) => word.length > 2 && !SKIP.has(word));
@@ -26,7 +40,55 @@
   function providerFor(url) {
     const domain = domainOf(url);
     if (domain === 'youtu.be' || domain.endsWith('youtube.com')) return 'YouTube';
+    if (domain === 'nfl.com' || domain.endsWith('.nfl.com')) return 'NFL.com';
+    if (domain === 'mlb.com' || domain.endsWith('.mlb.com')) return 'MLB.com';
+    if (domain === 'nba.com' || domain.endsWith('.nba.com')) return 'NBA.com';
+    if (domain === 'nhl.com' || domain.endsWith('.nhl.com')) return 'NHL.com';
+    if (domain === 'espn.com' || domain.endsWith('.espn.com')) return 'ESPN';
+    if (domain === 'foxsports.com' || domain.endsWith('.foxsports.com')) return 'FOX Sports';
+    if (domain === 'cbssports.com' || domain.endsWith('.cbssports.com')) return 'CBS Sports';
+    if (domain === 'nbcsports.com' || domain.endsWith('.nbcsports.com')) return 'NBC Sports';
     return domain || 'Public web';
+  }
+
+  function authority(source) {
+    const domain = clean(source.domain || domainOf(source.url), 180).toLowerCase();
+    for (const [name, points] of AUTHORITY) {
+      if (domain === name || domain.endsWith(`.${name}`)) return points;
+    }
+    return 0;
+  }
+
+  function leagueFor(query) {
+    if (/\b(football|nfl)\b/i.test(query)) return 'NFL';
+    if (/\b(baseball|mlb)\b/i.test(query)) return 'MLB';
+    if (/\b(basketball|nba|wnba)\b/i.test(query)) return /\bwnba\b/i.test(query) ? 'WNBA' : 'NBA';
+    if (/\b(hockey|nhl)\b/i.test(query)) return 'NHL';
+    if (/\b(soccer|mls)\b/i.test(query)) return 'MLS';
+    return '';
+  }
+
+  function subjectEquivalent(query, text) {
+    const lower = clean(text).toLowerCase();
+    if (/\bfootball\b/i.test(query) && /\bnfl\b/.test(lower)) return true;
+    if (/\bbaseball\b/i.test(query) && /\bmlb\b/.test(lower)) return true;
+    if (/\bbasketball\b/i.test(query) && /\b(?:nba|wnba)\b/.test(lower)) return true;
+    if (/\bhockey\b/i.test(query) && /\bnhl\b/.test(lower)) return true;
+    if (/\bsoccer\b/i.test(query) && /\b(?:mls|fifa|uefa)\b/.test(lower)) return true;
+    return false;
+  }
+
+  function intentFit(query, source) {
+    const text = clean(`${source.title} ${source.extract} ${source.url}`).toLowerCase();
+    let score = 0;
+    if (SCHEDULE.test(query)) score += /\b(schedule|schedules|fixture|fixtures|calendar|matchups?|week\s+\d{1,2}|kickoff|game dates?)\b/i.test(text) ? .44 : -.08;
+    if (SCORE.test(query)) score += /\b(score|scores|result|results|final|finals|box score)\b/i.test(text) ? .40 : -.06;
+    if (STANDINGS.test(query)) score += /\b(standings?|rankings?|division|conference|record|table)\b/i.test(text) ? .40 : -.06;
+    if (STATS.test(query)) score += /\b(stats?|statistics|leaders?|leaderboard|yards?|touchdowns?|goals?|assists?)\b/i.test(text) ? .36 : -.05;
+    if (ROSTER.test(query)) score += /\b(roster|lineup|depth chart|squad|players?)\b/i.test(text) ? .36 : -.05;
+    if (NEWS.test(query)) score += /\b(news|report|reported|headline|update|injury|trade|preview|analysis|week)\b/i.test(text) ? .24 : 0;
+    if (VIDEO_INTENT.test(query)) score += source.mediaType === 'video' || videoId(source.url) ? .54 : /\b(video|highlight|clip|replay|watch)\b/i.test(text) ? .20 : -.05;
+    return score;
   }
 
   function unwrap(raw) {
@@ -45,7 +107,7 @@
     const re = /\[([^\]\n]{4,260})\]\((https?:\/\/[^)\s]+)\)/g;
     let match;
     let order = 0;
-    while ((match = re.exec(String(text || ''))) && result.length < 36) {
+    while ((match = re.exec(String(text || ''))) && result.length < 42) {
       const title = clean(match[1], 220);
       const url = unwrap(match[2]);
       const domain = domainOf(url);
@@ -55,7 +117,7 @@
       if (seen.has(key)) continue;
       seen.add(key);
       const id = videoId(url);
-      const nearby = clean(String(text || '').slice(re.lastIndex, re.lastIndex + 460), 380);
+      const nearby = clean(String(text || '').slice(re.lastIndex, re.lastIndex + 500), 420);
       result.push({
         id: `web-${Math.abs(hash(key))}`,
         title,
@@ -63,7 +125,7 @@
         url,
         domain,
         provider: providerFor(url),
-        extract: nearby && overlap(query, nearby) ? nearby : `${title}. ${engine} result related to “${clean(query, 180)}”.`,
+        extract: nearby && (overlap(query, nearby) || subjectEquivalent(query, nearby)) ? nearby : `${title}. ${engine} result related to “${clean(query, 180)}”.`,
         sourceExtract: nearby,
         image: id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : '',
         mediaType: id || domain.endsWith('youtube.com') ? 'video' : 'article',
@@ -80,7 +142,7 @@
     return h;
   }
 
-  async function fetchText(url, ms = 5500) {
+  async function fetchText(url, ms = 6200) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), ms);
     try {
@@ -94,14 +156,30 @@
     }
   }
 
+  function queryPhrases(query) {
+    const phrases = [query];
+    const league = leagueFor(query);
+    const year = String(new Date().getFullYear());
+    if (SPORTS.test(query)) {
+      const subject = league ? `${league} ${query}` : query;
+      phrases.push(`${subject} ESPN FOX Sports ${league ? `${league}.com` : ''}`);
+      if (SCHEDULE.test(query)) phrases.push(`${subject} ${year} schedule official ESPN CBS Sports`);
+      if (NEWS.test(query)) phrases.push(`${subject} latest news headlines ESPN FOX CBS NBC`);
+      if (SCORE.test(query) || STANDINGS.test(query) || STATS.test(query) || ROSTER.test(query)) phrases.push(`${subject} official ESPN CBS Sports`);
+    } else {
+      phrases.push(`${query} stories sources`);
+    }
+    if (VIDEO_INTENT.test(query)) {
+      phrases.unshift(`${query} site:youtube.com/watch`);
+      if (league) phrases.push(`${league} ${query} YouTube ESPN FOX Sports`);
+    }
+    return [...new Set(phrases.map((value) => clean(value, 300)).filter(Boolean))].slice(0, 5);
+  }
+
   async function broadWeb(query) {
     const wantsVideo = VIDEO_INTENT.test(query);
-    const phrases = [query];
-    if (wantsVideo) phrases.push(`${query} site:youtube.com/watch`);
-    phrases.push(`${query} stories videos sources`);
-
     const endpoints = [];
-    [...new Set(phrases)].slice(0, 3).forEach((phrase) => {
+    queryPhrases(query).forEach((phrase) => {
       const q = encodeURIComponent(phrase);
       endpoints.push({ engine: 'Google', url: `https://r.jina.ai/http://www.google.com/search?q=${q}` });
       endpoints.push({ engine: 'Bing', url: `https://r.jina.ai/http://www.bing.com/search?q=${q}` });
@@ -117,9 +195,10 @@
     const seen = new Set();
     return all.filter((item) => {
       const key = item.url.replace(/[?#].*$/, '').toLowerCase();
-      if (!key || seen.has(key) || overlap(query, `${item.title} ${item.extract}`) === 0) return false;
+      const relevance = overlap(query, `${item.title} ${item.extract}`) + (subjectEquivalent(query, `${item.title} ${item.extract}`) ? 1 : 0);
+      if (!key || seen.has(key) || relevance === 0) return false;
       seen.add(key);
-      item.intentScore = overlap(query, `${item.title} ${item.extract}`) * 0.18 + Math.max(0, 12 - item.webOrder) * 0.012 + (wantsVideo && item.mediaType === 'video' ? 0.38 : 0);
+      item.intentScore = relevance * .18 + Math.max(0, 16 - item.webOrder) * .012 + authority(item) + intentFit(query, item) + (wantsVideo && item.mediaType === 'video' ? .38 : 0);
       return true;
     });
   }
@@ -150,10 +229,10 @@
       const key = sourceKey(source);
       if (!key || seen.has(key)) return;
       seen.add(key);
-      const relevance = overlap(query, `${source.title} ${source.extract}`);
-      const base = Number.isFinite(source.intentScore) ? source.intentScore : relevance * 0.16;
+      const relevance = overlap(query, `${source.title} ${source.extract}`) + (subjectEquivalent(query, `${source.title} ${source.extract}`) ? 1 : 0);
+      const base = Number.isFinite(source.intentScore) ? source.intentScore : relevance * .16;
       const video = source.mediaType === 'video' || videoId(source.url) || domainOf(source.url).endsWith('youtube.com');
-      unique.push({ ...source, omniScore: base + relevance * 0.11 + (wantsVideo && video ? 0.28 : 0) + Math.max(0, 10 - index) * 0.008 });
+      unique.push({ ...source, omniScore: base + relevance * .11 + authority(source) + intentFit(query, source) + (wantsVideo && video ? .28 : 0) + Math.max(0, 12 - index) * .008 });
     });
     unique.sort((a, b) => b.omniScore - a.omniScore);
 
@@ -171,15 +250,15 @@
       if (selected.length >= 14) break;
     }
     for (const source of deferred) {
-      if (selected.length >= 18) break;
+      if (selected.length >= 20) break;
       const domain = source.domain || domainOf(source.url) || source.provider || 'source';
       const count = domainCount.get(domain) || 0;
-      const cap = wantsVideo && (domain.includes('youtube.com') || domain === 'youtu.be') ? 5 : 2;
+      const cap = wantsVideo && (domain.includes('youtube.com') || domain === 'youtu.be') ? 7 : 3;
       if (count >= cap) continue;
       selected.push(source);
       domainCount.set(domain, count + 1);
     }
-    return selected.slice(0, 18);
+    return selected.slice(0, 20);
   }
 
   async function omniBroadSearch(query) {
@@ -190,7 +269,32 @@
     return selected.length ? selected : core.map(makeSourceTruthful);
   }
 
+  function relevanceFirstRecord(record) {
+    if (!record || !Array.isArray(record.sources)) return record;
+    record.sources = [...record.sources].sort((a, b) => {
+      const aBase = Number(a.omniScore ?? a.intentScore ?? 0);
+      const bBase = Number(b.omniScore ?? b.intentScore ?? 0);
+      const aPersonal = Number(a.personalWeight || 0);
+      const bPersonal = Number(b.personalWeight || 0);
+      return (bBase + bPersonal * .08) - (aBase + aPersonal * .08);
+    });
+    try {
+      const indexer = new window.OmniIndexer(OmniPhi.profile());
+      const field = indexer.build(record.query, record.sources);
+      record.source = field.source;
+      record.nodes = field.nodes;
+      OmniPhi.saveResearch(record);
+    } catch {}
+    return record;
+  }
+
   OmniPhi.fetchWikipedia = omniBroadSearch;
   OmniPhi.fetchAllSources = omniBroadSearch;
-  window.OmniSearchBreadth = { search: omniBroadSearch, broadWeb, broadSelect };
+  OmniPhi.createResearch = function (query, mode, sources) {
+    return relevanceFirstRecord(previousCreateResearch(query, mode, sources));
+  };
+  OmniPhi.refreshResearchWithProfile = function (record) {
+    return relevanceFirstRecord(previousRefreshResearch(record));
+  };
+  window.OmniSearchBreadth = { search: omniBroadSearch, broadWeb, broadSelect, queryPhrases, intentFit, version: '2026-09-15-live2' };
 })();
