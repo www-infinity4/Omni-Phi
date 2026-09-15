@@ -64,3 +64,89 @@
 
   window.OmniCapabilityRouter = { REGISTRY, categoriesFor, route };
 })();
+
+(function () {
+  'use strict';
+
+  const GUEST_KEY = 'starquest_guest_profile_v1';
+  const SESSION_KEY = 'starquest_session';
+  const USERS_KEY = 'starquest_users';
+
+  function read(key, fallback) {
+    try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+    catch { return fallback; }
+  }
+
+  function walletSnapshot() {
+    const session = read(SESSION_KEY, null);
+    const users = read(USERS_KEY, {});
+    const profile = session && session.key && users[session.key]
+      ? users[session.key]
+      : read(GUEST_KEY, {});
+    return {
+      tokens: Math.max(0, Number(profile.tokens) || 0),
+      pending: Math.max(0, Number(profile.pendingShareCredits) || 0),
+      shares: Math.max(0, Number(profile.shareCount) || 0)
+    };
+  }
+
+  function refreshWalletLabels() {
+    const wallet = walletSnapshot();
+    document.querySelectorAll('[data-phi-star-wallet]').forEach((node) => {
+      node.innerHTML = `<strong>★ ${wallet.tokens} Star Coin${wallet.tokens === 1 ? '' : 's'}</strong><small>${wallet.pending}/10 shares toward next coin · ${wallet.shares} total shares</small>`;
+    });
+  }
+
+  function enhanceDrawer() {
+    const drawer = document.querySelector('.menu-drawer');
+    const nav = drawer?.querySelector('.drawer-nav');
+    if (!nav || nav.querySelector('[data-phi-network-nav]')) {
+      refreshWalletLabels();
+      return;
+    }
+
+    const section = document.createElement('div');
+    section.dataset.phiNetworkNav = '1';
+    section.style.cssText = 'display:grid;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14)';
+    section.innerHTML = `
+      <div style="font-size:.68rem;font-weight:900;letter-spacing:.13em;text-transform:uppercase;opacity:.62">Phi network</div>
+      <a href="https://www-infinity4.github.io/C13b0/phi/">Infinity Phi</a>
+      <a href="https://www-infinity4.github.io/Omni-Phi/">Omni Phi</a>
+      <a href="https://www-infinity4.github.io/News-Phi/">News Phi</a>
+      <a href="https://www-infinity4.github.io/C13b0/wallet/">Infinity + Star Coin wallets</a>
+      <div data-phi-star-wallet style="display:grid;gap:2px;margin-top:3px;padding:11px 12px;border:1px solid rgba(240,189,85,.28);border-radius:13px;background:rgba(240,189,85,.09)"></div>`;
+    nav.appendChild(section);
+    section.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => {
+      document.querySelector('.menu-backdrop')?.classList.remove('open');
+      drawer.classList.remove('open');
+      document.body.style.overflow = '';
+    }));
+    refreshWalletLabels();
+  }
+
+  function install() {
+    if (!window.OmniPhi || typeof window.OmniPhi.setupMenu !== 'function' || window.OmniPhi.setupMenu.__phiNetworkWrapped) return false;
+    const original = window.OmniPhi.setupMenu.bind(window.OmniPhi);
+    const wrapped = function () {
+      const result = original();
+      enhanceDrawer();
+      return result;
+    };
+    wrapped.__phiNetworkWrapped = true;
+    window.OmniPhi.setupMenu = wrapped;
+    enhanceDrawer();
+    return true;
+  }
+
+  if (!install()) {
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      if (install() || tries > 40) clearInterval(timer);
+    }, 50);
+  }
+
+  window.addEventListener('storage', refreshWalletLabels);
+  window.addEventListener('starquest:share-progress', refreshWalletLabels);
+  window.addEventListener('controlphi:wallet-change', refreshWalletLabels);
+})();
