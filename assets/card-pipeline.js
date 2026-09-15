@@ -3,6 +3,7 @@
   if (!window.OmniPhi) return;
 
   const INFINITY_SHARE_FALLBACK = 'https://www-infinity4.github.io/C13b0/infinity-phi-share.png';
+  const OMNI_SHARE_PAGE = 'https://www-infinity4.github.io/Omni-Phi/share/';
   const originalFetch = OmniPhi.fetchWikipedia.bind(OmniPhi);
   const imageCache = new Map();
 
@@ -201,14 +202,17 @@
     return clean(card?.image || card?.imageUrl || INFINITY_SHARE_FALLBACK, 1800);
   }
 
-  // Preserve the old API name for callers, but the preview URL is now the
-  // actual Omni Phi page/card URL. No workers.dev URL is exposed to X/Twitter.
+  // Keep the shared address on Omni Phi while giving X/Twitter a dedicated,
+  // crawlable large-image page. A human tap immediately returns to the exact
+  // research page/card encoded in target.
   function sharePreviewUrl(card) {
-    return exactResearchTarget(card);
+    const share = new URL(OMNI_SHARE_PAGE);
+    share.searchParams.set('target', exactResearchTarget(card));
+    return share.toString();
   }
 
   OmniPhi.shareCard = async function shareExactCard(card) {
-    const shareUrl = exactResearchTarget(card);
+    const shareUrl = sharePreviewUrl(card);
     const title = clean(card?.title || card?.sourceTitle || 'Omni Phi card', 220);
     const text = clean(card?.extract || card?.body || card?.description || '', 420);
 
