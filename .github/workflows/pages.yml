@@ -49,19 +49,21 @@ jobs:
               # description on the exact Omni page that is being shared.
               if 'name="twitter:card"' not in text:
                   public_url = public_urls[name]
-                  social = f'''  <link rel="canonical" href="{public_url}" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Omni Phi" />
-  <meta property="og:url" content="{public_url}" />
-  <meta property="og:title" content="Omni Phi — Proportional Search" />
-  <meta property="og:description" content="A proportional Omni Phi research card with its source context and connected search path." />
-  <meta property="og:image" content="{share_image}" />
-  <meta property="og:image:width" content="1536" />
-  <meta property="og:image:height" content="1024" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Omni Phi — Proportional Search" />
-  <meta name="twitter:description" content="Open the shared Omni Phi research card and continue the connected search." />
-  <meta name="twitter:image" content="{share_image}" />'''
+                  social = "\n".join([
+                      f'  <link rel="canonical" href="{public_url}" />',
+                      '  <meta property="og:type" content="website" />',
+                      '  <meta property="og:site_name" content="Omni Phi" />',
+                      f'  <meta property="og:url" content="{public_url}" />',
+                      '  <meta property="og:title" content="Omni Phi — Proportional Search" />',
+                      '  <meta property="og:description" content="A proportional Omni Phi research card with its source context and connected search path." />',
+                      f'  <meta property="og:image" content="{share_image}" />',
+                      '  <meta property="og:image:width" content="1536" />',
+                      '  <meta property="og:image:height" content="1024" />',
+                      '  <meta name="twitter:card" content="summary_large_image" />',
+                      '  <meta name="twitter:title" content="Omni Phi — Proportional Search" />',
+                      '  <meta name="twitter:description" content="Open the shared Omni Phi research card and continue the connected search." />',
+                      f'  <meta name="twitter:image" content="{share_image}" />',
+                  ])
                   text = text.replace("</head>", f'{social}\n</head>')
 
               # The card-depth guard MUST be active before multi-source retrieval
@@ -94,7 +96,7 @@ jobs:
               # Override only the share transport after the existing card/image
               # pipeline is loaded. Images, semantics, card depth and collection
               # logic stay untouched; only the public share URL changes.
-              clean_share = '<script src="../assets/share-clean-url.js?v=20260915-clean1"></script>'
+              clean_share = '<script src="../assets/share-clean-url.js?v=20260915-clean2"></script>'
               if clean_share not in text:
                   match = re.search(r'<script src="\.\./assets/card-pipeline\.js[^\"]*"></script>', text)
                   if match:
