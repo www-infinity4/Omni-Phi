@@ -68,11 +68,21 @@
   <script src="../assets/omni-family.js"></script>
   <script src="../assets/indexer.js"></script>
   <script src="../assets/app.js"></script>
+  <script src="https://www-infinity4.github.io/Control-Phi/control-phi.js?v=20260915-sharecredit2"></script>
+  <script>
+    if(window.OmniPhi&&window.ControlPhi?.ensureShareCredit){
+      const localShareCredit=OmniPhi.awardStarCoinShare?.bind(OmniPhi);
+      OmniPhi.awardStarCoinShare=(reference)=>{
+        try{return window.ControlPhi.ensureShareCredit(reference,'web_share_api')}
+        catch(error){return localShareCredit?localShareCredit(reference):{progressToNextCoin:null,awarded:0,balance:null}}
+      };
+    }
+  </script>
   <script src="../assets/capability-router.js"></script>
   <script src="../assets/smart-search.js"></script>
   <script src="../assets/multi-source-search.js?v=20260915-1"></script>
   <script src="../assets/search-breadth.js?v=20260915-1"></script>
-  <script src="../assets/card-pipeline.js"></script>
+  <script src="../assets/card-pipeline.js?v=20260915-infinitypreview2"></script>
   <script src="../assets/site-intelligence.js"></script>
   <script>
     document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'AI Overview');
