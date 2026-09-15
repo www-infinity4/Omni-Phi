@@ -2,8 +2,8 @@
   'use strict';
   if (!window.OmniPhi) return;
 
-  const SHARE_ENDPOINT = 'https://infinity-rogers.marvaseater.workers.dev/share/card';
-  const CARD_RENDER = 'https://www-infinity4.github.io/Omni-Phi/share-card/';
+  const SHARE_ENDPOINT = 'https://infinity-rogers.marvaseater.workers.dev/share/phi';
+  const INFINITY_SHARE_FALLBACK = 'https://www-infinity4.github.io/C13b0/infinity-phi-share.png';
   const originalFetch = OmniPhi.fetchWikipedia.bind(OmniPhi);
   const imageCache = new Map();
 
@@ -198,30 +198,24 @@
     return 'orange';
   }
 
+  // Infinity Phi's working share path sends the real card image directly to the
+  // preview Worker. Do the same here instead of asking a screenshot service to
+  // render Omni's JavaScript share-card page first.
   function socialCardImage(card) {
-    const renderParams = new URLSearchParams({
-      v: '2',
-      tone: previewTone(card),
-      title: clean(card?.title || 'Infinity Phi card', 180),
-      body: clean(card?.extract || card?.body || '', 360),
-      image: clean(card?.image || card?.imageUrl || '', 1200),
-      domain: clean(card?.domain || card?.provider || 'Infinity Phi', 120)
-    });
-    const renderUrl = `${CARD_RENDER}?${renderParams}`;
-    return `https://image.thum.io/get/ogImage/?url=${encodeURIComponent(renderUrl)}`;
+    return clean(card?.image || card?.imageUrl || INFINITY_SHARE_FALLBACK, 1800);
   }
 
   function sharePreviewUrl(card) {
+    const research = OmniPhi.activeResearch?.();
     const params = new URLSearchParams({
-      v: '2',
-      title: clean(card?.title || 'Infinity Phi card', 180),
-      body: clean(card?.extract || card?.body || '', 700),
+      title: clean(card?.title || 'Omni Phi card', 220),
+      body: clean(card?.extract || card?.body || '', 1400),
+      source: clean(card?.url || '', 1800),
       image: socialCardImage(card),
-      domain: clean(card?.domain || card?.provider || 'Infinity Phi', 120),
-      source: clean(card?.url || '', 1200),
+      q: clean(research?.query || card?.query || card?.title || '', 1000),
       target: exactResearchTarget(card)
     });
-    return `${SHARE_ENDPOINT}?${params}`;
+    return `${SHARE_ENDPOINT}?${params.toString()}`;
   }
 
   OmniPhi.shareCard = async function shareExactCard(card) {
@@ -237,9 +231,8 @@
     }
 
     try {
-      // Share only the preview URL. X/Twitter then renders the actual orange/yellow
-      // card from the Worker metadata instead of turning the card text into a
-      // multi-post thread and leaving the preview as a bare link.
+      // Share only the preview URL. X/Twitter reads the same preview route that
+      // Infinity Phi uses, with the actual card image supplied in metadata.
       await navigator.share({ url: shareUrl });
       return { ...OmniPhi.awardStarCoinShare(shareUrl), shareUrl };
     } catch (error) {
@@ -257,8 +250,8 @@
       extract: record?.overview || '',
       image,
       imageVerified: Boolean(image),
-      domain: 'Infinity Phi raw data',
-      provider: 'Infinity Phi'
+      domain: 'Omni Phi raw data',
+      provider: 'Omni Phi'
     });
   };
 
