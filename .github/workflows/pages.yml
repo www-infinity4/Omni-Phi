@@ -79,7 +79,7 @@ jobs:
 
               # Preserve original source title/extract/image when a user collects
               # an orange card so News Phi receives factual source metadata.
-              metadata = '<script src="../assets/collect-source-metadata.js?v=20260915-1"></script>'
+              metadata = '<script src="../assets/collect-source-metadata.js?v=20260915-2"></script>'
               if metadata not in text:
                   app = '<script src="../assets/app.js"></script>'
                   if app in text:
