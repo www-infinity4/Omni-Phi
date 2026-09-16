@@ -3,41 +3,80 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Omni Phi — Website Index</title>
-  <meta name="description" content="GPT website build instructions generated from Omni Phi evidence and orange-card reactions." />
+  <title>Omni Phi — Website Builder</title>
+  <meta name="description" content="Turn Omni Phi research into a real public website with a site brief, GPT architecture, owner preview, and clean public shell." />
   <meta name="theme-color" content="#080620" />
   <link rel="stylesheet" href="../assets/style.css" />
   <style>
     .blueprint-card{display:block;text-align:left;width:100%;cursor:default}
     .blueprint-card .build-section{display:inline-block;margin-bottom:8px;padding:5px 9px;border:1px solid rgba(225,180,255,.35);border-radius:999px;color:#ebc9ff;font-size:.7rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
     .blueprint-card .why{margin-top:10px;color:#bda7e6;font-size:.8rem}
-    .build-panel{margin-top:24px;padding:22px;border:1px solid rgba(211,126,255,.48);border-radius:24px;background:linear-gradient(145deg,rgba(58,12,90,.92),rgba(18,10,50,.96));box-shadow:0 18px 55px rgba(0,0,0,.28)}
-    .build-panel h2{margin:.35rem 0 .55rem;color:#fff}
-    .build-panel p{color:#d9cbef;line-height:1.6}
+    .brief-panel,.build-panel{margin-top:24px;padding:22px;border:1px solid rgba(211,126,255,.48);border-radius:24px;background:linear-gradient(145deg,rgba(58,12,90,.92),rgba(18,10,50,.96));box-shadow:0 18px 55px rgba(0,0,0,.28)}
+    .brief-panel h2,.build-panel h2{margin:.35rem 0 .55rem;color:#fff}
+    .brief-panel p,.build-panel p{color:#d9cbef;line-height:1.6}
+    .brief-grid{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr);gap:12px;margin-top:16px}
+    .brief-field{display:grid;gap:7px}.brief-field.wide{grid-column:1/-1}.brief-field label{font-size:.78rem;font-weight:900;color:#e8d8f2}
+    .brief-field input,.brief-field select,.brief-field textarea{width:100%;border:1px solid rgba(231,196,255,.35);border-radius:14px;background:#0b0920;color:#fff;padding:12px 13px;font:inherit;outline:none}
+    .brief-field textarea{min-height:132px;resize:vertical;line-height:1.5}.brief-field input:focus,.brief-field select:focus,.brief-field textarea:focus{border-color:#d98aff;box-shadow:0 0 0 3px rgba(187,91,255,.12)}
+    .brief-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.brief-actions button{border:1px solid rgba(255,255,255,.18);border-radius:12px;background:#24133e;color:#fff;padding:10px 13px;font-weight:900;cursor:pointer}.brief-actions .primary{background:#6930a5;border-color:#c78cff}.brief-note{margin-top:12px;color:#b9a7c9;font-size:.82rem;line-height:1.5}
     .build-button{width:100%;min-height:58px;margin-top:12px;border:1px solid #f4c6ff;border-radius:17px;background:linear-gradient(135deg,#9b35d5,#5120a8);color:white;font-weight:950;font-size:1rem;cursor:pointer;box-shadow:0 0 25px rgba(170,75,255,.25)}
     .build-button:disabled{opacity:.62;cursor:wait}
     .site-token-list{display:grid;gap:9px;margin-top:16px}
     .site-token{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 13px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(5,6,25,.35)}
-    .site-token strong{color:#fff}.site-token small{display:block;color:#ad9ec6;margin-top:3px}.site-token a{color:#f1d3ff;font-weight:850;text-decoration:none}
+    .site-token strong{color:#fff}.site-token small{display:block;color:#ad9ec6;margin-top:3px}.site-token-links{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.site-token a{color:#f1d3ff;font-weight:850;text-decoration:none;padding:7px 9px;border:1px solid rgba(241,211,255,.25);border-radius:10px}.site-token a.owner{background:#5b277f;color:#fff}
+    @media(max-width:700px){.brief-grid{grid-template-columns:1fr}.brief-field.wide{grid-column:auto}.site-token{align-items:flex-start;flex-direction:column}.site-token-links{justify-content:flex-start}}
   </style>
 </head>
 <body class="content-page index-data-page">
   <div id="topbar"></div>
   <main class="site-shell">
     <section class="page-hero">
-      <div class="page-kicker">Page 4 · Website Index</div>
-      <h1 class="page-title" id="pageTitle">Preparing website instructions…</h1>
-      <p class="page-subtitle">Orange-card reactions become indexed signals. GPT combines those signals with the evidence and turns the purple cards into instructions for the one-click website generator.</p>
+      <div class="page-kicker">Website Builder</div>
+      <h1 class="page-title" id="pageTitle">Preparing website workspace…</h1>
+      <p class="page-subtitle">The research cards are source material. This page now decides what kind of real website they should become, then opens an owner preview that is separate from the clean public site.</p>
       <nav class="pill-nav" aria-label="Research views">
         <a id="overviewLink" href="../overview/">AI Overview</a>
         <a id="structuredLink" href="../structured/">Full Stories</a>
-        <a class="active" href="./">Website Index</a>
+        <a class="active" href="./">Website Builder</a>
         <a href="../ecosystem/">Omni Line</a>
       </nav>
     </section>
 
-    <section>
-      <div class="shell-banner"><div><div class="page-kicker">GPT build logic</div><h2>Purple website-story cards</h2></div><small id="blueprintStatus">Reading indexed reactions…</small></div>
+    <section class="brief-panel" id="websiteBriefPanel">
+      <div class="page-kicker">Step 1 · Tell GPT what this becomes</div>
+      <h2>Website brief</h2>
+      <p>Keep it simple or be specific. If you skip the brief, GPT uses the research and chooses the best-fit public site type. Storefronts get a normal shop shell; news/research keeps the useful story system.</p>
+      <div class="brief-grid">
+        <div class="brief-field">
+          <label for="siteType">Site type</label>
+          <select id="siteType">
+            <option value="auto">Auto — GPT chooses</option>
+            <option value="storefront">Storefront</option>
+            <option value="business">Business</option>
+            <option value="news">News / updates</option>
+            <option value="research">Research / story</option>
+            <option value="portfolio">Portfolio</option>
+            <option value="catalog">Catalog / collection</option>
+          </select>
+        </div>
+        <div class="brief-field">
+          <label for="siteName">Website / business name</label>
+          <input id="siteName" type="text" placeholder="Jazzy J's Wired Coin Emporium" autocomplete="organization" />
+        </div>
+        <div class="brief-field wide">
+          <label for="siteBrief">What should the site actually do?</label>
+          <textarea id="siteBrief" placeholder="Example: I found a 1990 quarter worth $1 and want a storefront to sell coins. Build a clean coin shop with listings, images, prices, shipping information, an about section, contact information, and owner-only editing."></textarea>
+        </div>
+      </div>
+      <div class="brief-actions">
+        <button class="primary" id="saveBrief" type="button">Save brief</button>
+        <button id="skipBrief" type="button">Skip — use best fit</button>
+      </div>
+      <div class="brief-note" id="briefStatus">A hamburger/navigation shell is automatic. Owner editing is only shown in owner mode; public viewers get the finished site.</div>
+    </section>
+
+    <section style="margin-top:24px">
+      <div class="shell-banner"><div><div class="page-kicker">Step 2 · Research becomes build material</div><h2>Purple structure cards</h2></div><small id="blueprintStatus">Reading indexed reactions…</small></div>
       <div class="cards-grid steering-grid" id="steeringCards"><div class="panel loading">GPT is turning the search index into website instructions</div></div>
     </section>
 
@@ -48,7 +87,7 @@
         <div class="data-list" id="nodeList"></div>
       </article>
       <article class="panel panel-pad">
-        <div class="page-kicker">Evidence used by the builder</div>
+        <div class="page-kicker">Evidence available to the builder</div>
         <h2 class="section-title">Source index</h2>
         <div class="data-list" id="sourceList"></div>
       </article>
@@ -65,10 +104,10 @@
     </section>
 
     <section class="build-panel" id="buildPanel">
-      <div class="page-kicker">One click from indexed search → website</div>
+      <div class="page-kicker">Step 3 · Generate the public site + owner preview</div>
       <h2 id="sitePlanTitle">Website plan loading…</h2>
-      <p id="sitePlanSummary">GPT is combining the orange evidence, your reactions, and the purple build cards.</p>
-      <button class="build-button" id="buildWebsite" type="button" disabled>Build website + create site token</button>
+      <p id="sitePlanSummary">GPT is combining the evidence, your brief, and the site structure.</p>
+      <button class="build-button" id="buildWebsite" type="button" disabled>Build owner preview + create site token</button>
       <div class="site-token-list" id="siteTokenList"></div>
     </section>
   </main>
@@ -80,8 +119,9 @@
   <script src="../assets/smart-search.js"></script>
   <script src="../assets/card-pipeline.js"></script>
   <script src="../assets/site-intelligence.js?v=4"></script>
+  <script src="../assets/site-builder-v2.js?v=1"></script>
   <script>
-    document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'website index');
+    document.getElementById('topbar').innerHTML = OmniPhi.topbar('OMNI PHI', 'website builder');
     OmniPhi.setupMenu();
 
     const params = new URLSearchParams(location.search);
@@ -89,18 +129,45 @@
     const mode = params.get('mode') || OmniPhi.activeResearch()?.mode || 'search';
     const navParams = new URLSearchParams({q, mode});
     const buildButton = document.getElementById('buildWebsite');
+    const siteType = document.getElementById('siteType');
+    const siteName = document.getElementById('siteName');
+    const siteBrief = document.getElementById('siteBrief');
+    const briefStatus = document.getElementById('briefStatus');
     let currentRecord = null;
     let currentBlueprint = null;
 
-    document.getElementById('pageTitle').textContent = `${q} — website index`;
+    document.getElementById('pageTitle').textContent = `${q} — website builder`;
     document.getElementById('coreTitle').textContent = `# ${q}`;
     document.getElementById('overviewLink').href = `${OmniPhi.url('overview/')}?${navParams}`;
     document.getElementById('structuredLink').href = `${OmniPhi.url('structured/')}?${navParams}`;
 
+    const savedBrief = window.OmniSiteBuilder?.loadBrief(q) || {type:'auto',name:'',brief:''};
+    siteType.value = savedBrief.type || 'auto';
+    siteName.value = savedBrief.name || '';
+    siteBrief.value = savedBrief.brief || '';
+
+    function briefFromForm() {
+      return { type: siteType.value || 'auto', name: siteName.value.trim(), brief: siteBrief.value.trim() };
+    }
+
+    function saveBrief(message = 'Website brief saved. It will be used when you build the owner preview.') {
+      window.OmniSiteBuilder?.saveBrief(q, briefFromForm());
+      briefStatus.textContent = message;
+    }
+
+    document.getElementById('saveBrief').addEventListener('click', () => saveBrief());
+    document.getElementById('skipBrief').addEventListener('click', () => {
+      siteType.value = 'auto'; siteName.value = ''; siteBrief.value = '';
+      saveBrief('Brief skipped. GPT will choose the simplest appropriate public website from the indexed material.');
+    });
+
     function renderTokens() {
       const sites = (window.OmniWebsiteIntelligence?.generatedSites() || []).filter(site => String(site.query || '').toLowerCase() === q.toLowerCase()).slice(0, 8);
       const list = document.getElementById('siteTokenList');
-      list.innerHTML = sites.length ? sites.map(site => `<div class="site-token"><div><strong>${OmniPhi.escapeHtml(site.title)}</strong><small>${OmniPhi.escapeHtml(site.id)} · ${new Date(site.createdAt).toLocaleString()}</small></div><a href="${OmniPhi.escapeHtml(site.url)}">Open</a></div>`).join('') : '<div class="muted">No website token has been created from this search yet.</div>';
+      list.innerHTML = sites.length ? sites.map(site => {
+        const ownerUrl = window.OmniSiteBuilder?.ownerUrl(site.url) || `${site.url}${site.url.includes('?') ? '&' : '?'}owner=1`;
+        return `<div class="site-token"><div><strong>${OmniPhi.escapeHtml(site.title)}</strong><small>${OmniPhi.escapeHtml(site.id)} · ${new Date(site.createdAt).toLocaleString()}</small></div><div class="site-token-links"><a href="${OmniPhi.escapeHtml(site.url)}">Public</a><a class="owner" href="${OmniPhi.escapeHtml(ownerUrl)}">Owner edit</a></div></div>`;
+      }).join('') : '<div class="muted">No website has been created from this search yet.</div>';
     }
 
     function renderIndex(record, blueprint) {
@@ -114,10 +181,11 @@
       }).join('') || '<p class="muted">No evidence sources indexed yet.</p>';
 
       const indexed = {
-        schema: 'omni-phi-website-index/v3',
+        schema: 'omni-phi-website-index/v4',
         query: record.query,
         mode: record.mode,
         createdAt: record.createdAt,
+        siteBrief: briefFromForm(),
         resolvedIntent: record.resolvedIntent || null,
         capabilityRoute: record.capabilityRoute || null,
         source: record.source,
@@ -145,18 +213,18 @@
 
     function renderBlueprint(blueprint) {
       const cards = Array.isArray(blueprint?.cards) ? blueprint.cards : [];
-      document.getElementById('steeringCards').innerHTML = cards.length ? cards.map((card, index) => `<article class="research-card steering-card blueprint-card"><span class="hash">${'#'.repeat(2 + (index % 4))}</span><span class="build-section">${OmniPhi.escapeHtml(card.section || `Section ${index + 1}`)}</span><h3>${OmniPhi.escapeHtml(card.title || `Website section ${index + 1}`)}</h3><p>${OmniPhi.escapeHtml(card.instruction || '')}</p><div class="why">${OmniPhi.escapeHtml(card.reason || '')}</div><div class="card-foot"><span>GPT build instruction</span><span>φ</span></div></article>`).join('') : '<div class="panel panel-pad">No purple website instructions were produced yet.</div>';
+      document.getElementById('steeringCards').innerHTML = cards.length ? cards.map((card, index) => `<article class="research-card steering-card blueprint-card"><span class="hash">${'#'.repeat(2 + (index % 4))}</span><span class="build-section">${OmniPhi.escapeHtml(card.section || `Section ${index + 1}`)}</span><h3>${OmniPhi.escapeHtml(card.title || `Website section ${index + 1}`)}</h3><p>${OmniPhi.escapeHtml(card.instruction || '')}</p><div class="why">${OmniPhi.escapeHtml(card.reason || '')}</div><div class="card-foot"><span>Source/build material</span><span>φ</span></div></article>`).join('') : '<div class="panel panel-pad">No purple website instructions were produced yet.</div>';
       const reactions = window.OmniWebsiteIntelligence?.reactionSummary(q) || [];
       const provisional = blueprint?.generatedBy === 'instant';
       document.getElementById('blueprintStatus').textContent = blueprint?.generatedBy === 'gpt'
-        ? `Built by GPT from evidence + ${reactions.length} reaction${reactions.length === 1 ? '' : 's'}`
+        ? `Source structure ready · ${reactions.length} reaction${reactions.length === 1 ? '' : 's'} indexed`
         : provisional
-          ? 'Evidence draft ready · GPT refining in background…'
+          ? 'Evidence draft ready · GPT refining source structure…'
           : 'Evidence fallback ready';
-      document.getElementById('sitePlanTitle').textContent = blueprint?.site?.title || `${q} — generated website`;
-      document.getElementById('sitePlanSummary').textContent = blueprint?.site?.summary || blueprint?.site?.subtitle || 'Ready to generate from the indexed search.';
+      document.getElementById('sitePlanTitle').textContent = blueprint?.site?.title || `${q} — website`;
+      document.getElementById('sitePlanSummary').textContent = 'Your site brief is applied at build time so this research structure can become a storefront, business site, news site, catalog, portfolio, or research publication.';
       buildButton.disabled = provisional;
-      buildButton.textContent = provisional ? 'GPT refining website…' : 'Build website + create site token';
+      buildButton.textContent = provisional ? 'GPT refining source structure…' : 'Build owner preview + create site token';
     }
 
     function instantBlueprint(record) {
@@ -167,16 +235,16 @@
       keyed.sort((a, b) => b.score - a.score || a.index - b.index);
       const cards = keyed.slice(0, 6).map(({source, index, score}, position) => ({
         title: source.title || `${q} section ${position + 1}`,
-        section: position === 0 ? 'Lead evidence' : `Story section ${position + 1}`,
-        instruction: `Build a clear reader-facing section around “${source.title || q}”. Keep the facts grounded in this source, explain why they matter to ${q}, preserve its source link, and avoid repeating the same point used by another section.`,
-        reason: score > 0 ? `This orange card carries a +${score} interaction signal, so it should receive stronger emphasis in the website.` : 'This is one of the strongest indexed evidence cards available for the search.',
+        section: position === 0 ? 'Lead evidence' : `Source section ${position + 1}`,
+        instruction: `Use “${source.title || q}” as source material for the public website. Preserve the factual source, avoid duplication, and let the chosen site type decide whether this becomes an article section, listing, catalog item, or supporting business content.`,
+        reason: score > 0 ? `This orange card carries a +${score} interaction signal.` : 'This is one of the strongest indexed sources available for the build.',
         sourceIndexes: [index]
       }));
       return {
         generatedBy: 'instant',
         site: {
-          title: `${q} — generated research site`,
-          subtitle: 'Built from the indexed orange-card evidence and refined by GPT.',
+          title: `${q} — source-grounded website`,
+          subtitle: 'Research structure ready for a public website shell.',
           summary: record?.overview || `A source-grounded website about ${q}.`,
           sections: cards.map(card => {
             const source = sources[card.sourceIndexes[0]];
@@ -189,16 +257,22 @@
 
     buildButton.addEventListener('click', async () => {
       if (!currentRecord || !currentBlueprint || currentBlueprint.generatedBy === 'instant') return;
+      saveBrief('Brief saved. GPT is architecting the public site shell…');
       buildButton.disabled = true;
-      buildButton.textContent = 'Building website…';
+      buildButton.textContent = 'Architecting website…';
       try {
-        const site = await OmniWebsiteIntelligence.generateWebsite(currentRecord, currentBlueprint);
+        const prepared = window.OmniSiteBuilder
+          ? await OmniSiteBuilder.planWebsite(currentRecord, currentBlueprint, briefFromForm())
+          : currentBlueprint;
+        buildButton.textContent = 'Creating owner preview…';
+        const site = await OmniWebsiteIntelligence.generateWebsite(currentRecord, prepared);
         renderTokens();
-        location.href = site.url;
+        location.href = window.OmniSiteBuilder?.ownerUrl(site.url) || `${site.url}${site.url.includes('?') ? '&' : '?'}owner=1`;
       } catch (error) {
         console.error(error);
         buildButton.disabled = false;
         buildButton.textContent = 'Build failed · try again';
+        briefStatus.textContent = 'The website build stopped before a site was created. Your brief is still saved.';
       }
     });
 
