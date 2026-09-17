@@ -37,6 +37,7 @@ jobs:
           share_image = "https://www-infinity4.github.io/C13b0/infinity-phi-share.png?v=20260915-omni-share1"
           consensus = '<script src="../assets/purple-consensus-v5.js?v=20260916-1"></script>'
           image_stream = '<script src="../assets/image-stream-v2.js?v=20260916-visual2"></script>'
+          share_export = '<script src="../assets/orange-card-share-export.js?v=20260916-orange-share1"></script>'
 
           for name in ("overview/index.html", "cards/index.html", "structured/index.html"):
               path = Path(name)
@@ -104,6 +105,12 @@ jobs:
                   if match:
                       text = text[:match.end()] + f'\n  {clean_share}' + text[match.end():]
 
+              if share_export not in text:
+                  if image_stream in text:
+                      text = text.replace(image_stream, f'{image_stream}\n  {share_export}', 1)
+                  else:
+                      text = text.replace("</body>", f'  {share_export}\n</body>')
+
               if name == "overview/index.html":
                   storyboard = '<script src="../assets/overview-storyboard.js"></script>'
                   if storyboard not in text:
@@ -128,6 +135,11 @@ jobs:
                   match = re.search(r'<script src="\.\./assets/card-pipeline\.js[^\"]*"></script>', text)
                   if match:
                       text = text[:match.end()] + f'\n  {image_stream}' + text[match.end():]
+              if share_export not in text:
+                  if image_stream in text:
+                      text = text.replace(image_stream, f'{image_stream}\n  {share_export}', 1)
+                  else:
+                      text = text.replace("</body>", f'  {share_export}\n</body>')
               auto.write_text(text)
 
           build = Path("build/index.html")
@@ -145,9 +157,12 @@ jobs:
       - name: Verify Omni Phi visual contract
         run: |
           test -f assets/image-stream-v2.js
+          test -f assets/orange-card-share-export.js
           grep -q 'image-stream-v2.js' overview/index.html
           grep -q 'image-stream-v2.js' cards/index.html
           grep -q 'image-stream-v2.js' structured/index.html
+          grep -q 'orange-card-share-export.js' overview/index.html
+          grep -q 'orange-card-share-export.js' cards/index.html
           grep -q 'card-pipeline.js' overview/index.html
           grep -q 'site-intelligence.js' cards/index.html
       - name: Configure and enable Pages
