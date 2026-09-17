@@ -106,8 +106,6 @@
       return source.image;
     }
 
-    // For ordinary web stories, first show the actual source page rather than a
-    // vaguely related encyclopedia image. This keeps the visual tied to the card.
     if (!isWikimediaSource(source)) {
       const preview = sourcePagePreview(source);
       if (preview && !usedImages.has(preview)) {
@@ -176,9 +174,6 @@
     const list = Array.isArray(sources) ? sources : [];
     const usedImages = new Set();
 
-    // Keep a source-provided image when it is unique. When several unrelated
-    // cards arrive with the same generic image, clear later duplicates so they
-    // can be hydrated against their own source/title instead.
     list.forEach((source) => {
       if (!source) return;
       source.sourceLocked = true;
@@ -276,4 +271,104 @@
 
   OmniPhi.socialCardImage = socialCardImage;
   OmniPhi.sharePreviewUrl = sharePreviewUrl;
+
+  function ensureImageBuilderStyles() {
+    if (document.getElementById('omni-image-builder-orange-style')) return;
+    const style = document.createElement('style');
+    style.id = 'omni-image-builder-orange-style';
+    style.textContent = `
+      #imageSelectionOrangeCards{margin-top:24px;padding:20px;border:1px solid rgba(251,146,60,.48);border-radius:24px;background:linear-gradient(145deg,rgba(124,45,18,.22),rgba(67,20,7,.28));box-shadow:0 18px 45px rgba(0,0,0,.18)}
+      #imageSelectionOrangeCards .image-builder-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}#imageSelectionOrangeCards .image-builder-head h2{margin:.2rem 0 0;color:#fff}#imageSelectionOrangeCards .image-builder-head p{margin:0;max-width:42rem;color:#fdba74;font-size:.82rem;line-height:1.45}
+      .image-builder-orange-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}.image-builder-orange-card{overflow:hidden;border:2px solid #fb923c;border-radius:20px;background:linear-gradient(145deg,#f97316,#c2410c);color:#fff;box-shadow:0 12px 28px rgba(67,20,7,.24)}.image-builder-orange-card img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;background:#431407}.image-builder-orange-copy{padding:14px}.image-builder-orange-copy small{display:block;color:#ffedd5;font-weight:850}.image-builder-orange-copy h3{margin:6px 0 8px;color:#fff7ed;font-size:1rem;line-height:1.25}.image-builder-orange-copy p{margin:0;color:#fff7ed;font-size:.82rem;line-height:1.5}.image-builder-orange-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.image-builder-orange-actions a,.image-builder-orange-actions button{border:1px solid rgba(255,255,255,.35);border-radius:10px;background:rgba(67,20,7,.28);color:#fff;padding:8px 10px;font:850 11px/1 system-ui,sans-serif;text-decoration:none;cursor:pointer}.image-builder-orange-actions button{background:#7f1d1d}.image-builder-orange-card details{margin-top:10px;border-top:1px solid rgba(255,255,255,.2);padding-top:9px}.image-builder-orange-card summary{cursor:pointer;color:#ffedd5;font-weight:850;font-size:.78rem}.image-builder-orange-meta{margin-top:8px;color:#ffedd5;font-size:.75rem;line-height:1.45}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function removeImageFromBuilder(source) {
+    const research = OmniPhi.activeResearch?.();
+    if (!research || !Array.isArray(research.sources)) return;
+    const key = cardKey(source);
+    research.sources = research.sources.filter((item) => cardKey(item) !== key);
+    research.imageSelectionCount = research.sources.length;
+    research.overview = research.sources.length
+      ? `Website Builder is using ${research.sources.length} selected image source${research.sources.length === 1 ? '' : 's'} from ${research.query}. Review the orange cards and purple structure before building.`
+      : `No selected image sources remain for ${research.query}.`;
+    OmniPhi.saveResearch?.(research);
+    location.reload();
+  }
+
+  function renderImageBuilderOrangeCards() {
+    if (!/\/cards\/?$/.test(location.pathname)) return;
+    if (document.getElementById('imageSelectionOrangeCards')) return;
+    const record = OmniPhi.activeResearch?.();
+    if (!record || record.mode !== 'image-selection') return;
+    const sources = (record.sources || []).filter((source) => source && (source.selectedFromImageSearch || source.kind === 'image-seed' || source.image));
+    if (!sources.length) return;
+
+    const steering = document.getElementById('steeringCards')?.closest('section');
+    if (!steering) return;
+    ensureImageBuilderStyles();
+
+    const section = document.createElement('section');
+    section.id = 'imageSelectionOrangeCards';
+    const head = document.createElement('div');
+    head.className = 'image-builder-head';
+    head.innerHTML = `<div><div class="page-kicker">Selected image evidence</div><h2>Orange cards from your collected images</h2></div><p>Inspect what each image is attached to before the final website build. Removing a card here removes it from this builder pass and refreshes the purple site-structure cards.</p>`;
+    const grid = document.createElement('div');
+    grid.className = 'image-builder-orange-grid';
+
+    sources.forEach((source, index) => {
+      const card = document.createElement('article');
+      card.className = 'image-builder-orange-card';
+      const image = clean(source.image || source.imageUrl, 1800);
+      if (image) {
+        const img = document.createElement('img');
+        img.src = image;
+        img.alt = clean(source.title || record.query, 220);
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.addEventListener('error', () => img.remove(), { once: true });
+        card.appendChild(img);
+      }
+      const copy = document.createElement('div');
+      copy.className = 'image-builder-orange-copy';
+      const provider = clean(source.provider || source.domain || 'Image source', 120);
+      const title = clean(source.title || `Selected image ${index + 1}`, 220);
+      const extract = clean(source.extract || source.sourceExtract || '', 1200);
+      copy.innerHTML = `<small>${provider} · image ${index + 1}</small><h3>${OmniPhi.escapeHtml(title)}</h3><p>${OmniPhi.escapeHtml(extract.slice(0, 420))}${extract.length > 420 ? '…' : ''}</p>`;
+
+      const details = document.createElement('details');
+      const sourceUrl = clean(source.url || source.sourceUrl || '', 1800);
+      details.innerHTML = `<summary>Source information</summary><div class="image-builder-orange-meta">${OmniPhi.escapeHtml([source.creator ? `Creator: ${source.creator}` : '', source.license ? `License: ${source.license}` : '', source.domain ? `Domain: ${source.domain}` : '', extract].filter(Boolean).join(' · '))}</div>`;
+      copy.appendChild(details);
+
+      const actions = document.createElement('div');
+      actions.className = 'image-builder-orange-actions';
+      if (/^https?:\/\//i.test(sourceUrl)) {
+        const link = document.createElement('a');
+        link.href = sourceUrl;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = 'Open source';
+        actions.appendChild(link);
+      }
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.textContent = 'Remove from builder';
+      remove.addEventListener('click', () => removeImageFromBuilder(source));
+      actions.appendChild(remove);
+      copy.appendChild(actions);
+      card.appendChild(copy);
+      grid.appendChild(card);
+    });
+
+    section.append(head, grid);
+    steering.insertAdjacentElement('beforebegin', section);
+  }
+
+  if (/\/cards\/?$/.test(location.pathname)) {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderImageBuilderOrangeCards, { once: true });
+    else renderImageBuilderOrangeCards();
+    setTimeout(renderImageBuilderOrangeCards, 0);
+  }
 })();
