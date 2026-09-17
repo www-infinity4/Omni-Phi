@@ -110,7 +110,7 @@
     section.style.cssText = 'display:grid;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14)';
     section.innerHTML = `
       <div style="font-size:.68rem;font-weight:900;letter-spacing:.13em;text-transform:uppercase;opacity:.62">Phi network</div>
-      <a href="https://www-infinity4.github.io/C13b0/phi/">Infinity Phi</a>
+      <a href="https://www-infinity4.github.io/C13b0/">Infinity Phi</a>
       <a href="https://www-infinity4.github.io/Omni-Phi/">Omni Phi</a>
       <a href="https://www-infinity4.github.io/News-Phi/">News Phi</a>
       <a href="https://www-infinity4.github.io/C13b0/wallet/">Infinity + Star Coin wallets</a>
