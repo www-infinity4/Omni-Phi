@@ -35,6 +35,7 @@ jobs:
               "structured/index.html": "https://www-infinity4.github.io/Omni-Phi/structured/",
           }
           share_image = "https://www-infinity4.github.io/C13b0/infinity-phi-share.png?v=20260915-omni-share1"
+          consensus = '<script src="../assets/purple-consensus-v5.js?v=20260916-1"></script>'
 
           for name in ("overview/index.html", "cards/index.html", "structured/index.html"):
               path = Path(name)
@@ -65,6 +66,13 @@ jobs:
                       f'  <meta name="twitter:image" content="{share_image}" />',
                   ])
                   text = text.replace("</head>", f'{social}\n</head>')
+
+              # Give the search/website intelligence exactly three schematic
+              # layers: identity, system/layout, then content/components.
+              if consensus not in text:
+                  match = re.search(r'<script src="\.\./assets/site-intelligence\.js[^\"]*"></script>', text)
+                  if match:
+                      text = text[:match.end()] + f'\n  {consensus}' + text[match.end():]
 
               # The card-depth guard MUST be active before multi-source retrieval
               # calls GPT enrichment. Loading it at </body> was too late and let
@@ -105,12 +113,41 @@ jobs:
               if name == "overview/index.html":
                   storyboard = '<script src="../assets/overview-storyboard.js"></script>'
                   if storyboard not in text:
-                      intelligence = '<script src="../assets/site-intelligence.js"></script>'
-                      if intelligence in text:
-                          text = text.replace(intelligence, f'{intelligence}\n  {storyboard}', 1)
+                      if consensus in text:
+                          text = text.replace(consensus, f'{consensus}\n  {storyboard}', 1)
                       else:
-                          text = text.replace("</body>", f'  {storyboard}\n</body>')
+                          intelligence = '<script src="../assets/site-intelligence.js"></script>'
+                          if intelligence in text:
+                              text = text.replace(intelligence, f'{intelligence}\n  {storyboard}', 1)
+                          else:
+                              text = text.replace("</body>", f'  {storyboard}\n</body>')
               path.write_text(text)
+
+          # The direct Infinity -> Omni autobuild must use the same three-layer
+          # consensus before planning the finished site.
+          auto = Path("autobuild/index.html")
+          if auto.exists():
+              text = auto.read_text()
+              if consensus not in text:
+                  match = re.search(r'<script src="\.\./assets/site-intelligence\.js[^\"]*"></script>', text)
+                  if match:
+                      text = text[:match.end()] + f'\n  {consensus}' + text[match.end():]
+              auto.write_text(text)
+
+          # Generated sites receive the identity/logo and layout/view behavior
+          # selected by Purple 1 and Purple 2. Existing module/plugin rendering
+          # remains owned by site-builder-v2.
+          build = Path("build/index.html")
+          if build.exists():
+              text = build.read_text()
+              runtime = '<script src="../assets/site-schematic-runtime-v5.js?v=20260916-1"></script>'
+              if runtime not in text:
+                  builder = re.search(r'<script src="\.\./assets/site-builder-v2\.js[^\"]*"></script>', text)
+                  if builder:
+                      text = text[:builder.end()] + f'\n  {runtime}' + text[builder.end():]
+                  else:
+                      text = text.replace("</body>", f'  {runtime}\n</body>')
+              build.write_text(text)
           PY
       - name: Configure and enable Pages
         uses: actions/configure-pages@v5
