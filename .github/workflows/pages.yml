@@ -37,6 +37,7 @@ jobs:
           share_image = "https://www-infinity4.github.io/C13b0/infinity-phi-share.png?v=20260915-omni-share1"
           consensus = '<script src="../assets/purple-consensus-v5.js?v=20260916-1"></script>'
           image_stream = '<script src="../assets/image-stream-v2.js?v=20260916-visual2"></script>'
+          image_search = '<script src="../assets/image-search-v3.js?v=20260916-google1"></script>'
           share_export = '<script src="../assets/orange-card-share-export.js?v=20260916-orange-share1"></script>'
 
           for name in ("overview/index.html", "cards/index.html", "structured/index.html"):
@@ -99,6 +100,12 @@ jobs:
                   else:
                       text = text.replace("</body>", f'  {image_stream}\n</body>')
 
+              if name == "overview/index.html" and image_search not in text:
+                  if image_stream in text:
+                      text = text.replace(image_stream, f'{image_stream}\n  {image_search}', 1)
+                  else:
+                      text = text.replace("</body>", f'  {image_search}\n</body>')
+
               clean_share = '<script src="../assets/share-clean-url.js?v=20260915-clean2"></script>'
               if clean_share not in text:
                   match = re.search(r'<script src="\.\./assets/card-pipeline\.js[^\"]*"></script>', text)
@@ -157,12 +164,16 @@ jobs:
       - name: Verify Omni Phi visual contract
         run: |
           test -f assets/image-stream-v2.js
+          test -f assets/image-search-v3.js
+          test -f assets/image-mode-v3.js
           test -f assets/orange-card-share-export.js
           grep -q 'image-stream-v2.js' overview/index.html
+          grep -q 'image-search-v3.js' overview/index.html
           grep -q 'image-stream-v2.js' cards/index.html
           grep -q 'image-stream-v2.js' structured/index.html
           grep -q 'orange-card-share-export.js' overview/index.html
           grep -q 'orange-card-share-export.js' cards/index.html
+          grep -q 'image-mode-v3.js' index.html
           grep -q 'card-pipeline.js' overview/index.html
           grep -q 'site-intelligence.js' cards/index.html
       - name: Configure and enable Pages
