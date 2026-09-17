@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Omni Phi — Building Website</title>
+  <meta name="description" content="Build a source-grounded website directly from Infinity Phi research, selected images, interactions, and citations." />
+  <meta name="theme-color" content="#064e3b" />
+  <link rel="stylesheet" href="../assets/style.css" />
+  <style>
+    body{min-height:100vh;background:radial-gradient(circle at top,#123d31 0,#071914 48%,#030807 100%);color:#fff}
+    .auto-shell{width:min(92vw,760px);margin:0 auto;padding:clamp(72px,12vh,130px) 0 80px}
+    .auto-card{border:1px solid rgba(167,243,208,.35);border-radius:28px;background:linear-gradient(145deg,rgba(6,78,59,.92),rgba(4,28,23,.96));padding:clamp(22px,5vw,38px);box-shadow:0 24px 80px rgba(0,0,0,.4)}
+    .kicker{font:900 11px/1 system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6ee7b7}.auto-card h1{margin:.55rem 0 .8rem;font:950 clamp(30px,7vw,52px)/1 system-ui,sans-serif}.auto-card p{color:#d1fae5;line-height:1.65}.steps{display:grid;gap:10px;margin:24px 0}.step{display:flex;gap:11px;align-items:center;border:1px solid rgba(255,255,255,.1);border-radius:15px;padding:12px 14px;background:rgba(255,255,255,.05);font:800 13px/1.35 system-ui,sans-serif}.dot{width:12px;height:12px;border-radius:50%;background:#34d399;box-shadow:0 0 16px rgba(52,211,153,.7);flex:0 0 auto}.step.pending .dot{background:#475569;box-shadow:none}.step.error .dot{background:#fb7185}.status{margin-top:18px;border-radius:14px;background:#022c22;padding:14px;color:#a7f3d0;font:800 13px/1.45 system-ui,sans-serif}.fallback{display:none;margin-top:14px}.fallback a{display:flex;justify-content:center;border:1px solid #a7f3d0;border-radius:13px;background:#10b981;color:#052e16;padding:12px;text-decoration:none;font:950 13px/1 system-ui,sans-serif}
+  </style>
+</head>
+<body>
+  <main class="auto-shell">
+    <section class="auto-card">
+      <div class="kicker">Infinity Phi → Omni Phi</div>
+      <h1>Generating the website</h1>
+      <p>Using the AI overview, source-backed cards, interaction-weighted directions, selected images, originating URLs, and citation data already collected in Infinity Phi.</p>
+      <div class="steps">
+        <div class="step" id="stepResearch"><span class="dot"></span><span>Research and citations received</span></div>
+        <div class="step pending" id="stepPlan"><span class="dot"></span><span>Architecting the website from the evidence</span></div>
+        <div class="step pending" id="stepSite"><span class="dot"></span><span>Creating public site + owner preview</span></div>
+      </div>
+      <div class="status" id="status">Reading the Infinity Phi build package…</div>
+      <div class="fallback" id="fallback"><a id="builderLink" href="../cards/">Open the website builder</a></div>
+    </section>
+  </main>
+
+  <script src="../assets/omni-family.js"></script>
+  <script src="../assets/indexer.js"></script>
+  <script src="../assets/app.js"></script>
+  <script src="../assets/capability-router.js"></script>
+  <script src="../assets/smart-search.js"></script>
+  <script src="../assets/card-pipeline.js"></script>
+  <script src="../assets/site-intelligence.js?v=4"></script>
+  <script src="../assets/site-builder-v2.js?v=1"></script>
+  <script>
+    (() => {
+      'use strict';
+      const params = new URLSearchParams(location.search);
+      const q = (params.get('q') || window.OmniPhi?.activeResearch?.()?.query || '').trim();
+      const mode = params.get('mode') || window.OmniPhi?.activeResearch?.()?.mode || 'search';
+      const status = document.getElementById('status');
+      const fallback = document.getElementById('fallback');
+      const builderLink = document.getElementById('builderLink');
+      builderLink.href = `../cards/?${new URLSearchParams({q:q || 'research',mode,from:'infinity'})}`;
+
+      function setStep(id,state){
+        const node=document.getElementById(id);
+        if(!node)return;
+        node.classList.toggle('pending',state==='pending');
+        node.classList.toggle('error',state==='error');
+      }
+      function fail(message,error){
+        console.error(error || message);
+        status.textContent = message;
+        setStep('stepPlan','error');
+        setStep('stepSite','error');
+        fallback.style.display='block';
+      }
+
+      async function ensureRecord(){
+        let record = window.OmniPhi?.activeResearch?.();
+        if(record && (!q || String(record.query||'').toLowerCase()===q.toLowerCase())) return window.OmniPhi.refreshResearchWithProfile ? window.OmniPhi.refreshResearchWithProfile(record) : record;
+        if(!q) throw new Error('research_query_missing');
+        let sources=[];
+        try { sources = await window.OmniPhi.fetchWikipedia(q); } catch(error){ console.warn(error); }
+        if(!sources.length && window.OmniPhi.fallbackSources) sources = window.OmniPhi.fallbackSources(q);
+        if(window.OmniPhi.ensureCardImages) sources = await window.OmniPhi.ensureCardImages(q,sources);
+        return window.OmniPhi.createResearch(q,mode,sources);
+      }
+
+      async function run(){
+        if(!window.OmniPhi || !window.OmniWebsiteIntelligence) return fail('The website engine did not load. Open the builder to keep the saved research intact.');
+        try{
+          const record = await ensureRecord();
+          if(!record || !(record.sources||[]).length) throw new Error('research_sources_missing');
+          setStep('stepResearch','done');
+          setStep('stepPlan','done');
+          status.textContent = 'Planning the full website from the selected evidence and interactions…';
+
+          const blueprint = await window.OmniWebsiteIntelligence.buildBlueprint(record);
+          if(!blueprint) throw new Error('website_blueprint_missing');
+          const brief = window.OmniSiteBuilder?.loadBrief?.(record.query) || {type:'auto',name:'',brief:''};
+          const prepared = window.OmniSiteBuilder?.planWebsite
+            ? await window.OmniSiteBuilder.planWebsite(record,blueprint,brief)
+            : blueprint;
+
+          setStep('stepPlan','done');
+          setStep('stepSite','done');
+          status.textContent = 'Creating the public website and owner preview…';
+          const site = await window.OmniWebsiteIntelligence.generateWebsite(record,prepared);
+          if(!site?.url) throw new Error('generated_site_url_missing');
+          const target = window.OmniSiteBuilder?.ownerUrl?.(site.url) || `${site.url}${site.url.includes('?')?'&':'?'}owner=1`;
+          location.replace(target);
+        }catch(error){
+          fail('The automatic build stopped before the site was created. Your research, images, sources, and citations remain saved; open the builder to continue.',error);
+        }
+      }
+
+      run();
+    })();
+  </script>
+</body>
+</html>
