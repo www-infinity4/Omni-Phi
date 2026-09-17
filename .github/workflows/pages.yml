@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Apply shared Infinity card skin, card depth, source truth, storyboard, and clean sharing
+      - name: Apply shared Infinity card skin, card depth, source truth, storyboard, image stream, and clean sharing
         run: |
           python - <<'PY'
           import re
@@ -36,6 +36,7 @@ jobs:
           }
           share_image = "https://www-infinity4.github.io/C13b0/infinity-phi-share.png?v=20260915-omni-share1"
           consensus = '<script src="../assets/purple-consensus-v5.js?v=20260916-1"></script>'
+          image_stream = '<script src="../assets/image-stream-v2.js?v=20260916-visual2"></script>'
 
           for name in ("overview/index.html", "cards/index.html", "structured/index.html"):
               path = Path(name)
@@ -46,8 +47,6 @@ jobs:
               if href not in text:
                   text = text.replace("</head>", f'  <link rel="stylesheet" href="{href}" />\n</head>')
 
-              # Give X/Twitter and other crawlers a large image and readable
-              # description on the exact Omni page that is being shared.
               if 'name="twitter:card"' not in text:
                   public_url = public_urls[name]
                   social = "\n".join([
@@ -67,16 +66,11 @@ jobs:
                   ])
                   text = text.replace("</head>", f'{social}\n</head>')
 
-              # Give the search/website intelligence exactly three schematic
-              # layers: identity, system/layout, then content/components.
               if consensus not in text:
                   match = re.search(r'<script src="\.\./assets/site-intelligence\.js[^\"]*"></script>', text)
                   if match:
                       text = text[:match.end()] + f'\n  {consensus}' + text[match.end():]
 
-              # The card-depth guard MUST be active before multi-source retrieval
-              # calls GPT enrichment. Loading it at </body> was too late and let
-              # a one-card GPT response collapse the whole orange evidence field.
               runtime = '<script src="../assets/omni-card-parity.js"></script>'
               if runtime not in text:
                   smart = '<script src="../assets/smart-search.js"></script>'
@@ -85,25 +79,25 @@ jobs:
                   else:
                       text = text.replace("</body>", f'  {runtime}\n</body>')
 
-              # Preserve original source title/extract/image when a user collects
-              # an orange card so News Phi receives factual source metadata.
               metadata = '<script src="../assets/collect-source-metadata.js?v=20260915-2"></script>'
               if metadata not in text:
                   app = '<script src="../assets/app.js"></script>'
                   if app in text:
                       text = text.replace(app, f'{app}\n  {metadata}', 1)
 
-              # Sports/statistical cards keep the original source text after
-              # semantic retrieval instead of publishing rewritten statistics.
               sports_lock = '<script src="../assets/sports-source-lock.js?v=20260915-1"></script>'
               if sports_lock not in text:
                   pipeline = '<script src="../assets/card-pipeline.js"></script>'
                   if pipeline in text:
                       text = text.replace(pipeline, f'{sports_lock}\n  {pipeline}', 1)
 
-              # Override only the share transport after the existing card/image
-              # pipeline is loaded. Images, semantics, card depth and collection
-              # logic stay untouched; only the public share URL changes.
+              if image_stream not in text:
+                  match = re.search(r'<script src="\.\./assets/card-pipeline\.js[^\"]*"></script>', text)
+                  if match:
+                      text = text[:match.end()] + f'\n  {image_stream}' + text[match.end():]
+                  else:
+                      text = text.replace("</body>", f'  {image_stream}\n</body>')
+
               clean_share = '<script src="../assets/share-clean-url.js?v=20260915-clean2"></script>'
               if clean_share not in text:
                   match = re.search(r'<script src="\.\./assets/card-pipeline\.js[^\"]*"></script>', text)
@@ -123,8 +117,6 @@ jobs:
                               text = text.replace("</body>", f'  {storyboard}\n</body>')
               path.write_text(text)
 
-          # The direct Infinity -> Omni autobuild must use the same three-layer
-          # consensus before planning the finished site.
           auto = Path("autobuild/index.html")
           if auto.exists():
               text = auto.read_text()
@@ -132,11 +124,12 @@ jobs:
                   match = re.search(r'<script src="\.\./assets/site-intelligence\.js[^\"]*"></script>', text)
                   if match:
                       text = text[:match.end()] + f'\n  {consensus}' + text[match.end():]
+              if image_stream not in text:
+                  match = re.search(r'<script src="\.\./assets/card-pipeline\.js[^\"]*"></script>', text)
+                  if match:
+                      text = text[:match.end()] + f'\n  {image_stream}' + text[match.end():]
               auto.write_text(text)
 
-          # Generated sites receive the identity/logo and layout/view behavior
-          # selected by Purple 1 and Purple 2. Existing module/plugin rendering
-          # remains owned by site-builder-v2.
           build = Path("build/index.html")
           if build.exists():
               text = build.read_text()
@@ -149,6 +142,14 @@ jobs:
                       text = text.replace("</body>", f'  {runtime}\n</body>')
               build.write_text(text)
           PY
+      - name: Verify Omni Phi visual contract
+        run: |
+          test -f assets/image-stream-v2.js
+          grep -q 'image-stream-v2.js' overview/index.html
+          grep -q 'image-stream-v2.js' cards/index.html
+          grep -q 'image-stream-v2.js' structured/index.html
+          grep -q 'card-pipeline.js' overview/index.html
+          grep -q 'site-intelligence.js' cards/index.html
       - name: Configure and enable Pages
         uses: actions/configure-pages@v5
         with:
