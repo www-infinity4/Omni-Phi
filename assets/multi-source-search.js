@@ -224,7 +224,7 @@
     return out;
   }
 
-  async function multiSourceSearch(query) {
+  async function rawMultiSourceSearch(query) {
     const intent = await OmniSmartSearch.planQuery(query).catch(() => OmniSmartSearch.resolveIntent(query));
     const resolvedIntent = intent || OmniSmartSearch.resolveIntent(query);
     const searchQueries = [...new Set([
@@ -253,8 +253,12 @@
 
     const allUnique = dedupe(merged);
     const selected = preserveDepth(diversify(allUnique, resolvedIntent), allUnique, 10);
-    if (!selected.length) return previousSearch(query);
+    return selected.length ? selected : previousSearch(query);
+  }
 
+  async function multiSourceSearch(query) {
+    const selected = await rawMultiSourceSearch(query);
+    const resolvedIntent = OmniSmartSearch.resolveIntent(query);
     try {
       const intelligent = await OmniSmartSearch.enrichCardsWithAi(query, resolvedIntent, selected);
       const reranked = diversify(dedupe(intelligent), resolvedIntent);
@@ -268,6 +272,7 @@
   OmniPhi.fetchAllSources = multiSourceSearch;
   window.OmniMultiSourceSearch = {
     search: multiSourceSearch,
+    searchRaw: rawMultiSourceSearch,
     fetchOpenAlex,
     fetchNasa,
     fetchGdelt,
