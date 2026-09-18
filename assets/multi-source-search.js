@@ -209,6 +209,10 @@
     return chosen;
   }
 
+  function subjectTokens(query){return clean(query,240).toLowerCase().match(/[a-z0-9]+/g)||[]}
+  function directSubjectMatch(source,query){const tokens=subjectTokens(query);if(!tokens.length)return true;const text=clean([source.title,source.extract,source.sourceTitle,source.domain].filter(Boolean).join(" "),3200).toLowerCase();const phrase=clean(query,240).toLowerCase();return text.includes(phrase)||tokens.every(t=>text.includes(t))}
+  function enforceSubject(sources,query){const exact=sources.filter(s=>directSubjectMatch(s,query));return exact.length>=4?exact:sources.filter(s=>directSubjectMatch(s,query)||Number(s.intentScore||0)>=0.45)}
+
   function preserveDepth(preferred, fallback, minimum = 10) {
     const out = [];
     const seen = new Set();
@@ -252,7 +256,8 @@
     });
 
     const allUnique = dedupe(merged);
-    const selected = preserveDepth(diversify(allUnique, resolvedIntent), allUnique, 10);
+    const subjectSafe = enforceSubject(allUnique, query);
+    const selected = preserveDepth(diversify(subjectSafe, resolvedIntent), subjectSafe, Math.min(10, subjectSafe.length));
     return selected.length ? selected : previousSearch(query);
   }
 
