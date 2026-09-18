@@ -253,6 +253,134 @@
     throw lastError || new Error('card_ai_unavailable');
   }
 
+  async function callOverviewAi(query, intent, sources) {
+    const evidence = sources.slice(0, 12).map((source, index) => ({
+      index,
+      sourceTitle: source.sourceTitle || source.title || `Source ${index + 1}`,
+      sourceUrl: source.url || source.sourceUrl || '',
+      domain: source.domain || source.provider || '',
+      evidence: clean(source.sourceExtract || source.extract || '', 1800)
+    }));
+    const instruction = [
+      'You are the AI Overview writer for Omni Phi.',
+      `User query: ${query}`,
+      `Canonical subject: ${intent.canonicalSubject || query}`,
+      `Interpreted intent: ${intent.summary || query}`,
+      'Use only the supplied evidence.',
+      'Write one useful overview first. Do not write story cards in this response.',
+      'Synthesize the evidence into a concise readable overview that directly addresses the query.',
+      'Reject off-subject evidence and competing meanings.',
+      'Return JSON only. Schema: {"overview":"..."}',
+      `Evidence: ${JSON.stringify(evidence)}`
+    ].join('\n');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
+    try {
+      const response = await fetch(AI_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          input: instruction,
+          context: {
+            application: 'Omni Phi',
+            assistant: 'gpt-overview-writer',
+            task: 'overview-first-synthesis',
+            verified_context: { query, canonical_subject: intent.canonicalSubject || query, source_count: evidence.length }
+          }
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.message || payload.error || `HTTP ${response.status}`);
+      const result = parseAiJson(payload.output_text || payload.output || '');
+      const overview = clean(result.overview, 2200);
+      if (!overview) throw new Error('overview_missing');
+      aiOverviewByQuery.set(normalizeQuery(query), overview);
+      return overview;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function generateOverviewWithAi(query, intent, sources) {
+    try {
+      return await callOverviewAi(query, intent, sources);
+    } catch (error) {
+      console.warn('Omni Phi overview AI fallback:', error);
+      return buildSmartOverview(query, intent, sources);
+    }
+  }
+
+  async function enrichOneCardWithAi(query, intent, source) {
+    const evidence = {
+      sourceTitle: source.sourceTitle || source.title || 'Source',
+      sourceUrl: source.url || source.sourceUrl || '',
+      domain: source.domain || source.provider || '',
+      evidence: clean(source.sourceExtract || source.extract || '', 2200)
+    };
+    const instruction = [
+      'You are writing ONE grounded Omni Phi story card.',
+      `User query: ${query}`,
+      `Canonical subject: ${intent.canonicalSubject || query}`,
+      `Interpreted intent: ${intent.summary || query}`,
+      'Use only the supplied evidence for this card.',
+      'If this evidence is clearly about a different entity or competing meaning, return {"accept":false}.',
+      'Otherwise rewrite it into one distinct useful story direction.',
+      'Title: specific and readable, usually 3–10 words. Text: 2–4 concise sentences.',
+      'Do not write an overview and do not mention other cards.',
+      'Return JSON only. Schema: {"accept":true,"title":"...","text":"..."}',
+      `Evidence: ${JSON.stringify(evidence)}`
+    ].join('\n');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
+    try {
+      const response = await fetch(AI_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          input: instruction,
+          context: {
+            application: 'Omni Phi',
+            assistant: 'gpt-single-card-writer',
+            task: 'one-grounded-card',
+            verified_context: { query, canonical_subject: intent.canonicalSubject || query, source_url: evidence.sourceUrl }
+          }
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.message || payload.error || `HTTP ${response.status}`);
+      const result = parseAiJson(payload.output_text || payload.output || '');
+      if (result.accept === false) return null;
+      const title = clean(result.title, 150);
+      const text = clean(result.text, 1000);
+      if (!title || !text) throw new Error('card_missing');
+      return {
+        ...source,
+        sourceTitle: source.sourceTitle || source.title || '',
+        sourceExtract: source.sourceExtract || source.extract || '',
+        title,
+        extract: text,
+        aiGenerated: true,
+        sourceLocked: true,
+        canonicalSubject: intent.canonicalSubject || query
+      };
+    } catch (error) {
+      console.warn('Omni Phi single-card AI fallback:', error);
+      if (!sourcePassesAnchor(source, intent)) return null;
+      return {
+        ...source,
+        sourceTitle: source.sourceTitle || source.title || '',
+        sourceExtract: source.sourceExtract || source.extract || '',
+        aiGenerated: false,
+        sourceLocked: true,
+        canonicalSubject: intent.canonicalSubject || query
+      };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async function enrichCardsWithAi(query, intent, sources) {
     if (!sources.length) return sources;
     try {
@@ -382,6 +510,8 @@
     relevance,
     smartFetch,
     enrichCardsWithAi,
+    generateOverviewWithAi,
+    enrichOneCardWithAi,
     subjectCoverage
   };
 })();
