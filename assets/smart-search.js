@@ -31,6 +31,17 @@
     return JSON.parse(raw.slice(start, end + 1));
   }
 
+  function aiPayloadText(payload) {
+    const value = payload?.output_text ?? payload?.output ?? payload?.answer ?? payload?.response ?? payload?.content ?? payload?.message ?? '';
+    if (typeof value === 'string') return value;
+    if (value && typeof value === 'object') {
+      if (typeof value.text === 'string') return value.text;
+      if (typeof value.content === 'string') return value.content;
+      try { return JSON.stringify(value); } catch {}
+    }
+    return String(value || '');
+  }
+
   function lexicalIntent(query) {
     const raw = clean(query, 600);
     const quoted = [...raw.matchAll(/["“]([^"”]+)["”]/g)].map((m) => clean(m[1], 160)).filter(Boolean);
@@ -86,7 +97,7 @@
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.message || payload.error || `HTTP ${response.status}`);
-      const result = parseAiJson(payload.output_text || payload.output || '');
+      const result = parseAiJson(aiPayloadText(payload));
       const canonicalSubject = clean(result.canonicalSubject, 220) || fallback.canonicalSubject;
       const entityType = clean(result.entityType, 80) || 'unknown';
       const summary = clean(result.summary, 500) || fallback.summary;
@@ -242,7 +253,7 @@
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.message || payload.error || `HTTP ${response.status}`);
-        const result = parseAiJson(payload.output_text || payload.output || '');
+        const result = parseAiJson(aiPayloadText(payload));
         clearTimeout(timer);
         return result;
       } catch (error) {
@@ -292,7 +303,7 @@
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.message || payload.error || `HTTP ${response.status}`);
-      const result = parseAiJson(payload.output_text || payload.output || '');
+      const result = parseAiJson(aiPayloadText(payload));
       const overview = clean(result.overview, 2200);
       if (!overview) throw new Error('overview_missing');
       aiOverviewByQuery.set(normalizeQuery(query), overview);
@@ -350,7 +361,7 @@
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.message || payload.error || `HTTP ${response.status}`);
-      const result = parseAiJson(payload.output_text || payload.output || '');
+      const result = parseAiJson(aiPayloadText(payload));
       if (result.accept === false) return null;
       const title = clean(result.title, 150);
       const text = clean(result.text, 1000);
