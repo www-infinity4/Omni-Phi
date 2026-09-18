@@ -2,7 +2,7 @@
   'use strict';
   if (!window.OmniPhi || !window.OmniSmartSearch) return;
 
-  const previousSearch = OmniPhi.fetchWikipedia.bind(OmniPhi);
+  const previousSearch = (query) => (window.OmniSmartSearch?.rawFetch ? OmniSmartSearch.rawFetch(query) : OmniPhi.fetchWikipedia(query));
   const clean = (value, max = 2400) => String(value || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
   const domainOf = (value) => {
     try { return new URL(value).hostname.replace(/^www\./, ''); } catch { return ''; }
