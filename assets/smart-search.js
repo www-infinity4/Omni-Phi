@@ -423,7 +423,7 @@
       }));
   }
 
-  async function smartFetch(query) {
+  async function rawSmartFetch(query) {
     const intent = await planQuery(query);
     const queries = [...new Set([
       ...(intent.searchQueries || []),
@@ -453,7 +453,12 @@
     let usable = ranked.filter((source) => sourcePassesAnchor(source, intent) && source.intentScore >= 0.22).slice(0, 10);
     if (!usable.length) usable = ranked.filter((source) => sourcePassesAnchor(source, intent)).slice(0, 8);
     if (!usable.length) usable = ranked.slice(0, 6);
+    return usable;
+  }
 
+  async function smartFetch(query) {
+    const usable = await rawSmartFetch(query);
+    const intent = resolveIntent(query);
     return enrichCardsWithAi(query, intent, usable);
   }
 
@@ -509,6 +514,7 @@
     planQuery,
     relevance,
     smartFetch,
+    rawFetch: rawSmartFetch,
     enrichCardsWithAi,
     generateOverviewWithAi,
     enrichOneCardWithAi,
