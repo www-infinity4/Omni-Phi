@@ -265,12 +265,13 @@
   }
 
   async function callOverviewAi(query, intent, sources) {
-    const evidence = sources.slice(0, 12).map((source, index) => ({
+    const evidence = sources.slice(0, 20).map((source, index) => ({
       index,
       sourceTitle: source.sourceTitle || source.title || `Source ${index + 1}`,
       sourceUrl: source.url || source.sourceUrl || '',
+      imageUrl: source.image || source.imageUrl || '',
       domain: source.domain || source.provider || '',
-      evidence: clean(source.sourceExtract || source.extract || '', 1800)
+      evidence: clean(source.sourceExtract || source.extract || '', 900)
     }));
     const instruction = [
       'You are the AI Overview writer for Omni Phi.',
