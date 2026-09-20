@@ -93,7 +93,7 @@
     ].join('\n');
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10000);
+    const timer = setTimeout(() => controller.abort(), 5000);
     try {
       const response = await fetch(AI_ENDPOINT, {
         method: 'POST',
@@ -349,6 +349,18 @@
       domain: source.domain || source.provider || '',
       evidence: clean(source.sourceExtract || source.extract || '', 2200)
     };
+    // Retrieved cards are already grounded in a real source. Render them without
+    // holding the entire feed behind one serial AI request per card.
+    if (evidence.sourceUrl && evidence.evidence.length >= 60 && sourcePassesAnchor(source, intent)) {
+      return {
+        ...source,
+        sourceTitle: source.sourceTitle || source.title || '',
+        sourceExtract: source.sourceExtract || source.extract || '',
+        aiGenerated: false,
+        sourceLocked: true,
+        canonicalSubject: intent.canonicalSubject || query
+      };
+    }
     const instruction = [
       'You are writing ONE grounded Omni Phi story card.',
       `User query: ${query}`,
