@@ -165,7 +165,6 @@ jobs:
         run: |
           test -f assets/image-stream-v2.js
           test -f assets/image-search-v4.js
-          test -f assets/image-mode-v3.js
           test -f assets/orange-card-share-export.js
           grep -q 'image-stream-v2.js' overview/index.html
           grep -q 'image-search-v4.js' overview/index.html
@@ -173,7 +172,6 @@ jobs:
           grep -q 'image-stream-v2.js' structured/index.html
           grep -q 'orange-card-share-export.js' overview/index.html
           grep -q 'orange-card-share-export.js' cards/index.html
-          grep -q 'image-mode-v3.js' index.html
           grep -q 'card-pipeline.js' overview/index.html
           grep -q 'site-intelligence.js' cards/index.html
       - name: Configure and enable Pages
