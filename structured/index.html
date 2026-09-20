@@ -28,7 +28,7 @@
 
   <script src="../assets/omni-family.js"></script>
   <script src="../assets/indexer.js"></script>
-  <script src="../assets/app.js"></script>
+  <script src="../assets/app.js?v=20260920-storiesfix1"></script>
   <script src="../assets/capability-router.js"></script>
   <script src="../assets/smart-search.js"></script>
   <script src="../assets/multi-source-search.js?v=20260915-1"></script>
@@ -78,13 +78,35 @@
       return groups.map((paragraph) => `<p>${OmniPhi.escapeHtml(paragraph)}</p>`).join('');
     }
 
-    function render(record, availableSources) {
-      const profile = OmniPhi.profile();
+    function readJson(store, key, fallback = []) {
+      try { const value = JSON.parse(store.getItem(key) || 'null'); return Array.isArray(value) ? value : fallback; } catch { return fallback; }
+    }
+
+    function collectedForQuery(record, availableSources) {
       const available = new Map(availableSources.map((source) => [keyOf(source), source]));
-      const selected = (profile.collected || []).map((saved) => ({...saved, ...(available.get(keyOf(saved)) || {})})).filter((source) => {
+      const pools = [
+        OmniPhi.profile()?.collected || [],
+        ...['phiShared:collection:v1','omniPhi:websiteIndex:v1','phiWebsiteIndex:v1','websiteIndex:v1'].flatMap((key) => [
+          ...readJson(localStorage, key),
+          ...readJson(sessionStorage, key)
+        ])
+      ];
+      const seen = new Set();
+      const needle = q.toLowerCase();
+      return pools.map((saved) => ({...saved, ...(available.get(keyOf(saved)) || {})})).filter((source) => {
+        const key = keyOf(source);
+        if (!key || seen.has(key)) return false;
+        const taggedQuery = String(source.searchQuery || source.query || source.selectionScope || '').toLowerCase();
         const haystack = `${source.title || ''} ${source.extract || ''}`.toLowerCase();
-        return haystack.includes(q.toLowerCase()) || (record.sources || []).some((candidate) => keyOf(candidate) === keyOf(source));
+        const belongs = taggedQuery === needle || taggedQuery.startsWith(needle + ' ') || haystack.includes(needle) ||
+          (record.sources || []).some((candidate) => keyOf(candidate) === key);
+        if (belongs) seen.add(key);
+        return belongs;
       });
+    }
+
+    function render(record, availableSources) {
+      const selected = collectedForQuery(record, availableSources);
 
       if (!selected.length) {
         stories.innerHTML = `<section class="panel empty-stories"><div class="topic-orb">φ</div><h2>Choose the stories you want to read</h2><p>Collect one or more orange cards on page two. Each selected card will open here as a full story.</p><a href="${OmniPhi.url('overview/')}?${navParams}">Return to orange cards</a></section>`;
@@ -111,14 +133,26 @@
     }
 
     async function load() {
-      let record = OmniPhi.activeResearch();
-      let sources = record && String(record.query || '').toLowerCase() === q.toLowerCase() ? (record.sources || []) : [];
-      if (!sources.length) {
-        try { sources = await OmniPhi.fetchWikipedia(q); } catch (error) { console.warn(error); }
+      try {
+        let record = OmniPhi.activeResearch();
+        let sources = record && String(record.query || '').toLowerCase() === q.toLowerCase() ? (record.sources || []) : [];
+        const saved = collectedForQuery(record || {sources:[]}, sources);
+        if (!sources.length && !saved.length) {
+          try { sources = await Promise.race([
+            OmniPhi.fetchWikipedia(q),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('source timeout')), 7000))
+          ]); } catch (error) { console.warn(error); }
+        }
+        if (!sources.length && saved.length) sources = saved;
+        if (!sources.length) sources = OmniPhi.fallbackSources(q);
+        if (!record || String(record.query || '').toLowerCase() !== q.toLowerCase()) record = OmniPhi.createResearch(q, mode, sources);
+        render(record, [...saved, ...sources, ...(record.sources || [])]);
+      } catch (error) {
+        console.error('Collected stories failed', error);
+        const saved = collectedForQuery({sources:[]}, []);
+        if (saved.length) render({sources:saved}, saved);
+        else stories.innerHTML = '<section class="panel empty-stories"><h2>Collected stories could not open</h2><p>Your saved cards are still preserved. Return to AI Overview and reopen Full Stories.</p></section>';
       }
-      if (!sources.length) sources = OmniPhi.fallbackSources(q);
-      if (!record || String(record.query || '').toLowerCase() !== q.toLowerCase()) record = OmniPhi.createResearch(q, mode, sources);
-      render(record, [...sources, ...(record.sources || [])]);
     }
 
     load();
