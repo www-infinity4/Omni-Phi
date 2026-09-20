@@ -28,7 +28,21 @@
     const start = raw.indexOf('{');
     const end = raw.lastIndexOf('}');
     if (start < 0 || end <= start) throw new Error('ai_invalid_json');
-    return JSON.parse(raw.slice(start, end + 1));
+    const json = raw.slice(start, end + 1);
+    try { return JSON.parse(json); } catch (firstError) {
+      let fixed = '', quoted = false, escaped = false;
+      for (const char of json) {
+        if (escaped) { fixed += char; escaped = false; continue; }
+        if (char === '\\') { fixed += char; escaped = true; continue; }
+        if (char === '"') { fixed += char; quoted = !quoted; continue; }
+        if (quoted && char === '\n') { fixed += '\\n'; continue; }
+        if (quoted && char === '\r') { fixed += '\\r'; continue; }
+        if (quoted && char === '\t') { fixed += '\\t'; continue; }
+        if (quoted && char.charCodeAt(0) < 32) { fixed += ' '; continue; }
+        fixed += char;
+      }
+      try { return JSON.parse(fixed); } catch { throw firstError; }
+    }
   }
 
   function aiPayloadText(payload) {
@@ -315,6 +329,11 @@
   }
 
   async function generateOverviewWithAi(query, intent, sources) {
+    const grounded = (Array.isArray(sources) ? sources : []).some((source) =>
+      clean(source?.url || source?.sourceUrl, 1200) &&
+      clean(source?.sourceExtract || source?.extract, 2200).length >= 60
+    );
+    if (!grounded) return buildSmartOverview(query, intent, sources || []);
     try {
       return await callOverviewAi(query, intent, sources);
     } catch (error) {
@@ -525,6 +544,7 @@
     resolveIntent,
     planQuery,
     relevance,
+    fastFetch: oldFetch,
     smartFetch,
     rawFetch: rawSmartFetch,
     enrichCardsWithAi,
