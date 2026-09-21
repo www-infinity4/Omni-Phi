@@ -320,6 +320,26 @@
     return detail;
   }
   function awardStarCoinShare(reference) { return awardStarCoinCredit("share",reference); }
+  function creditInfinitySearch(query) {
+    const q=String(query||"").replace(/\s+/g," ").trim();if(!q)return"";
+    const store=walletStore(),wallet=store.wallet,now=Date.now(),tokenId=`omni-${now.toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+    wallet.infinityTokens=Math.max(0,Number(wallet.infinityTokens)||0);
+    wallet.infinityLedger=Array.isArray(wallet.infinityLedger)?wallet.infinityLedger:[];
+    wallet.infinitySearches=Array.isArray(wallet.infinitySearches)?wallet.infinitySearches:[];
+    if(!wallet.infinityLedger.some(e=>e?.tokenId===tokenId)){
+      wallet.infinityTokens+=1;
+      wallet.infinityLedger.push({id:tokenId,tokenId,type:"search_reward",amount:1,balance:wallet.infinityTokens,source:"omni-phi",query:q,fingerprint:`omni-search:${tokenId}`,createdAt:now});
+      wallet.infinitySearches.push({tokenId,query:q,source:"omni-phi",createdAt:now});
+      wallet.infinityLedger=wallet.infinityLedger.slice(-1000);wallet.infinitySearches=wallet.infinitySearches.slice(-1000);store.save();
+    }
+    const unified=jsonGet("infinity_unified_wallet_v1",{}),searches=Array.isArray(unified.searches)?unified.searches:[];
+    searches.push({tokenId,query:q,source:"omni-phi",createdAt:now});unified.infinityTokens=wallet.infinityTokens;unified.searches=searches.slice(-1000);
+    const walletId=unified.currentWalletId;if(walletId&&unified.wallets?.[walletId]){const active=unified.wallets[walletId];active.balances={...(active.balances||{}),infinityTokens:wallet.infinityTokens}}
+    unified.updatedAt=now;unified.source="omni-phi";jsonSet("infinity_unified_wallet_v1",unified);
+    try{localStorage.setItem("omniPhi:lastSearchToken:v1",JSON.stringify({tokenId,query:q,createdAt:now}))}catch{}
+    const detail={infinityTokens:wallet.infinityTokens,tokenId,query:q,source:"omni-phi"};window.dispatchEvent(new Event("infinity-wallet-updated"));window.dispatchEvent(new CustomEvent("controlphi:wallet-change",{detail}));
+    return tokenId;
+  }
   async function shareCard(card) {
     const storyKey=card.storyKey||card.url||card.id||String(card.title||"card").toLowerCase().replace(/[^a-z0-9]+/g,"-");
     const params=new URLSearchParams({
@@ -345,6 +365,6 @@
   window.OmniPhi = {
     STORAGE, base, url, queryParam, profile, saveProfile, activeResearch, saveResearch,
     collectSource, sourceWeight, setupMenu, fetchWikipedia, fallbackSources,
-    createResearch, refreshResearchWithProfile, renderCloud, awardStarCoinCredit, awardStarCoinShare, shareCard, topbar, escapeHtml
+    createResearch, refreshResearchWithProfile, renderCloud, creditInfinitySearch, awardStarCoinCredit, awardStarCoinShare, shareCard, topbar, escapeHtml
   };
 })();
