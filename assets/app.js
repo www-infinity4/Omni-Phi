@@ -53,6 +53,7 @@
       collectedAt: new Date().toISOString()
     };
     const existing = p.collected.find((item) => (item.url || item.id || item.title) === key);
+    const isNew = !existing;
     if (existing) Object.assign(existing, saved, { collectedAt: existing.collectedAt || saved.collectedAt });
     else p.collected.push(saved);
     if (source.domain) p.domains[source.domain] = (p.domains[source.domain] || 0) + 1;
@@ -63,6 +64,7 @@
     if (sharedExisting) Object.assign(sharedExisting, saved, { collectedAt: sharedExisting.collectedAt || saved.collectedAt });
     else shared.unshift(saved);
     jsonSet(STORAGE.sharedCollection, shared);
+    p.lastCollectReward = isNew ? awardStarCoinCredit("collect", saved.storyKey) : { progressToNextCoin: starProgress(), awarded: 0, duplicate: true };
     return p;
   }
 
@@ -279,27 +281,45 @@
     window.addEventListener("resize",resize,{passive:true}); resize(); draw();
   }
 
-  function awardStarCoinShare(reference) {
-    const attemptId=`phi-share-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
-    const session=jsonGet("starquest_session",null);
-    const users=jsonGet("starquest_users",{});
-    const signedIn=session&&session.key&&users[session.key];
-    const wallet=signedIn||jsonGet("starquest_guest_profile_v1",{key:"__guest__",username:"Guest",tokens:0,shareCount:0,pendingShareCredits:0,shareEvents:[],ledger:[],watchHistory:[],watchPositions:{},unlockedContent:{}});
+  function walletStore(){
+    const session=jsonGet("starquest_session",null),users=jsonGet("starquest_users",{}),signed=session?.key&&users?.[session.key];
+    const wallet=signed||jsonGet("starquest_guest_profile_v1",{key:"__guest__",username:"Guest",tokens:0,shareCount:0,pendingShareCredits:0,shareEvents:[],ledger:[]});
+    return {session,users,signed:Boolean(signed),wallet,save(){if(this.signed){this.users[this.session.key]=this.wallet;jsonSet("starquest_users",this.users)}else jsonSet("starquest_guest_profile_v1",this.wallet)}};
+  }
+  function starProgress(){return Math.max(0,Number(walletStore().wallet.pendingShareCredits)||0)}
+  function mirrorStarWallet(wallet){
+    const unified=jsonGet("infinity_unified_wallet_v1",{}),walletId=unified.currentWalletId;
+    unified.starCoin=wallet.tokens+wallet.pendingShareCredits/10;
+    unified.starCoinWhole=wallet.tokens;
+    unified.starCoinProgress=wallet.pendingShareCredits;
+    if(walletId&&unified.wallets?.[walletId]){
+      const active=unified.wallets[walletId];
+      active.balances={...(active.balances||{}),starCoin:unified.starCoin,starCoinWhole:wallet.tokens,starCoinProgress:wallet.pendingShareCredits};
+      active.starCoinShares=wallet.shareCount;
+    }
+    unified.updatedAt=Date.now();unified.source="omni-phi";jsonSet("infinity_unified_wallet_v1",unified);
+  }
+  function awardStarCoinCredit(action,reference) {
+    const store=walletStore(),wallet=store.wallet,ref=String(reference||"").trim(),eventType=action==="share"?"share_credit":"collect_credit";
     wallet.tokens=Math.max(0,Number(wallet.tokens)||0);
-    wallet.shareCount=Math.max(0,Number(wallet.shareCount)||0)+1;
-    wallet.pendingShareCredits=Math.max(0,Number(wallet.pendingShareCredits)||0)+1;
+    wallet.shareCount=Math.max(0,Number(wallet.shareCount)||0);
+    wallet.pendingShareCredits=Math.max(0,Number(wallet.pendingShareCredits)||0);
     wallet.shareEvents=Array.isArray(wallet.shareEvents)?wallet.shareEvents:[];
     wallet.ledger=Array.isArray(wallet.ledger)?wallet.ledger:[];
-    wallet.shareEvents.push({id:attemptId,attemptId,contentId:reference,method:"web_share_api",confirmed:true,verified:true,createdAt:Date.now()});
-    let awarded=0;
+    if(action==="collect"&&wallet.ledger.some(e=>e?.type===eventType&&e?.referenceId===ref))return{progressToNextCoin:wallet.pendingShareCredits,awarded:0,balance:wallet.tokens,duplicate:true};
+    const id=`phi-${action}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+    if(action==="share"){wallet.shareCount+=1;wallet.shareEvents.push({id,attemptId:id,contentId:ref,reference:ref,method:"web_share_api",confirmed:true,verified:true,createdAt:Date.now(),source:"omni-phi"})}
+    wallet.pendingShareCredits+=1;let awarded=0;
     while(wallet.pendingShareCredits>=10){wallet.pendingShareCredits-=10;wallet.tokens+=1;awarded+=1}
-    wallet.ledger.push({id:`tx-${attemptId}`,type:awarded?"share_reward":"share_credit",amount:awarded,balance:wallet.tokens,pendingShareCredits:wallet.pendingShareCredits,reason:awarded?"Share reward: 10 completed shares":`Confirmed share receipt ${wallet.pendingShareCredits}/10`,referenceId:attemptId,createdAt:Date.now()});
-    wallet.shareEvents=wallet.shareEvents.slice(-250);wallet.ledger=wallet.ledger.slice(-500);
-    if(signedIn){users[session.key]=wallet;jsonSet("starquest_users",users)}else jsonSet("starquest_guest_profile_v1",wallet);
-    window.dispatchEvent(new CustomEvent("starquest:share-progress",{detail:{progressToNextCoin:wallet.pendingShareCredits,awarded,balance:wallet.tokens}}));
-    return {progressToNextCoin:wallet.pendingShareCredits,awarded,balance:wallet.tokens};
+    wallet.ledger.push({id:`tx-${id}`,type:eventType,amount:awarded,credit:.1,balance:wallet.tokens,pendingShareCredits:wallet.pendingShareCredits,referenceId:ref,createdAt:Date.now(),source:"omni-phi"});
+    wallet.shareEvents=wallet.shareEvents.slice(-250);wallet.ledger=wallet.ledger.slice(-500);store.save();mirrorStarWallet(wallet);
+    const detail={progressToNextCoin:wallet.pendingShareCredits,awarded,balance:wallet.tokens,action,source:"omni-phi"};
+    window.dispatchEvent(new CustomEvent("starquest:share-progress",{detail}));
+    window.dispatchEvent(new CustomEvent("controlphi:wallet-change",{detail}));
+    window.dispatchEvent(new Event("infinity-wallet-updated"));
+    return detail;
   }
-
+  function awardStarCoinShare(reference) { return awardStarCoinCredit("share",reference); }
   async function shareCard(card) {
     const storyKey=card.storyKey||card.url||card.id||String(card.title||"card").toLowerCase().replace(/[^a-z0-9]+/g,"-");
     const params=new URLSearchParams({
@@ -325,6 +345,6 @@
   window.OmniPhi = {
     STORAGE, base, url, queryParam, profile, saveProfile, activeResearch, saveResearch,
     collectSource, sourceWeight, setupMenu, fetchWikipedia, fallbackSources,
-    createResearch, refreshResearchWithProfile, renderCloud, awardStarCoinShare, shareCard, topbar, escapeHtml
+    createResearch, refreshResearchWithProfile, renderCloud, awardStarCoinCredit, awardStarCoinShare, shareCard, topbar, escapeHtml
   };
 })();
