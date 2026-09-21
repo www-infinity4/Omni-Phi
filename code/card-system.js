@@ -28,7 +28,7 @@ const jesusStories=[
 function infer(query){
  const q=String(query||"").trim(),l=q.toLowerCase();
  const jesus=/\bjesus\b/.test(l)&&/\b(story|stories|life|gospel|parables?)\b/.test(l);
- const music=/\b(band|music|album|singer|artist|pink floyd)\b/.test(l);
+ const catalogEntity=root.InfinityEntityCatalog?.find(q),music=/\b(band|music|album|singer|artist|pink floyd)\b/.test(l)||catalogEntity?.type==="person";
  return {
   query:q,title:jesus?"The Stories of Jesus":music?q.replace(/\s+music\s*$/i,"").trim():q,
   kind:jesus?"story-collection":music?"music-archive":"research-publication",
