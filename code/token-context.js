@@ -9,7 +9,8 @@ const sameToken=(item,tokenId,query)=>{
  if(item.tokenId)return String(item.tokenId)===String(tokenId);
  const q=text(item.searchQuery||item.query||item.selectionScope||item.refinedQuery).toLowerCase();
  const needle=text(query).toLowerCase();
- return !q||q===needle||q.startsWith(needle+" ")||needle.startsWith(q+" ");
+ // Never let an unscoped item from an older search leak into the active build.
+ return !!q&&(q===needle||q.startsWith(needle+" ")||needle.startsWith(q+" "));
 };
 const identity=item=>text(item.storyKey||item.id||item.url||item.sourceUrl||item.imageUrl||item.image||item.title);
 function unique(items){const seen=new Set();return items.filter(item=>{const key=identity(item);if(!key||seen.has(key))return false;seen.add(key);return true})}
