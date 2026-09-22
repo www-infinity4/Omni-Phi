@@ -41,7 +41,8 @@ function sourceCards(results){
 }
 function relevant(item,query){
  const words=String(query||"").toLowerCase().split(/\W+/).filter(x=>x.length>2&&!/^(the|and|for|with|music|images?|videos?|audio|sound)$/.test(x));
- const hay=String((item?.title||"")+" "+(item?.description||"")+" "+(item?.url||"")).toLowerCase();
+ // Match the identity of the result, not incidental names buried in a playlist description.
+ const hay=String((item?.title||"")+" "+(item?.url||"")).toLowerCase();
  return words.length===0||words.every(word=>hay.includes(word));
 }
 function render(query,results,direction,visuals,tokenId,media,context){
