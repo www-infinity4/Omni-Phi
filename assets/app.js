@@ -185,7 +185,7 @@
   function saveResearch(r) {
     jsonSet(STORAGE.research, r);
     const history = jsonGet(STORAGE.history, []);
-    const compact = { query: r.query, mode: r.mode, createdAt: r.createdAt, sourceCount: (r.sources || []).length };
+    const compact = { tokenId: queryParam("token") || undefined, query: r.query, mode: r.mode, createdAt: r.createdAt, sourceCount: (r.sources || []).length };
     const merged = [compact, ...history.filter((h) => !(h.query === compact.query && h.mode === compact.mode))].slice(0, 40);
     jsonSet(STORAGE.history, merged);
   }
