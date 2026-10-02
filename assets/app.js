@@ -143,6 +143,7 @@
       payload:{title:q,dek:"Omni Phi search token",overview:"Omni Phi is building the proportional research package for "+q+".",sources:[]}
     };
     await appendInfinityToken(token);
+    prebuildTokenWebsite(tokenId,q);
     return token;
   }
   function semanticResearchFromOmni(record) {
