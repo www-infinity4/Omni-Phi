@@ -95,29 +95,37 @@
       }catch{finish(false)}
     });
   }
-  async function saveInfinityTokenLedger(tokens) {
-    const next=Array.isArray(tokens)?tokens:[];
-    const raw=encodeSecureEnvelope(next);
+  function publishInfinityLedger(next) {
+    const tokens=Array.isArray(next)?next:[];
+    const raw=encodeSecureEnvelope(tokens);
     try{localStorage.setItem(INFINITY_TOKEN_LEDGER,raw)}catch{}
-    await writeInfinityLedgerDurable(raw);
+    void writeInfinityLedgerDurable(raw);
     window.dispatchEvent(new Event("infinity-history-updated"));
     window.dispatchEvent(new Event("infinity-wallet-updated"));
-    window.dispatchEvent(new CustomEvent("infinity:token-ledger-updated",{detail:{count:next.length}}));
-    return next;
+    window.dispatchEvent(new CustomEvent("infinity:token-ledger-updated",{detail:{count:tokens.length}}));
+    return tokens;
+  }
+  async function saveInfinityTokenLedger(tokens) {
+    return publishInfinityLedger(tokens);
   }
   async function appendInfinityToken(token) {
     if(!token?.id) return null;
+    const local=readInfinityLedgerLocal();
+    if(Array.isArray(local)){
+      publishInfinityLedger([token,...local.filter(item=>item?.id!==token.id)]);
+      return token;
+    }
     const existing=await loadInfinityTokenLedger();
-    const next=[token,...existing.filter(item=>item?.id!==token.id)];
-    await saveInfinityTokenLedger(next);
+    publishInfinityLedger([token,...existing.filter(item=>item?.id!==token.id)]);
     return token;
   }
   async function updateInfinityToken(id,patch) {
     if(!id)return null;
-    const existing=await loadInfinityTokenLedger();
+    const local=readInfinityLedgerLocal();
+    const existing=Array.isArray(local)?local:await loadInfinityTokenLedger();
     const current=existing.find(item=>item?.id===id)||{id};
     const token={...current,...patch,id};
-    await saveInfinityTokenLedger([token,...existing.filter(item=>item?.id!==id)]);
+    publishInfinityLedger([token,...existing.filter(item=>item?.id!==id)]);
     return token;
   }
   function tokenWebsiteUrl(id,query="") {
@@ -187,7 +195,7 @@
     jsonSet(STORAGE.research, r);
     const history = jsonGet(STORAGE.history, []);
     const compact = { tokenId: queryParam("token") || undefined, query: r.query, mode: r.mode, createdAt: r.createdAt, sourceCount: (r.sources || []).length };
-    const merged = [compact, ...history.filter((h) => !(h.query === compact.query && h.mode === compact.mode))].slice(0, 40);
+    const merged = [compact, ...history.filter((h) => compact.tokenId ? h.tokenId !== compact.tokenId : h.createdAt !== compact.createdAt)].slice(0, 5000);
     jsonSet(STORAGE.history, merged);
   }
 
