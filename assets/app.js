@@ -96,35 +96,13 @@
           <a href="${url("structured/")}">Full Stories</a>
           <a href="${url("cards/")}">Indexed Data</a>
           <a href="${url("ecosystem/")}">Omni Line</a>
-          <button type="button" data-wallet-history style="text-align:left">Unified wallet · tokens & history</button>
           <a href="https://github.com/www-infinity4/Omni-Phi">GitHub repository</a>
         </nav>`;
       document.body.append(backdrop, drawer);
     }
     const set = (v) => { backdrop.classList.toggle("open", v); drawer.classList.toggle("open", v); document.body.style.overflow = v ? "hidden" : ""; };
     openers.forEach((b) => b.addEventListener("click", () => set(true)));
-    backdrop.addEventListener("click", () => set(false));
-    drawer.querySelector("[data-wallet-history]")?.addEventListener("click", async () => {
-      let panel = document.getElementById("omniWalletHistory");
-      if (!panel) {
-        panel = document.createElement("section"); panel.id = "omniWalletHistory"; panel.className = "menu-drawer";
-        panel.style.cssText = "overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px;z-index:1002";
-        document.body.appendChild(panel);
-      }
-      panel.classList.add("open"); panel.innerHTML = '<div class="drawer-head"><strong>Unified Infinity Wallet</strong><button class="icon-button" data-wallet-close aria-label="Close wallet">×</button></div><p>Loading cloud tokens and history…</p>';
-      panel.querySelector("[data-wallet-close]")?.addEventListener("click",()=>panel.classList.remove("open"));
-      try {
-        if (typeof window.InfinityUnifiedWallet !== "function") throw new Error("Wallet client unavailable");
-        const wallet = new window.InfinityUnifiedWallet({appName:"Omni Phi"}), state = await wallet.connect();
-        const esc = escapeHtml, tokens = Array.isArray(state.tokens)?state.tokens:[], history = Array.isArray(state.history)?state.history:[];
-        panel.innerHTML = '<div class="drawer-head"><strong>Unified Infinity Wallet</strong><button class="icon-button" data-wallet-close aria-label="Close wallet">×</button></div>'+
-          '<div style="font-size:2rem;font-weight:950;margin:12px 0">'+esc(String(state.balances?.INFINITY??0))+' <small style="font-size:.8rem">Infinity</small></div>'+
-          '<h3>Search tokens</h3><div>'+tokens.filter(t=>t.type==="INFINITY_SEARCH").slice(0,100).map(t=>'<article style="padding:10px 0;border-bottom:1px solid #ffffff22"><b>'+esc(t.data?.query||t.data?.search_id||"Search")+'</b><br><small>'+esc(t.id||t.token_id||"")+'</small></article>').join('')+'</div>'+
-          '<h3>History</h3><div>'+history.slice(0,100).map(h=>'<article style="padding:10px 0;border-bottom:1px solid #ffffff22"><b>'+esc(h.type||h.event_type||"Wallet event")+'</b> · '+esc(String(h.amount??""))+'<br><small>'+esc(h.metadata?.query||h.metadata?.search_id||h.reference_id||"")+'</small></article>').join('')+'</div>';
-        panel.querySelector("[data-wallet-close]")?.addEventListener("click",()=>panel.classList.remove("open"));
-      } catch (err) { panel.innerHTML += '<p role="alert">Cloud wallet unavailable: '+escapeHtml(String(err.message||err))+'</p>'; }
-    });
-    drawer.querySelector("[data-close-menu]")?.addEventListener("click", () => set(false));
+    backdrop.addEventListener("click", () => set(false));    drawer.querySelector("[data-close-menu]")?.addEventListener("click", () => set(false));
     drawer.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => set(false)));
   }
 
