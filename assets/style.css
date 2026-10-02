@@ -524,3 +524,82 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 
 .source-actions button[data-share]{border-color:rgba(255,210,96,.72);background:linear-gradient(135deg,rgba(145,65,8,.52),rgba(72,24,3,.5))}
+
+
+/* Infinity Phi wallet parity: when Omni opens Unified wallet, use the same green
+   drawer/card geometry as Infinity Phi rather than a separate gray-button UI. */
+.menu-drawer.wallet-mode{
+  background:#0b4129;
+  border-right-color:rgba(255,255,255,.08);
+  box-shadow:30px 0 80px rgba(0,0,0,.45);
+}
+.menu-drawer.wallet-mode .drawer-head{
+  border-bottom:1px solid rgba(255,255,255,.10);
+  padding-bottom:16px;
+}
+.menu-drawer.wallet-mode .drawer-head strong{
+  font-family:Georgia,serif;
+  font-size:2rem;
+  letter-spacing:0;
+}
+.menu-drawer.wallet-mode .icon-button{
+  border:0;
+  border-radius:999px;
+  background:rgba(255,255,255,.10);
+  box-shadow:none;
+}
+.omni-infinity-wallet-view{
+  padding:26px 0 max(32px,env(safe-area-inset-bottom));
+}
+.omni-wallet-kicker{
+  margin:0 0 28px;
+  color:#fff;
+  font:900 13px/1.2 system-ui,sans-serif;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+}
+.omni-wallet-card{
+  margin:0;
+  padding:28px 26px 32px;
+  border-radius:26px;
+  background:rgba(255,255,255,.10);
+  color:#fff;
+}
+.omni-wallet-name{
+  display:block;
+  margin:0 0 14px;
+  font-size:1.35rem;
+  line-height:1.2;
+}
+.omni-wallet-id{
+  margin:0;
+  font:500 14px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color:#f0f4f1;
+  overflow-wrap:anywhere;
+}
+.omni-wallet-count{
+  margin:34px 0 30px;
+  font-size:3rem;
+  line-height:1;
+  font-weight:950;
+  color:#fff;
+}
+.omni-wallet-open{
+  display:flex!important;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  min-height:64px;
+  width:100%;
+  padding:16px 18px!important;
+  border:0!important;
+  border-radius:18px!important;
+  background:#f0bd55!important;
+  color:#071a34!important;
+  text-decoration:none!important;
+  text-align:center;
+  font-size:1.05rem;
+  font-weight:950!important;
+  box-shadow:none!important;
+}
+.drawer-back{visibility:hidden}
