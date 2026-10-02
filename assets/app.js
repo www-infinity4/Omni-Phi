@@ -100,9 +100,10 @@
     const raw=encodeSecureEnvelope(tokens);
     try{localStorage.setItem(INFINITY_TOKEN_LEDGER,raw)}catch{}
     void writeInfinityLedgerDurable(raw);
+    const stable=window.InfinityTokenCount?.reconcile?.(tokens.length)?.value??tokens.length;
     window.dispatchEvent(new Event("infinity-history-updated"));
     window.dispatchEvent(new Event("infinity-wallet-updated"));
-    window.dispatchEvent(new CustomEvent("infinity:token-ledger-updated",{detail:{count:tokens.length}}));
+    window.dispatchEvent(new CustomEvent("infinity:token-ledger-updated",{detail:{count:stable}}));
     return tokens;
   }
   async function saveInfinityTokenLedger(tokens) {
@@ -150,6 +151,7 @@
       walletId:identity.walletId,createdAt:now,websiteUrl:tokenWebsiteUrl(tokenId,q),
       payload:{title:q,dek:"Omni Phi search token",overview:"Omni Phi is building the proportional research package for "+q+".",sources:[]}
     };
+    window.InfinityTokenCount?.register?.(tokenId);
     await appendInfinityToken(token);
     prebuildTokenWebsite(tokenId,q);
     return token;
@@ -293,7 +295,8 @@
       const id=identity.walletId;
       walletIdNode.textContent=id.length>32?id.slice(0,16)+"…"+id.slice(-10):id;
       const ledger=await loadInfinityTokenLedger();
-      balance.textContent=String(ledger.length);
+      const stable=window.InfinityTokenCount?.reconcile?.(ledger.length)?.value??ledger.length;
+      balance.textContent=String(stable);
     };
     const showWallet=()=>{nav.hidden=true;nav.style.display="none";panel.hidden=false;panel.style.display="block";back.style.visibility="visible";drawer.classList.add("wallet-mode");title.textContent="Omni Phi";drawer.scrollTop=0;void renderWallet()};
     openers.forEach(b=>b.addEventListener("click",()=>{showNav();set(true)}));
@@ -526,6 +529,7 @@
   function creditInfinitySearch(query) {
     const q=String(query||"").replace(/\s+/g," ").trim();if(!q)return"";
     const store=walletStore(),wallet=store.wallet,now=Date.now(),tokenId=`omni-${now.toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+    window.InfinityTokenCount?.register?.(tokenId);
     wallet.infinityTokens=Math.max(0,Number(wallet.infinityTokens)||0);
     wallet.infinityLedger=Array.isArray(wallet.infinityLedger)?wallet.infinityLedger:[];
     wallet.infinitySearches=Array.isArray(wallet.infinitySearches)?wallet.infinitySearches:[];
