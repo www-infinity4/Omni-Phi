@@ -532,6 +532,7 @@
     unified.updatedAt=now;unified.source="omni-phi";jsonSet("infinity_unified_wallet_v1",unified);
     try{localStorage.setItem("omniPhi:lastSearchToken:v1",JSON.stringify({tokenId,query:q,createdAt:now}))}catch{}
     const detail={infinityTokens:wallet.infinityTokens,tokenId,query:q,source:"omni-phi"};window.dispatchEvent(new Event("infinity-wallet-updated"));window.dispatchEvent(new CustomEvent("controlphi:wallet-change",{detail}));
+    void createUnifiedSearchToken(q,tokenId).catch(err=>console.warn("Omni canonical token write deferred",err));
     return tokenId;
   }
   async function shareCard(card) {
