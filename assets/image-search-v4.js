@@ -123,9 +123,13 @@
       OmniPhi.saveResearch?.(research);
     }
 
+    const reward = OmniPhi.awardStarCoinCredit?.('collect', 'omni-image:'+key) || {};
     card?.classList.add('selected');
-    if (button) { button.textContent = '✓ Collected'; button.disabled = true; }
-    window.dispatchEvent(new CustomEvent('omniphi:image-selected', { detail: { query, record } }));
+    if (button) {
+      button.textContent = reward.duplicate ? '✓ Already collected' : reward.awarded ? '✓ Collected · 1 StarCoin!' : '✓ Collected · '+(reward.progressToNextCoin ?? 0)+'/10 ⭐';
+      button.disabled = true;
+    }
+    window.dispatchEvent(new CustomEvent('omniphi:image-selected', { detail: { query, record, reward } }));
     updateSelectedCount(query);
     return record;
   }
