@@ -603,3 +603,5 @@ button { -webkit-tap-highlight-color: transparent; }
   box-shadow:none!important;
 }
 .drawer-back{visibility:hidden}
+
+.drawer-nav[hidden],[data-wallet-panel][hidden]{display:none!important}
