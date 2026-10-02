@@ -562,6 +562,16 @@
     void createUnifiedSearchToken(q,tokenId).catch(err=>console.warn("Omni canonical token write deferred",err));
     return tokenId;
   }
+  function sharePreviewUrl(target) {
+    try {
+      const candidate=new URL(target||location.href,location.href);
+      if(candidate.origin!==location.origin||!candidate.pathname.startsWith("/Omni-Phi/")) return location.href;
+      const share=new URL("share/",base);
+      share.searchParams.set("target",candidate.toString());
+      return share.toString();
+    } catch { return location.href; }
+  }
+
   async function shareCard(card) {
     const storyKey=card.storyKey||card.url||card.id||String(card.title||"card").toLowerCase().replace(/[^a-z0-9]+/g,"-");
     const params=new URLSearchParams({
@@ -572,7 +582,8 @@
       sharedDomain:card.domain||card.provider||"Omni Phi",
       sharedQuery:activeResearch()?.query||""
     });
-    const shareUrl=`https://www-infinity4.github.io/News-Phi/?${params}#story=${encodeURIComponent(storyKey)}`;
+    const targetUrl=`${url("overview/")}?${new URLSearchParams({q:activeResearch()?.query||card.searchQuery||card.title||"",mode:"search",sharedTitle:card.title||"",sharedUrl:card.url||"",sharedImage:card.image||card.imageUrl||"",story:storyKey})}`;
+    const shareUrl=sharePreviewUrl(targetUrl);
     if(!navigator.share){try{await navigator.clipboard.writeText(shareUrl);return {copied:true}}catch{return {error:true}}}
     try{
       await navigator.share({title:card.title||"Omni Phi card",text:String(card.extract||card.body||"").slice(0,320),url:shareUrl});
@@ -587,7 +598,7 @@
   window.OmniPhi = {
     STORAGE, base, url, queryParam, profile, saveProfile, activeResearch, saveResearch,
     collectSource, sourceWeight, setupMenu, fetchWikipedia, fallbackSources,
-    createResearch, refreshResearchWithProfile, renderCloud, creditInfinitySearch, awardStarCoinCredit, awardStarCoinShare, shareCard, topbar, escapeHtml,
+    createResearch, refreshResearchWithProfile, renderCloud, creditInfinitySearch, awardStarCoinCredit, awardStarCoinShare, sharePreviewUrl, shareCard, topbar, escapeHtml,
     loadInfinityTokenLedger, saveInfinityTokenLedger, appendInfinityToken, updateInfinityToken,
     createUnifiedSearchToken, enrichUnifiedSearchToken, tokenWebsiteUrl, prebuildTokenWebsite
   };
