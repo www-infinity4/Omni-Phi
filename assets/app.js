@@ -79,38 +79,35 @@
   }
 
   function setupMenu() {
-    const openers = document.querySelectorAll("[data-open-menu]");
-    if (!openers.length) return;
-    let backdrop = document.querySelector(".menu-backdrop"), drawer = document.querySelector(".menu-drawer");
-    if (!backdrop || !drawer) {
-      backdrop=document.createElement("div"); backdrop.className="menu-backdrop";
-      drawer=document.createElement("aside"); drawer.className="menu-drawer"; document.body.append(backdrop,drawer);
-    }
-    drawer.style.overflowY="auto"; drawer.style.webkitOverflowScrolling="touch";
-    const legacy=jsonGet("infinity_unified_wallet_v1",{}), walletId=legacy.currentWalletId||legacy.walletId||"infinity-wallet";
-    const shortId=String(walletId).length>22?String(walletId).slice(0,16)+"…"+String(walletId).slice(-10):String(walletId);
+    const openers=document.querySelectorAll("[data-open-menu]"); if(!openers.length)return;
+    let backdrop=document.querySelector(".menu-backdrop"),drawer=document.querySelector(".menu-drawer");
+    if(!backdrop||!drawer){backdrop=document.createElement("div");backdrop.className="menu-backdrop";drawer=document.createElement("aside");drawer.className="menu-drawer";document.body.append(backdrop,drawer)}
+    drawer.style.overflowY="auto";drawer.style.webkitOverflowScrolling="touch";
+    const legacy=jsonGet("infinity_unified_wallet_v1",{}),walletId=legacy.currentWalletId||legacy.walletId||"infinity-wallet",shortId=String(walletId).length>22?String(walletId).slice(0,16)+"…"+String(walletId).slice(-10):String(walletId);
     drawer.innerHTML=`
-      <div class="drawer-head"><strong>Omni Phi</strong><button class="icon-button" data-close-menu aria-label="Close menu">×</button></div>
-      <nav class="drawer-nav">
-        <a href="${url()}">Search</a><a href="${url("overview/")}">AI Overview</a><a href="${url("structured/")}">Full Stories</a><a href="${url("cards/")}">Indexed Data</a><a href="${url("ecosystem/")}">Omni Line</a>
-        <button type="button" data-show-unified-wallet>Unified wallet</button>
+      <div class="drawer-head"><button class="icon-button" data-wallet-back aria-label="Back">‹</button><strong style="font-size:1.55rem">Infinity Phi</strong><button class="icon-button" data-close-menu aria-label="Close menu">×</button></div>
+      <nav class="drawer-nav" data-main-nav>
+        <a href="https://www-infinity4.github.io/C13b0/">Infinity φ home</a>
+        <a href="https://www-infinity4.github.io/C13b0/profile/">Profile & AI context</a>
+        <a href="${url()}">Search & research</a>
+        <a href="${url("build/")}">Website builder</a>
         <a href="https://www-infinity4.github.io/C13b0/wallet/">Token wallet</a>
+        <button type="button" data-share-page>Share this page</button>
+        <button type="button" data-show-wallet>Unified wallet</button>
         <a href="https://www-infinity4.github.io/C13b0/history/">History & websites</a>
       </nav>
-      <section data-unified-wallet-panel hidden style="padding:8px 0 28px">
-        <div style="display:flex;align-items:center;gap:14px;margin:8px 0 28px"><button class="icon-button" data-wallet-back aria-label="Back">‹</button><strong style="font-size:1.55rem">Infinity Phi</strong></div>
+      <section data-wallet-panel hidden style="padding:8px 0 28px">
         <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:28px"><b style="font-size:.78rem">UNIFIED INFINITY WALLET</b>
         <article style="margin-top:20px;padding:22px;border-radius:24px;background:rgba(255,255,255,.09)"><h2 style="margin:0 0 12px">Infinity Wallet</h2><code data-wallet-id>${escapeHtml(shortId)}</code><div data-wallet-balance style="font-size:3rem;font-weight:950;margin:28px 0">—</div><a href="https://www-infinity4.github.io/C13b0/wallet/" style="display:block;text-align:center;padding:18px;border-radius:18px;background:#f6c354;color:#142039;font-weight:950;text-decoration:none">Open token workspace ↗</a></article></div>
       </section>`;
-    const nav=drawer.querySelector(".drawer-nav"),panel=drawer.querySelector("[data-unified-wallet-panel]"),balance=drawer.querySelector("[data-wallet-balance]");
+    const nav=drawer.querySelector("[data-main-nav]"),panel=drawer.querySelector("[data-wallet-panel]"),balance=drawer.querySelector("[data-wallet-balance]"),back=drawer.querySelector("[data-wallet-back]");
     const set=v=>{backdrop.classList.toggle("open",v);drawer.classList.toggle("open",v);document.body.style.overflow=v?"hidden":""};
-    const showWallet=()=>{nav.hidden=true;panel.hidden=false};
-    const showNav=()=>{panel.hidden=true;nav.hidden=false};
+    const showNav=()=>{panel.hidden=true;nav.hidden=false;back.style.visibility="hidden"};
+    const showWallet=()=>{nav.hidden=true;panel.hidden=false;back.style.visibility="visible"};
     const renderWallet=state=>{const n=Number(state?.balances?.INFINITY);balance.textContent=Number.isFinite(n)?String(n):"—";const id=state?.user?.id;if(id)drawer.querySelector("[data-wallet-id]").textContent="infinity-wallet:…"+String(id).slice(-10)};
-    openers.forEach(b=>b.addEventListener("click",()=>{showNav();set(true)})); backdrop.addEventListener("click",()=>set(false));
-    drawer.querySelector("[data-close-menu]")?.addEventListener("click",()=>set(false)); drawer.querySelector("[data-wallet-back]")?.addEventListener("click",showNav); drawer.querySelector("[data-show-unified-wallet]")?.addEventListener("click",showWallet);
-    drawer.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>set(false)));
-    window.addEventListener("infinity:wallet-state",e=>renderWallet(e.detail)); window.addEventListener("omni:wallet-ready",e=>renderWallet(e.detail));
+    openers.forEach(b=>b.addEventListener("click",()=>{showNav();set(true)}));backdrop.addEventListener("click",()=>set(false));drawer.querySelector("[data-close-menu]")?.addEventListener("click",()=>set(false));back.addEventListener("click",showNav);drawer.querySelector("[data-show-wallet]")?.addEventListener("click",showWallet);
+    drawer.querySelector("[data-share-page]")?.addEventListener("click",async()=>{try{if(navigator.share)await navigator.share({title:document.title,url:location.href});else await navigator.clipboard.writeText(location.href)}catch{}});
+    drawer.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>set(false)));window.addEventListener("infinity:wallet-state",e=>renderWallet(e.detail));window.addEventListener("omni:wallet-ready",e=>renderWallet(e.detail));showNav();
   }
 
   async function fetchWikipedia(query) {
