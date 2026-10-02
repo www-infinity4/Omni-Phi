@@ -66,6 +66,107 @@
     const durable=await readInfinityLedgerDurable();
     return Array.isArray(durable)?durable:[];
   }
+  function encodeSecureEnvelope(value) {
+    const json=JSON.stringify(value),bytes=new TextEncoder().encode(json);
+    let binary=""; for(const byte of bytes) binary+=String.fromCharCode(byte);
+    const data=btoa(binary); let checksum=0;
+    for(let i=0;i<data.length;i++) checksum=(Math.imul(31,checksum)+data.charCodeAt(i))|0;
+    return JSON.stringify({v:1,checksum,data});
+  }
+  function writeInfinityLedgerDurable(raw) {
+    return new Promise(resolve=>{
+      if(typeof indexedDB==="undefined") return resolve(false);
+      let settled=false,timer;
+      const finish=v=>{if(settled)return;settled=true;clearTimeout(timer);resolve(v)};
+      try{
+        const req=indexedDB.open("infinity-persistent-state",1);
+        timer=setTimeout(()=>finish(false),1600);
+        req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains("records"))req.result.createObjectStore("records")};
+        req.onerror=()=>finish(false);req.onblocked=()=>finish(false);
+        req.onsuccess=()=>{
+          const db=req.result;
+          try{
+            const tx=db.transaction("records","readwrite");
+            tx.objectStore("records").put(raw,INFINITY_TOKEN_LEDGER);
+            tx.oncomplete=()=>{db.close();finish(true)};
+            tx.onerror=tx.onabort=()=>{try{db.close()}catch{}finish(false)};
+          }catch{try{db.close()}catch{}finish(false)}
+        };
+      }catch{finish(false)}
+    });
+  }
+  async function saveInfinityTokenLedger(tokens) {
+    const next=Array.isArray(tokens)?tokens:[];
+    const raw=encodeSecureEnvelope(next);
+    try{localStorage.setItem(INFINITY_TOKEN_LEDGER,raw)}catch{}
+    await writeInfinityLedgerDurable(raw);
+    window.dispatchEvent(new Event("infinity-history-updated"));
+    window.dispatchEvent(new Event("infinity-wallet-updated"));
+    window.dispatchEvent(new CustomEvent("infinity:token-ledger-updated",{detail:{count:next.length}}));
+    return next;
+  }
+  async function appendInfinityToken(token) {
+    if(!token?.id) return null;
+    const existing=await loadInfinityTokenLedger();
+    const next=[token,...existing.filter(item=>item?.id!==token.id)];
+    await saveInfinityTokenLedger(next);
+    return token;
+  }
+  async function updateInfinityToken(id,patch) {
+    if(!id)return null;
+    const existing=await loadInfinityTokenLedger();
+    const current=existing.find(item=>item?.id===id)||{id};
+    const token={...current,...patch,id};
+    await saveInfinityTokenLedger([token,...existing.filter(item=>item?.id!==id)]);
+    return token;
+  }
+  function tokenWebsiteUrl(id,query="") {
+    const params=new URLSearchParams({id:String(id),query:String(query||""),mode:"preview"});
+    return "https://www-infinity4.github.io/C13b0/studio/build/?"+params.toString();
+  }
+  function prebuildTokenWebsite(id,query="") {
+    if(!id||!document.body)return;
+    const frame=document.createElement("iframe");
+    frame.src=tokenWebsiteUrl(id,query);frame.tabIndex=-1;frame.setAttribute("aria-hidden","true");
+    frame.style.cssText="position:fixed;width:1px;height:1px;right:-8px;bottom:-8px;opacity:0;pointer-events:none;border:0";
+    document.body.appendChild(frame);
+    window.setTimeout(()=>frame.remove(),18000);
+  }
+  async function createUnifiedSearchToken(query,id) {
+    const q=String(query||"").replace(/\s+/g," ").trim(); if(!q)return null;
+    const tokenId=id||("omni-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8));
+    const identity=readInfinityWalletIdentity(),now=new Date().toISOString();
+    const token={
+      id:tokenId,stage:"search",kind:"omni-search",color:"yellow",status:"finished",
+      value:1,units:1,title:q,query:q,resolved:q,source:"omni-phi",sourceSystem:"OMNI_PHI",
+      walletId:identity.walletId,createdAt:now,websiteUrl:tokenWebsiteUrl(tokenId,q),
+      payload:{title:q,dek:"Omni Phi search token",overview:"Omni Phi is building the proportional research package for "+q+".",sources:[]}
+    };
+    await appendInfinityToken(token);
+    return token;
+  }
+  function semanticResearchFromOmni(record) {
+    const sources=(record?.sources||[]).slice(0,40).map(s=>({title:String(s.title||""),url:String(s.url||""),excerpt:String(s.extract||"")}));
+    const findings=sources.slice(0,12).map(s=>s.excerpt).filter(Boolean);
+    return {
+      title:String(record?.query||"Omni Phi research"),
+      dek:"Omni Phi proportional research",
+      overview:String(record?.overview||""),
+      findings,
+      context:(record?.nodes||[]).slice(0,20).map(n=>String(n.label||"")).filter(Boolean),
+      sources
+    };
+  }
+  async function enrichUnifiedSearchToken(tokenId,record) {
+    if(!tokenId||!record)return null;
+    const payload=semanticResearchFromOmni(record),q=String(record.query||"");
+    const updated=await updateInfinityToken(tokenId,{
+      title:q||"Omni Phi research",query:q,resolved:q,stage:"research",status:"finished",
+      sourceCount:payload.sources.length,payload,websiteUrl:tokenWebsiteUrl(tokenId,q),updatedAt:new Date().toISOString()
+    });
+    prebuildTokenWebsite(tokenId,q);
+    return updated;
+  }
   function readInfinityWalletIdentity() {
     const unified=jsonGet("infinity_unified_wallet_v1",{});
     const id=unified.currentWalletId||unified.walletId||"";
@@ -269,6 +370,8 @@
       }
     };
     saveResearch(record);
+    const tokenId=queryParam("token");
+    if(tokenId) void enrichUnifiedSearchToken(tokenId,record).catch(err=>console.warn("Omni token enrichment deferred",err));
     return record;
   }
 
@@ -456,6 +559,8 @@
   window.OmniPhi = {
     STORAGE, base, url, queryParam, profile, saveProfile, activeResearch, saveResearch,
     collectSource, sourceWeight, setupMenu, fetchWikipedia, fallbackSources,
-    createResearch, refreshResearchWithProfile, renderCloud, creditInfinitySearch, awardStarCoinCredit, awardStarCoinShare, shareCard, topbar, escapeHtml
+    createResearch, refreshResearchWithProfile, renderCloud, creditInfinitySearch, awardStarCoinCredit, awardStarCoinShare, shareCard, topbar, escapeHtml,
+    loadInfinityTokenLedger, saveInfinityTokenLedger, appendInfinityToken, updateInfinityToken,
+    createUnifiedSearchToken, enrichUnifiedSearchToken, tokenWebsiteUrl, prebuildTokenWebsite
   };
 })();
