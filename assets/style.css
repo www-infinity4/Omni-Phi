@@ -117,16 +117,25 @@ button { -webkit-tap-highlight-color: transparent; }
 .drawer-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 18px; }
 .drawer-head strong { font-size: 1.4rem; letter-spacing: .08em; }
 .drawer-nav { display: grid; gap: 7px; }
-.drawer-nav a {
-  text-decoration: none;
-  padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,.07);
-  background: rgba(255,255,255,.035);
-  color: #eee8ff;
-  font-weight: 720;
+.drawer-nav a,
+.drawer-nav button {
+  display:flex;
+  align-items:center;
+  width:100%;
+  min-height:58px;
+  text-align:left;
+  text-decoration:none;
+  padding:14px 16px;
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.07);
+  background:rgba(255,255,255,.035);
+  color:#eee8ff;
+  font-weight:720;
+  cursor:pointer;
 }
-.drawer-nav a:hover, .drawer-nav a:focus-visible { border-color: rgba(197,146,255,.4); background: rgba(132,75,255,.12); outline: none; }
+.drawer-nav a:hover, .drawer-nav a:focus-visible,
+.drawer-nav button:hover, .drawer-nav button:focus-visible { border-color:rgba(197,146,255,.4); background:rgba(132,75,255,.12); outline:none; }
+[data-wallet-panel] code{display:block;color:#fff;font-size:.92rem;overflow-wrap:anywhere}
 
 .index-page { overflow: hidden; }
 .index-hero {
