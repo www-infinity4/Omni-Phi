@@ -260,7 +260,8 @@
       wand:icon('<path d="m15 4 5 5"></path><path d="M13 6 3 16l5 5L18 11"></path><path d="m6 3 .5 2L9 6l-2.5 1L6 9l-.5-2L3 6l2.5-1z"></path>'),
       wallet:icon('<path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v10H5a3 3 0 0 1-3-3V7"></path><path d="M16 14h.01"></path>'),
       share:icon('<circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="m8.6 13.5 6.8 4"></path><path d="m15.4 6.5-6.8 4"></path>'),
-      history:icon('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path>')
+      history:icon('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path>'),
+      star:icon('<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.2L5.8 21 7 14.2 2 9.3l6.9-1z"></path>')
     };
     drawer.innerHTML=`
       <div class="drawer-head">
@@ -275,6 +276,7 @@
         <a href="${url("build/")}">${icons.wand}<span>Website builder</span></a>
         <a href="https://www-infinity4.github.io/C13b0/wallet/">${icons.wallet}<span>Token wallet</span></a>
         <button type="button" data-share-page>${icons.share}<span>Share this page</span></button>
+        <button type="button" data-show-star-wallet>${icons.star}<span>Star Coin wallet</span><strong data-star-menu-balance style="margin-left:auto;color:#f0bd55">0.0 ⭐</strong></button>
         <button type="button" data-show-wallet>${icons.wallet}<span>Unified wallet</span></button>
         <a href="https://www-infinity4.github.io/C13b0/history/">${icons.history}<span>History & websites</span></a>
       </nav>
@@ -284,10 +286,15 @@
           <b class="omni-wallet-name">Infinity Wallet</b>
           <p class="omni-wallet-id" data-wallet-id>Loading wallet…</p>
           <p class="omni-wallet-count" data-wallet-balance>—</p>
+          <div class="omni-star-wallet" style="margin:0 0 22px;padding:16px;border-radius:18px;background:rgba(240,189,85,.14);border:1px solid rgba(240,189,85,.35)">
+            <b style="display:block;color:#f0bd55">⭐ Star Coin wallet</b>
+            <p style="margin:8px 0 2px;font-size:1.6rem;font-weight:950" data-wallet-star-effective>0.0 ⭐</p>
+            <small data-wallet-star-progress>0 whole · 0/10 toward next Star Coin</small>
+          </div>
           <a class="omni-wallet-open" href="https://www-infinity4.github.io/C13b0/wallet/">Open token workspace <span aria-hidden="true">↗</span></a>
         </article>
       </section>`;
-    const nav=drawer.querySelector("[data-main-nav]"),panel=drawer.querySelector("[data-wallet-panel]"),balance=drawer.querySelector("[data-wallet-balance]"),walletIdNode=drawer.querySelector("[data-wallet-id]"),back=drawer.querySelector("[data-wallet-back]"),title=drawer.querySelector(".drawer-title");
+    const nav=drawer.querySelector("[data-main-nav]"),panel=drawer.querySelector("[data-wallet-panel]"),balance=drawer.querySelector("[data-wallet-balance]"),walletIdNode=drawer.querySelector("[data-wallet-id]"),starEffective=drawer.querySelector("[data-wallet-star-effective]"),starProgressNode=drawer.querySelector("[data-wallet-star-progress]"),starMenuBalance=drawer.querySelector("[data-star-menu-balance]"),back=drawer.querySelector("[data-wallet-back]"),title=drawer.querySelector(".drawer-title");
     const set=v=>{backdrop.classList.toggle("open",v);drawer.classList.toggle("open",v);document.body.style.overflow=v?"hidden":""};
     const showNav=()=>{panel.hidden=true;panel.style.display="none";nav.hidden=false;nav.style.display="grid";back.style.visibility="hidden";drawer.classList.remove("wallet-mode");title.textContent="Omni Phi"};
     const renderWallet=async()=>{
@@ -297,6 +304,10 @@
       const ledger=await loadInfinityTokenLedger();
       const stable=window.InfinityTokenCount?.reconcile?.(ledger.length)?.value??ledger.length;
       balance.textContent=String(stable);
+      const starWallet=walletStore().wallet||{},whole=Math.max(0,Number(starWallet.tokens)||0),progress=Math.max(0,Number(starWallet.pendingShareCredits)||0),effective=Math.round((whole+progress/10)*10)/10;
+      if(starEffective)starEffective.textContent=effective.toFixed(1)+" ⭐";
+      if(starProgressNode)starProgressNode.textContent=whole+" whole · "+progress+"/10 toward next Star Coin";
+      if(starMenuBalance)starMenuBalance.textContent=effective.toFixed(1)+" ⭐";
     };
     const showWallet=()=>{nav.hidden=true;nav.style.display="none";panel.hidden=false;panel.style.display="block";back.style.visibility="visible";drawer.classList.add("wallet-mode");title.textContent="Omni Phi";drawer.scrollTop=0;void renderWallet()};
     openers.forEach(b=>b.addEventListener("click",()=>{showNav();set(true)}));
@@ -304,9 +315,12 @@
     drawer.querySelector("[data-close-menu]")?.addEventListener("click",()=>set(false));
     back.addEventListener("click",showNav);
     drawer.querySelector("[data-show-wallet]")?.addEventListener("click",showWallet);
-    drawer.querySelector("[data-share-page]")?.addEventListener("click",async()=>{try{if(navigator.share)await navigator.share({title:document.title,url:location.href});else await navigator.clipboard.writeText(location.href)}catch{}});
+    drawer.querySelector("[data-show-star-wallet]")?.addEventListener("click",showWallet);
+    drawer.querySelector("[data-share-page]")?.addEventListener("click",async()=>{try{if(navigator.share){await navigator.share({title:document.title,url:location.href});awardStarCoinShare("omni-page:"+location.href+":"+Date.now())}else await navigator.clipboard.writeText(location.href)}catch{}});
     drawer.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>set(false)));
-    window.addEventListener("infinity-wallet-updated",()=>{if(!panel.hidden)void renderWallet()});
+    window.addEventListener("infinity-wallet-updated",()=>{void renderWallet()});
+    window.addEventListener("starquest:share-progress",()=>{void renderWallet()});
+    window.addEventListener("controlphi:wallet-change",()=>{void renderWallet()});
     window.addEventListener("focus",()=>{if(!panel.hidden)void renderWallet()});
     showNav();
   }
