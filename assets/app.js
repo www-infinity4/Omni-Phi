@@ -321,8 +321,8 @@
     window.addEventListener("infinity-wallet-updated",()=>{void renderWallet()});
     window.addEventListener("starquest:share-progress",()=>{void renderWallet()});
     window.addEventListener("controlphi:wallet-change",()=>{void renderWallet()});
-    window.addEventListener("focus",()=>{if(!panel.hidden)void renderWallet()});
-    showNav();
+    window.addEventListener("focus",()=>{void renderWallet()});
+    showNav();void renderWallet();
   }
 
   async function fetchWikipedia(query) {
