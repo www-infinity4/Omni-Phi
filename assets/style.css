@@ -102,6 +102,14 @@ button { -webkit-tap-highlight-color: transparent; }
   background: linear-gradient(180deg, rgba(8,7,35,.98), rgba(12,6,33,.98));
   border-right: 1px solid rgba(190,132,255,.28);
   box-shadow: 30px 0 80px rgba(0,0,0,.55);
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: max(40px, calc(env(safe-area-inset-bottom) + 28px));
+  touch-action: pan-y;
 }
 .menu-drawer.open { transform: translateX(0); }
 .menu-backdrop { position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,.56); opacity: 0; pointer-events: none; transition: opacity .25s ease; }
