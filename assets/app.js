@@ -19,6 +19,63 @@
   const url = (path = "") => `${base}${String(path).replace(/^\/+/, "")}`;
   const queryParam = (name) => new URLSearchParams(location.search).get(name) || "";
 
+  // Read the exact same durable token ledger Infinity Phi uses in SiteChrome.
+  const INFINITY_TOKEN_LEDGER = "c13b0_infinity_token_ledger_v3";
+  function decodeSecureEnvelope(raw) {
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object" && typeof parsed.data === "string") {
+        const binary = atob(parsed.data);
+        const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0));
+        return JSON.parse(new TextDecoder().decode(bytes));
+      }
+      return parsed;
+    } catch { return null; }
+  }
+  function readInfinityLedgerLocal() {
+    try {
+      const value = decodeSecureEnvelope(localStorage.getItem(INFINITY_TOKEN_LEDGER));
+      return Array.isArray(value) ? value : null;
+    } catch { return null; }
+  }
+  function readInfinityLedgerDurable() {
+    return new Promise(resolve => {
+      if (typeof indexedDB === "undefined") return resolve(null);
+      let settled=false,timer;
+      const finish=v=>{if(settled)return;settled=true;clearTimeout(timer);resolve(v)};
+      try {
+        const req=indexedDB.open("infinity-persistent-state",1);
+        timer=setTimeout(()=>finish(null),1400);
+        req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains("records"))req.result.createObjectStore("records")};
+        req.onerror=()=>finish(null); req.onblocked=()=>finish(null);
+        req.onsuccess=()=>{
+          const db=req.result;
+          try {
+            const tx=db.transaction("records","readonly"),get=tx.objectStore("records").get(INFINITY_TOKEN_LEDGER);
+            get.onsuccess=()=>{const value=decodeSecureEnvelope(typeof get.result==="string"?get.result:null);db.close();finish(Array.isArray(value)?value:null)};
+            get.onerror=()=>{db.close();finish(null)};
+          } catch { try{db.close()}catch{} finish(null); }
+        };
+      } catch { finish(null); }
+    });
+  }
+  async function loadInfinityTokenLedger() {
+    const local=readInfinityLedgerLocal();
+    if (Array.isArray(local)) return local;
+    const durable=await readInfinityLedgerDurable();
+    return Array.isArray(durable)?durable:[];
+  }
+  function readInfinityWalletIdentity() {
+    const unified=jsonGet("infinity_unified_wallet_v1",{});
+    const id=unified.currentWalletId||unified.walletId||"";
+    const active=id&&unified.wallets?.[id];
+    return {
+      walletId:String(active?.walletId||id||"infinity-wallet"),
+      displayName:String(active?.displayName||"Infinity Wallet")
+    };
+  }
+
   function profile() {
     return jsonGet(STORAGE.profile, { keywords: {}, domains: {}, terms: {}, collected: [], searches: 0 });
   }
@@ -83,31 +140,62 @@
     let backdrop=document.querySelector(".menu-backdrop"),drawer=document.querySelector(".menu-drawer");
     if(!backdrop||!drawer){backdrop=document.createElement("div");backdrop.className="menu-backdrop";drawer=document.createElement("aside");drawer.className="menu-drawer";document.body.append(backdrop,drawer)}
     drawer.style.overflowY="auto";drawer.style.webkitOverflowScrolling="touch";
-    const legacy=jsonGet("infinity_unified_wallet_v1",{}),walletId=legacy.currentWalletId||legacy.walletId||"infinity-wallet",shortId=String(walletId).length>22?String(walletId).slice(0,16)+"…"+String(walletId).slice(-10):String(walletId);
+    const icon=(d)=>'<svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
+    const icons={
+      search:icon('<circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path>'),
+      user:icon('<path d="M20 21a8 8 0 0 0-16 0"></path><circle cx="12" cy="7" r="4"></circle>'),
+      book:icon('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M4 4v15.5"></path><path d="M20 22V4H6.5A2.5 2.5 0 0 0 4 6.5"></path>'),
+      wand:icon('<path d="m15 4 5 5"></path><path d="M13 6 3 16l5 5L18 11"></path><path d="m6 3 .5 2L9 6l-2.5 1L6 9l-.5-2L3 6l2.5-1z"></path>'),
+      wallet:icon('<path d="M20 7V6a2 2 0 0 0-2-2H5a3 3 0 0 0 0 6h15v10H5a3 3 0 0 1-3-3V7"></path><path d="M16 14h.01"></path>'),
+      share:icon('<circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="m8.6 13.5 6.8 4"></path><path d="m15.4 6.5-6.8 4"></path>'),
+      history:icon('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path>')
+    };
     drawer.innerHTML=`
-      <div class="drawer-head"><button class="icon-button" data-wallet-back aria-label="Back">‹</button><strong style="font-size:1.55rem">Infinity Phi</strong><button class="icon-button" data-close-menu aria-label="Close menu">×</button></div>
+      <div class="drawer-head">
+        <button class="icon-button drawer-back" data-wallet-back aria-label="Back">‹</button>
+        <strong class="drawer-title">Omni Phi</strong>
+        <button class="icon-button" data-close-menu aria-label="Close menu">×</button>
+      </div>
       <nav class="drawer-nav" data-main-nav>
-        <a href="https://www-infinity4.github.io/C13b0/">Infinity φ home</a>
-        <a href="https://www-infinity4.github.io/C13b0/profile/">Profile & AI context</a>
-        <a href="${url()}">Search & research</a>
-        <a href="${url("build/")}">Website builder</a>
-        <a href="https://www-infinity4.github.io/C13b0/wallet/">Token wallet</a>
-        <button type="button" data-share-page>Share this page</button>
-        <button type="button" data-show-wallet>Unified wallet</button>
-        <a href="https://www-infinity4.github.io/C13b0/history/">History & websites</a>
+        <a href="https://www-infinity4.github.io/C13b0/">${icons.search}<span>Infinity φ home</span></a>
+        <a href="https://www-infinity4.github.io/C13b0/profile/">${icons.user}<span>Profile & AI context</span></a>
+        <a href="${url()}">${icons.book}<span>Search & research</span></a>
+        <a href="${url("build/")}">${icons.wand}<span>Website builder</span></a>
+        <a href="https://www-infinity4.github.io/C13b0/wallet/">${icons.wallet}<span>Token wallet</span></a>
+        <button type="button" data-share-page>${icons.share}<span>Share this page</span></button>
+        <button type="button" data-show-wallet>${icons.wallet}<span>Unified wallet</span></button>
+        <a href="https://www-infinity4.github.io/C13b0/history/">${icons.history}<span>History & websites</span></a>
       </nav>
-      <section data-wallet-panel hidden style="padding:8px 0 28px">
-        <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:28px"><b style="font-size:.78rem">UNIFIED INFINITY WALLET</b>
-        <article style="margin-top:20px;padding:22px;border-radius:24px;background:rgba(255,255,255,.09)"><h2 style="margin:0 0 12px">Infinity Wallet</h2><code data-wallet-id>${escapeHtml(shortId)}</code><div data-wallet-balance style="font-size:3rem;font-weight:950;margin:28px 0">—</div><a href="https://www-infinity4.github.io/C13b0/wallet/" style="display:block;text-align:center;padding:18px;border-radius:18px;background:#f6c354;color:#142039;font-weight:950;text-decoration:none">Open token workspace ↗</a></article></div>
+      <section data-wallet-panel hidden class="omni-infinity-wallet-view">
+        <p class="omni-wallet-kicker">UNIFIED INFINITY WALLET</p>
+        <article class="omni-wallet-card">
+          <b class="omni-wallet-name">Infinity Wallet</b>
+          <p class="omni-wallet-id" data-wallet-id>Loading wallet…</p>
+          <p class="omni-wallet-count" data-wallet-balance>—</p>
+          <a class="omni-wallet-open" href="https://www-infinity4.github.io/C13b0/wallet/">Open token workspace <span aria-hidden="true">↗</span></a>
+        </article>
       </section>`;
-    const nav=drawer.querySelector("[data-main-nav]"),panel=drawer.querySelector("[data-wallet-panel]"),balance=drawer.querySelector("[data-wallet-balance]"),back=drawer.querySelector("[data-wallet-back]");
+    const nav=drawer.querySelector("[data-main-nav]"),panel=drawer.querySelector("[data-wallet-panel]"),balance=drawer.querySelector("[data-wallet-balance]"),walletIdNode=drawer.querySelector("[data-wallet-id]"),back=drawer.querySelector("[data-wallet-back]"),title=drawer.querySelector(".drawer-title");
     const set=v=>{backdrop.classList.toggle("open",v);drawer.classList.toggle("open",v);document.body.style.overflow=v?"hidden":""};
-    const showNav=()=>{panel.hidden=true;nav.hidden=false;back.style.visibility="hidden"};
-    const showWallet=()=>{nav.hidden=true;panel.hidden=false;back.style.visibility="visible"};
-    const renderWallet=state=>{const latest=jsonGet("infinity_unified_wallet_v1",{}),active=latest.currentWalletId&&latest.wallets?.[latest.currentWalletId],candidates=[state?.balances?.INFINITY,state?.balances?.infinityTokens,state?.infinityTokens,active?.balances?.INFINITY,active?.balances?.infinityTokens,latest.infinityTokens,latest.balance];const n=candidates.map(Number).find(Number.isFinite);balance.textContent=Number.isFinite(n)?String(n):"—";const id=state?.user?.id||latest.currentWalletId||latest.walletId;if(id)drawer.querySelector("[data-wallet-id]").textContent=String(id).startsWith("infinity-wallet")?String(id):"infinity-wallet:…"+String(id).slice(-10)};
-    openers.forEach(b=>b.addEventListener("click",()=>{showNav();set(true)}));backdrop.addEventListener("click",()=>set(false));drawer.querySelector("[data-close-menu]")?.addEventListener("click",()=>set(false));back.addEventListener("click",showNav);drawer.querySelector("[data-show-wallet]")?.addEventListener("click",()=>{renderWallet(jsonGet("infinity_unified_wallet_v1",{}));showWallet()});
+    const showNav=()=>{panel.hidden=true;nav.hidden=false;back.style.visibility="hidden";drawer.classList.remove("wallet-mode");title.textContent="Omni Phi"};
+    const renderWallet=async()=>{
+      const identity=readInfinityWalletIdentity();
+      const id=identity.walletId;
+      walletIdNode.textContent=id.length>32?id.slice(0,16)+"…"+id.slice(-10):id;
+      const ledger=await loadInfinityTokenLedger();
+      balance.textContent=String(ledger.length);
+    };
+    const showWallet=()=>{nav.hidden=true;panel.hidden=false;back.style.visibility="visible";drawer.classList.add("wallet-mode");title.textContent="Omni Phi";void renderWallet()};
+    openers.forEach(b=>b.addEventListener("click",()=>{showNav();set(true)}));
+    backdrop.addEventListener("click",()=>set(false));
+    drawer.querySelector("[data-close-menu]")?.addEventListener("click",()=>set(false));
+    back.addEventListener("click",showNav);
+    drawer.querySelector("[data-show-wallet]")?.addEventListener("click",showWallet);
     drawer.querySelector("[data-share-page]")?.addEventListener("click",async()=>{try{if(navigator.share)await navigator.share({title:document.title,url:location.href});else await navigator.clipboard.writeText(location.href)}catch{}});
-    drawer.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>set(false)));window.addEventListener("infinity:wallet-state",e=>renderWallet(e.detail));window.addEventListener("omni:wallet-ready",e=>renderWallet(e.detail));window.addEventListener("infinity-wallet-updated",()=>renderWallet(jsonGet("infinity_unified_wallet_v1",{})));renderWallet(legacy);showNav();
+    drawer.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>set(false)));
+    window.addEventListener("infinity-wallet-updated",()=>{if(!panel.hidden)void renderWallet()});
+    window.addEventListener("focus",()=>{if(!panel.hidden)void renderWallet()});
+    showNav();
   }
 
   async function fetchWikipedia(query) {
