@@ -177,7 +177,7 @@
       </section>`;
     const nav=drawer.querySelector("[data-main-nav]"),panel=drawer.querySelector("[data-wallet-panel]"),balance=drawer.querySelector("[data-wallet-balance]"),walletIdNode=drawer.querySelector("[data-wallet-id]"),back=drawer.querySelector("[data-wallet-back]"),title=drawer.querySelector(".drawer-title");
     const set=v=>{backdrop.classList.toggle("open",v);drawer.classList.toggle("open",v);document.body.style.overflow=v?"hidden":""};
-    const showNav=()=>{panel.hidden=true;nav.hidden=false;back.style.visibility="hidden";drawer.classList.remove("wallet-mode");title.textContent="Omni Phi"};
+    const showNav=()=>{panel.hidden=true;panel.style.display="none";nav.hidden=false;nav.style.display="grid";back.style.visibility="hidden";drawer.classList.remove("wallet-mode");title.textContent="Omni Phi"};
     const renderWallet=async()=>{
       const identity=readInfinityWalletIdentity();
       const id=identity.walletId;
@@ -185,7 +185,7 @@
       const ledger=await loadInfinityTokenLedger();
       balance.textContent=String(ledger.length);
     };
-    const showWallet=()=>{nav.hidden=true;panel.hidden=false;back.style.visibility="visible";drawer.classList.add("wallet-mode");title.textContent="Omni Phi";void renderWallet()};
+    const showWallet=()=>{nav.hidden=true;nav.style.display="none";panel.hidden=false;panel.style.display="block";back.style.visibility="visible";drawer.classList.add("wallet-mode");title.textContent="Omni Phi";drawer.scrollTop=0;void renderWallet()};
     openers.forEach(b=>b.addEventListener("click",()=>{showNav();set(true)}));
     backdrop.addEventListener("click",()=>set(false));
     drawer.querySelector("[data-close-menu]")?.addEventListener("click",()=>set(false));
