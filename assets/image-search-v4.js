@@ -1,6 +1,15 @@
 (() => {
   'use strict';
-  if (!window.OmniPhi || window.__omniImageSearchV4) return;
+  if (window.__omniImageSearchV4) return;
+  if (!window.OmniPhi) {
+    let bootTries = 0;
+    const bootTimer = setInterval(() => {
+      bootTries += 1;
+      if (window.OmniPhi) { clearInterval(bootTimer); window.dispatchEvent(new Event('omniphi:image-search-ready')); }
+      else if (bootTries > 40) clearInterval(bootTimer);
+    }, 250);
+    return;
+  }
   window.__omniImageSearchV4 = true;
 
   const AI_ENDPOINT = 'https://infinity-rogers.marvaseater.workers.dev/v1/chat';
@@ -89,6 +98,7 @@
       sourceLocked: true,
       selectedFromImageSearch: true,
       searchQuery: query,
+      tokenId: String(OmniPhi.activeResearch?.()?.createdAt || read('omniPhi:lastSearchToken:v1', {})?.tokenId || new URLSearchParams(location.search).get('token') || ''),
       collectedAt: now,
       collectedFrom: item.origin === 'google-images' ? 'Google Images via Omni Phi' : 'Omni Phi image search',
       imageOrigin: item.origin || 'image-search',
@@ -114,7 +124,7 @@
     }
 
     card?.classList.add('selected');
-    if (button) { button.textContent = '✓ Selected'; button.disabled = true; }
+    if (button) { button.textContent = '✓ Collected'; button.disabled = true; }
     window.dispatchEvent(new CustomEvent('omniphi:image-selected', { detail: { query, record } }));
     updateSelectedCount(query);
     return record;
@@ -277,7 +287,7 @@
         <div>
           <small>${escape(item.provider || 'Image source')}</small>
           <strong>${escape(item.title || query)}</strong>
-          <button type="button" class="select-image">${alreadySelected ? '✓ Selected' : 'Select image'}</button>
+          <button type="button" class="select-image">${alreadySelected ? '✓ Collected' : 'Collect image'}</button>
           ${item.sourceUrl ? `<a href="${escape(item.sourceUrl)}" target="_blank" rel="noopener">Open source</a>` : ''}
         </div>`;
       const selectButton = card.querySelector('.select-image');
