@@ -153,6 +153,7 @@
     };
     window.InfinityTokenCount?.register?.(tokenId);
     await appendInfinityToken(token);
+    window.dispatchEvent(new CustomEvent("phi:quant-counterpart",{detail:{token_id:tokenId,query:q,source:"OMNI_PHI"}}));
     prebuildTokenWebsite(tokenId,q);
     return token;
   }

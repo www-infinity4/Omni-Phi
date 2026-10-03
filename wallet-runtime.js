@@ -234,6 +234,12 @@
     return{total,infinity,omni,quants,legacy:legacy+Math.max(0,total-records.size)};
   }
 
+  let cloudBalances={};
+  async function refreshCloudBalances(){try{const bridge=window.StarQuestCloudLedger;if(!bridge?.authenticatedFetch){const Wallet=window.InfinityCloudWallet||(typeof window.InfinityUnifiedWallet==='function'?window.InfinityUnifiedWallet:null);if(Wallet){const wallet=new Wallet({appName:document.title});const state=await wallet.refresh();cloudBalances=state.balances||{};refreshWalletUI()}return}const r=await bridge.authenticatedFetch('https://unified-wallet.marvaseater.workers.dev/v1/wallet/state');if(!r.ok)return;const state=await r.json();cloudBalances=state.balances||{};refreshWalletUI()}catch(error){console.warn('Cloud wallet balance refresh deferred',error)}}
+  window.addEventListener('infinity:wallet-state',e=>{cloudBalances=e.detail?.balances||{};refreshWalletUI()});
+  document.addEventListener('starquest:ledger-connected',refreshCloudBalances);
+  window.addEventListener('load',refreshCloudBalances);
+  window.addEventListener('focus',refreshCloudBalances);
   function auxiliaryBalances(){
     let quants=0,infinity=0,musicQuants=0;
     const canonical=canonicalSearchCounts();
@@ -256,7 +262,7 @@
       omni:canonical.omni,
       legacy:canonical.legacy,
       total:canonical.total,
-      musicQuants
+      musicQuants:Math.max(musicQuants,Number(cloudBalances.MUSIC_QUANT)||0)
     };
   }
 
@@ -452,6 +458,7 @@
     watchWalletMenu();
     refreshWalletUI();
     refreshAlienCoinCount();
+    void refreshCloudBalances();
   }
 
   function recordShare(input={}){
