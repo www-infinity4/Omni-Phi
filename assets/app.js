@@ -151,6 +151,8 @@
       walletId:identity.walletId,createdAt:now,websiteUrl:tokenWebsiteUrl(tokenId,q),
       payload:{title:q,dek:"Omni Phi search token",overview:"Omni Phi is building the proportional research package for "+q+".",sources:[]}
     };
+    window.PhiAssetBalances?.seed("INFINITY",window.InfinityTokenCount?.value?.()||0);
+    window.PhiAssetBalances?.mint("INFINITY",tokenId);
     window.InfinityTokenCount?.register?.(tokenId);
     await appendInfinityToken(token);
     window.dispatchEvent(new CustomEvent("phi:quant-counterpart",{detail:{token_id:tokenId,query:q,source:"OMNI_PHI"}}));
