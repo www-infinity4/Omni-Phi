@@ -34,7 +34,7 @@ function load(query,tokenId){
  const profile=list(root.OmniPhi?.profile?.()?.collected).filter(item=>sameToken(item,tokenId,query)).map(item=>normalized(item));
  const researchCards=sameToken(research,tokenId,query)||text(research.query).toLowerCase()===text(query).toLowerCase()?list(research.sources).map(item=>normalized(item)):[];
  const direction=json(localStorage,'omniPhi:websiteDirection:v1',{});
- const pathCards=String(direction.tokenId)===String(tokenId)?list(direction.selectedImages).map(item=>normalized(item)):[];
+ const pathCards=String(direction.tokenId)===String(tokenId)?list(direction.selectedImages).map(item=>normalized(item,'image')):[];
  const all=unique([...media,...shared,...profile,...researchCards,...pathCards]);
  const audio=unique(all.filter(item=>/audio|sound|music/.test(item.kind)));
  const video=unique(all.filter(item=>/video|movie|film/.test(item.kind)));
