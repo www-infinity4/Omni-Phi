@@ -211,6 +211,12 @@
     return coverage >= 0.5 || titleCoverage >= 0.5 || phraseIncluded(text, canonical);
   }
 
+  function evidencePrompt(lines,evidence){
+    const prefix=lines.join('\n');
+    while(evidence.length&&prefix.length+'\nEvidence: '.length+JSON.stringify(evidence).length>11500)evidence.pop();
+    return prefix+'\nEvidence: '+JSON.stringify(evidence);
+  }
+
   async function callCardAi(query, intent, sources) {
     const evidence = sources.slice(0, 10).map((source, index) => ({
       index,
@@ -220,13 +226,13 @@
       evidence: clean(source.sourceExtract || source.extract || '', 1800)
     }));
 
-    const instruction = [
+    const instruction = evidencePrompt([
       'You are the grounded intelligence layer for general-purpose research cards.',
-      `User query: ${query}`,
-      `Canonical subject: ${intent.canonicalSubject || query}`,
-      `Entity type: ${intent.entityType || 'unknown'}`,
-      `Interpreted intent: ${intent.summary || query}`,
-      `Competing meanings to exclude: ${(intent.excludedMeanings || []).join(' | ') || 'none supplied'}`,
+      `User query: ${clean(query,600)}`,
+      `Canonical subject: ${clean(intent.canonicalSubject || query,600)}`,
+      `Entity type: ${clean(intent.entityType || 'unknown',100)}`,
+      `Interpreted intent: ${clean(intent.summary || query,1800)}`,
+      `Competing meanings to exclude: ${clean((intent.excludedMeanings || []).join(' | ') || 'none supplied',600)}`,
       'Use only the supplied evidence.',
       'First reject any evidence item that is about a different entity or competing meaning, even if it shares words with the query.',
       'Return cards ONLY for evidence that is genuinely about the canonical subject. Omit off-subject evidence indexes completely.',
@@ -238,9 +244,8 @@
       'Card title: specific and readable, usually 3–10 words. Card text: 2–4 concise sentences.',
       'Write one concise overview that directly addresses the query and synthesizes only accepted evidence.',
       'Return JSON only. No markdown.',
-      'Schema: {"overview":"...","cards":[{"index":0,"title":"...","text":"..."}]}',
-      `Evidence: ${JSON.stringify(evidence)}`
-    ].join('\n');
+      'Schema: {"overview":"...","cards":[{"index":0,"title":"...","text":"..."}]}'
+    ],evidence);
 
     let lastError = null;
     for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -287,18 +292,17 @@
       domain: source.domain || source.provider || '',
       evidence: clean(source.sourceExtract || source.extract || '', 900)
     }));
-    const instruction = [
+    const instruction = evidencePrompt([
       'You are the AI Overview writer for Omni Phi.',
-      `User query: ${query}`,
-      `Canonical subject: ${intent.canonicalSubject || query}`,
-      `Interpreted intent: ${intent.summary || query}`,
+      `User query: ${clean(query,600)}`,
+      `Canonical subject: ${clean(intent.canonicalSubject || query,600)}`,
+      `Interpreted intent: ${clean(intent.summary || query,1800)}`,
       'Use only the supplied evidence.',
       'Write one useful overview first. Do not write story cards in this response.',
       'Synthesize the evidence into a concise readable overview that directly addresses the query.',
       'Reject off-subject evidence and competing meanings.',
-      'Return JSON only. Schema: {"overview":"..."}',
-      `Evidence: ${JSON.stringify(evidence)}`
-    ].join('\n');
+      'Return JSON only. Schema: {"overview":"..."}'
+    ],evidence);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 20000);
     try {
