@@ -38,7 +38,7 @@ function load(query,tokenId){
  const all=unique([...media,...shared,...profile,...researchCards,...pathCards]);
  const audio=unique(all.filter(item=>/audio|sound|music/.test(item.kind)));
  const video=unique(all.filter(item=>/video|movie|film/.test(item.kind)));
- const imageCards=unique([...images,...all.filter(item=>item.kind==="image")]);
+ const imageCards=unique([...images,...pathCards,...all.filter(item=>item.kind==="image")]);
  const mediaKeys=new Set([...audio,...video,...imageCards].map(identity));
  const cards=unique(all.filter(item=>!mediaKeys.has(identity(item))));
  const overview=text(research.overview||research.visualPatternOverview||(String(direction.tokenId)===String(tokenId)?direction.overview:'')||json(localStorage,"omniPhi:codeSeed:v1",{})?.overview);
