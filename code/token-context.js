@@ -12,6 +12,10 @@ const sameToken=(item,tokenId,query)=>{
  // Never let an unscoped item from an older search leak into the active build.
  return !!q&&(q===needle||q.startsWith(needle+" ")||needle.startsWith(q+" "));
 };
+const TOPIC_STOP=new Set("explain describe teach learn learning education educational lesson lessons guide student students grade grades school kid kids child children beginner introduction introductory simple simply for the a an and or of in on to from with about what which who how why when where is are was were be been being this that these those me my please sixth seventh eighth ninth tenth eleventh twelfth".split(" "));
+const stem=word=>{let value=String(word||"").toLowerCase();if(value.length>5&&value.endsWith("ing"))value=value.slice(0,-3);else if(value.length>4&&value.endsWith("ies"))value=value.slice(0,-3)+"y";else if(value.length>4&&value.endsWith("es"))value=value.slice(0,-2);else if(value.length>3&&value.endsWith("s"))value=value.slice(0,-1);return value};
+const topicTerms=query=>[...new Set((text(query).toLowerCase().match(/[a-z0-9]+/g)||[]).filter(word=>!TOPIC_STOP.has(word)).map(stem).filter(word=>word.length>2))];
+const onTopic=(item,query)=>{const terms=topicTerms(query);if(!terms.length)return true;const hay=new Set((text((item?.title||"")+" "+(item?.sourceTitle||"")+" "+(item?.extract||"")+" "+(item?.sourceExtract||"")).toLowerCase().match(/[a-z0-9]+/g)||[]).map(stem));return terms.some(term=>hay.has(term))};
 const identity=item=>text(item.storyKey||item.id||item.url||item.sourceUrl||item.imageUrl||item.image||item.title);
 function unique(items){const seen=new Set();return items.filter(item=>{const key=identity(item);if(!key||seen.has(key))return false;seen.add(key);return true})}
 function normalized(item,forcedKind){
@@ -32,7 +36,7 @@ function load(query,tokenId){
  const media=collectKeys(["omniPhi:mediaSelections:v1","infinityPhi:mediaSelections:v1"],tokenId,query);
  const shared=collectKeys(["phiShared:collection:v1","omniPhi:collection:v1","infinityPhi:collection:v1","omniPhi:websiteIndexCards:v1","infinityPhi:websiteIndexCards:v1"],tokenId,query);
  const profile=list(root.OmniPhi?.profile?.()?.collected).filter(item=>sameToken(item,tokenId,query)).map(item=>normalized(item));
- const researchCards=sameToken(research,tokenId,query)||text(research.query).toLowerCase()===text(query).toLowerCase()?list(research.sources).map(item=>normalized(item)):[];
+ const researchCards=(sameToken(research,tokenId,query)||text(research.query).toLowerCase()===text(query).toLowerCase()?list(research.sources).map(item=>normalized(item)):[]).filter(item=>onTopic(item,query));
  const direction=json(localStorage,'omniPhi:websiteDirection:v1',{});
  const pathCards=String(direction.tokenId)===String(tokenId)?list(direction.selectedImages).map(item=>normalized(item,'image')):[];
  const all=unique([...media,...shared,...profile,...researchCards,...pathCards]);
