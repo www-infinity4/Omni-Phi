@@ -222,8 +222,9 @@
     <script src="https://www-infinity4.github.io/C13b0/unified-token-count.js?v=20261002-stable3"></script><script src="../assets/app.js?v=20261002-starcoin2"></script>
     <script src="../assets/capability-router.js?v=20260920-c13b0-catalog1"></script>
     <script src="./entity-catalog.js?v=20260921-catalog1"></script>
-    <script src="./token-context.js?v=20260922-token2"></script>
+    <script src="./token-context.js?v=20261004-token3"></script>
     <script src="./card-system.js?v=20260922-card10"></script>
+    <script src="./education-builder.js?v=20261004-education1"></script>
     <script>
       (() => {
         const BACKEND = "https://orange-brook-a2ac.marvaseater.workers.dev",
@@ -263,7 +264,14 @@
               ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[m],
           );
         let iteration = 0;
+        let buildEpoch = 0, educationArtifact = null;
+        const expiredBuilds = new Set();
+        const savedDirection = (() => { try { return JSON.parse(localStorage.getItem('omniPhi:websiteDirection:v1') || 'null'); } catch { return null; } })();
+        const sitePath = p.get('path') || (savedDirection?.tokenId === tokenId ? savedDirection.path : '') || '';
+        if (sitePath) appliedDirection();
+        function appliedDirection() { direction.value = sitePath; }
         const applied = [];
+        if (sitePath) applied.push(sitePath);
         function log(title, detail, state = "run") {
           const d = document.createElement("div");
           d.className = "step " + state;
@@ -492,7 +500,26 @@
           } catch {}
           return out;
         }
-        async function render(route, n, note) {
+        async function render(route, n, note, epoch) {
+          if (/education|educational|curriculum|lesson|learning/i.test(sitePath + ' ' + note)) {
+            const context = window.CodePhiTokenContext || {};
+            let sources = window.CodePhiEducation.evidence(context, []);
+            if (sources.length < 3) {
+              const batches = await Promise.allSettled([query + ' educational guide', query + ' materials explanation'].map(async term => {
+                const u = new URL(BACKEND + '/search');
+                u.search = new URLSearchParams({q:term,format:'json',categories:'general'});
+                return (await fetchJson(u,{cache:'no-store'})).results || [];
+              }));
+              sources = window.CodePhiEducation.evidence(context,batches.filter(x=>x.status==='fulfilled').flatMap(x=>x.value));
+            }
+            const node = log('Design learning path','AI is arranging evidence into lessons, examples, comparison tasks and knowledge checks.');
+            const model = await window.CodePhiEducation.plan(query,note,sources);
+            if (epoch !== buildEpoch || expiredBuilds.has(epoch)) return;
+            educationArtifact = {model,sources,files:window.CodePhiEducation.packageFiles(model,sources,context,tokenId)};
+            viewer.srcdoc = window.CodePhiEducation.render(model,sources,context,tokenId);
+            finish(node,'pass',model.generation === 'ai-draft' ? 'AI curriculum applied to the page layout.' : 'Source-guided curriculum rendered; AI design unavailable or awaiting evidence.');
+            return;
+          }
           const tools = route.repositories || [],
             q = (query + " " + (note || "")).toLowerCase(),
             gallery =
@@ -520,6 +547,7 @@
           if (gallery) {
             let saved = collectVisuals();
             if (!saved.length) saved = await searchImages(query);
+            if (epoch !== buildEpoch) return;
             viewer.srcdoc =
               '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font:16px system-ui;margin:0;background:#111;color:#fff}header{padding:24px}h1{margin:0}.grid{display:grid;grid-template-columns:repeat(' +
               (cols || "auto-fill") +
@@ -620,6 +648,7 @@
           const entityBundle = window.InfinityEntityCatalog?.resolve(query);
           if (entityBundle?.cards?.length)
             results = [...entityBundle.cards, ...results];
+          if (epoch !== buildEpoch) return;
           viewer.srcdoc =
             window.InfinityPhiCards?.render(
               query,
@@ -631,6 +660,8 @@
             ) || "<h1>" + esc(query) + "</h1>";
         }
         async function build(note = "") {
+          const epoch = ++buildEpoch;
+          educationArtifact = null;
           if (note && !applied.includes(note)) applied.push(note);
           const combined = applied.join(" · ");
           iteration++;
@@ -667,18 +698,25 @@
             "…</h2><p>Loading fresh content for this token.</p></body>";
           try {
             await Promise.race([
-              render(route, iteration, combined),
+              render(route, iteration, combined, epoch),
               new Promise((_, reject) =>
                 setTimeout(
                   () => reject(new Error("Search sources timed out")),
-                  20000,
+                  40000,
                 ),
               ),
             ]);
           } catch (error) {
+            if (epoch !== buildEpoch) return;
+            expiredBuilds.add(epoch);
             const entityBundle = window.InfinityEntityCatalog?.resolve(query);
             const fallbackResults = entityBundle?.cards || [];
-            viewer.srcdoc =
+            if (/education|educational|curriculum|lesson|learning/i.test(sitePath + ' ' + combined)) {
+              const context = window.CodePhiTokenContext || {}, sources = window.CodePhiEducation.evidence(context,fallbackResults);
+              const model = {...window.CodePhiEducation.fallback(query,combined,sources),generation:'source-guided'};
+              educationArtifact = {model,sources,files:window.CodePhiEducation.packageFiles(model,sources,context,tokenId)};
+              viewer.srcdoc = window.CodePhiEducation.render(model,sources,context,tokenId);
+            } else viewer.srcdoc =
               window.InfinityPhiCards?.render(
                 query,
                 fallbackResults,
@@ -696,6 +734,7 @@
               "pass",
             );
           }
+          if (epoch !== buildEpoch) return;
           finish(
             assemble,
             "pass",
@@ -722,7 +761,7 @@
           finish(
             inspect,
             "pass",
-            "GPT is actively planning the next build pass from this token.",
+            "The current path and source collection determine the build structure.",
           );
           remote(
             "/code-phi/plan",
@@ -730,11 +769,12 @@
             5000,
           )
             .then((remotePlan) => {
+              if (epoch !== buildEpoch) return;
               plan = { ...plan, ...remotePlan };
               log(
-                "GPT plan joined",
+                "Capability plan joined",
                 plan.summary ||
-                  "Orange Brook strengthened this iteration plan.",
+                  "Orange Brook returned a capability plan.",
                 "pass",
               );
             })
@@ -761,13 +801,14 @@
             ],
           })
             .then((review) => {
+              if (epoch !== buildEpoch) return;
               finish(
                 browser,
-                "pass",
+                review.issues?.length ? "fail" : "pass",
                 review.summary || "GPT completed the missing-piece inspection.",
               );
               browserState.textContent =
-                "AI inspection: passed iteration " + iteration + ".";
+                "Browser inspection: " + (review.issues?.length ? 'issues found in' : 'completed for') + " iteration " + iteration + ".";
               (review.issues || [])
                 .slice(0, 6)
                 .forEach((issue) => log("Missing piece", issue, "fail"));
@@ -792,6 +833,7 @@
               }
             })
             .catch((e) => {
+              if (epoch !== buildEpoch) return;
               finish(browser, "fail", String(e.message || e));
               browserState.textContent =
                 "Browser verification: unavailable; local Code Phi build remains active.";
@@ -805,6 +847,9 @@
             iteration,
             direction: combined,
             route,
+            sitePath,
+            blueprint: educationArtifact?.model || null,
+            files: educationArtifact?.files || [],
             html: viewer.srcdoc,
             createdAt: new Date().toISOString(),
             creator: "Code Phi",
@@ -831,11 +876,17 @@
             iteration,
             html: viewer.srcdoc,
             direction: applied.join(" · "),
+            files: educationArtifact?.files || [],
+            blueprint: educationArtifact?.model || null,
             createdAt: new Date().toISOString(),
             status: "ready",
           };
           localStorage.setItem("codePhi:deployReady:v1", JSON.stringify(asset));
           status.textContent = "Website packaged for final deployment";
+          if (educationArtifact) {
+            const url=URL.createObjectURL(new Blob([JSON.stringify(asset,null,2)],{type:'application/json'}));
+            const a=document.createElement('a');a.href=url;a.download='code-phi-education-package.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+          }
           log(
             "Deploy package ready",
             "Saved under this research token. Web Phi publishing is the next handoff.",

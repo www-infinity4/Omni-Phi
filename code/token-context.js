@@ -33,13 +33,15 @@ function load(query,tokenId){
  const shared=collectKeys(["phiShared:collection:v1","omniPhi:collection:v1","infinityPhi:collection:v1","omniPhi:websiteIndexCards:v1","infinityPhi:websiteIndexCards:v1"],tokenId,query);
  const profile=list(root.OmniPhi?.profile?.()?.collected).filter(item=>sameToken(item,tokenId,query)).map(item=>normalized(item));
  const researchCards=sameToken(research,tokenId,query)||text(research.query).toLowerCase()===text(query).toLowerCase()?list(research.sources).map(item=>normalized(item)):[];
- const all=unique([...media,...shared,...profile,...researchCards]);
+ const direction=json(localStorage,'omniPhi:websiteDirection:v1',{});
+ const pathCards=String(direction.tokenId)===String(tokenId)?list(direction.selectedImages).map(item=>normalized(item)):[];
+ const all=unique([...media,...shared,...profile,...researchCards,...pathCards]);
  const audio=unique(all.filter(item=>/audio|sound|music/.test(item.kind)));
  const video=unique(all.filter(item=>/video|movie|film/.test(item.kind)));
  const imageCards=unique([...images,...all.filter(item=>item.kind==="image")]);
  const mediaKeys=new Set([...audio,...video,...imageCards].map(identity));
  const cards=unique(all.filter(item=>!mediaKeys.has(identity(item))));
- const overview=text(research.overview||research.visualPatternOverview||json(localStorage,"omniPhi:codeSeed:v1",{})?.overview);
+ const overview=text(research.overview||research.visualPatternOverview||(String(direction.tokenId)===String(tokenId)?direction.overview:'')||json(localStorage,"omniPhi:codeSeed:v1",{})?.overview);
  const context={schema:"infinity-code-token-context/v1",query,tokenId,overview,cards,images:imageCards,audio,video,all:unique([...cards,...imageCards,...video,...audio])};
  context.counts={cards:cards.length,images:imageCards.length,video:video.length,audio:audio.length};
  context.forPrompt=()=>({schema:context.schema,query,tokenId,overview:overview.slice(0,5000),counts:context.counts,cards:cards.slice(0,20).map(({title,extract,url,provider})=>({title,extract:extract.slice(0,1200),url,provider})),images:imageCards.slice(0,20).map(({title,image,url,provider})=>({title,image,url,provider})),video:video.slice(0,12).map(({id,title,extract,url})=>({id,title,extract:extract.slice(0,900),url})),audio:audio.slice(0,12).map(({id,title,extract,url})=>({id,title,extract:extract.slice(0,900),url}))});
