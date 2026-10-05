@@ -7,9 +7,10 @@ let syncing=false;
 function mirror(state){
  const unified=read(UNIFIED,{}),walletId=state.wallet_id||unified.currentWalletId||'music-quant-cloud';
  const wallets=unified.wallets&&typeof unified.wallets==='object'?unified.wallets:{},wallet=wallets[walletId]&&typeof wallets[walletId]==='object'?wallets[walletId]:{},balances=wallet.balances&&typeof wallet.balances==='object'?wallet.balances:{};
- wallets[walletId]={...wallet,balances:{...balances,MUSIC_QUANT:Number(state.balance||0)},updatedAt:Date.now()};
- write(UNIFIED,{...unified,currentWalletId:walletId,wallets,musicQuants:Number(state.balance||0),updatedAt:Date.now(),source:'music-quant-cloud'});
- window.dispatchEvent(new CustomEvent('controlphi:wallet-change',{detail:{musicQuants:Number(state.balance||0),source:'music-quant-cloud'}}));
+ const preserved=Math.max(Number(unified.musicQuants)||0,Number(unified?.balances?.MUSIC_QUANT)||0,Number(balances.MUSIC_QUANT)||0,Number(state.balance)||0);
+ wallets[walletId]={...wallet,balances:{...balances,MUSIC_QUANT:preserved},updatedAt:Date.now()};
+ write(UNIFIED,{...unified,currentWalletId:walletId,wallets,musicQuants:preserved,updatedAt:Date.now(),source:'music-quant-cloud'});
+ window.dispatchEvent(new CustomEvent('controlphi:wallet-change',{detail:{musicQuants:preserved,attachedMusicQuantRecords:Number(state.balance)||0,source:'music-quant-cloud'}}));
  window.ControlPhi?.refreshWallet?.();
 }
 function mergeCloud(cloud){
