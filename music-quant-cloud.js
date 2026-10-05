@@ -15,14 +15,14 @@ function mirror(state){
 function mergeCloud(cloud){
  const playable=read(LOCAL,[]),listening=read(LISTENING,[]),playableMap=new Map(playable.filter(q=>!q.transferredAt).map(q=>[q.id,q])),listeningMap=new Map(listening.filter(q=>!q.transferredAt).map(q=>[q.id,q]));
  (Array.isArray(cloud)?cloud:[]).forEach(q=>{if(!q?.id)return;if(q.kind==='listening'&&Array.isArray(q.notes)&&q.notes.length===0)listeningMap.set(q.id,q);else if(Array.isArray(q.notes)&&q.notes.length>=5&&q.notes.length<=15)playableMap.set(q.id,q)});
- const playableMerged=[...playableMap.values()].sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,500);
- const listeningMerged=[...listeningMap.values()].sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,500);
+ const playableMerged=[...playableMap.values()].sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+ const listeningMerged=[...listeningMap.values()].sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
  write(LOCAL,playableMerged);write(LISTENING,listeningMerged);return [...playableMerged,...listeningMerged];
 }
 async function sync(){
  if(syncing)return {ok:false,reason:'sync_in_progress'};const Wallet=window.InfinityCloudWallet;const bridge=window.StarQuestCloudLedger||(Wallet?{authenticatedFetch:(url,opt={})=>{const w=new Wallet({appName:document.title});return fetch(url,{...opt,headers:{'content-type':'application/json',authorization:'Bearer '+w.token(),...(opt.headers||{})},body:typeof opt.body==='string'?opt.body:opt.body?JSON.stringify(opt.body):undefined})}}:null);const indexed=window.MusicQuantStore?await window.MusicQuantStore.list().catch(()=>[]):[],playableMap=new Map([...read(LOCAL,[]),...indexed].filter(q=>q?.id&&!q.transferredAt).map(q=>[q.id,q])),listeningMap=new Map(read(LISTENING,[]).filter(q=>q?.id&&!q.transferredAt&&!playableMap.has(q.id)).map(q=>[q.id,q])),localBalance=playableMap.size+listeningMap.size;window.MusicQuantCloud.localCount=localBalance;window.MusicQuantCloud.pianoCount=playableMap.size;window.MusicQuantCloud.listeningCount=listeningMap.size;window.ControlPhi?.refreshWallet?.();if(!bridge?.authenticatedFetch){return {ok:false,reason:'account_not_connected',localBalance}}syncing=true;
  try{
-  const local=[...playableMap.values(),...listeningMap.values()].sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,1000);
+  const local=[...playableMap.values(),...listeningMap.values()].sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
   if(local.length){
    for(let offset=0;offset<local.length;offset+=100){
     const response=await bridge.authenticatedFetch(ENDPOINT+'/v1/music-quants/sync',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({quants:local.slice(offset,offset+100)})});
