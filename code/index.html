@@ -227,7 +227,7 @@
     <script src="./entity-catalog.js?v=20260921-catalog1"></script>
     <script src="./token-context.js?v=20261004-token5"></script>
     <script src="./card-system.js?v=20260922-card10"></script>
-    <script src="./education-builder.js?v=20261004-education3"></script>\n    <script src="./design-pipeline.js?v=20261005-design2"></script>
+    <script src="./education-builder.js?v=20261004-education3"></script>\n    <script src="./design-pipeline.js?v=20261005-design2"></script>\n    <script src="./provider-bridge.js?v=20261005-provider1"></script>\n    <script src="./repair-engine.js?v=20261005-repair1"></script>
     <script>
       (() => {
         const BACKEND = "https://orange-brook-a2ac.marvaseater.workers.dev",
@@ -761,6 +761,14 @@
             );
           }
           if (epoch !== buildEpoch) return;
+          if (window.CodePhiProviderBridge && viewer.srcdoc) {
+            viewer.srcdoc = window.CodePhiProviderBridge.apply(
+              viewer.srcdoc,
+              route,
+              window.CodePhiTokenContext || {},
+              query,
+            );
+          }
           finish(
             assemble,
             "pass",
@@ -845,22 +853,37 @@
               (review.issues || [])
                 .slice(0, 6)
                 .forEach((issue) => log("Missing piece", issue, "fail"));
-              if (review && review.html) {
-                localStorage.setItem(
-                  "codePhi:repairProposal:v1",
-                  JSON.stringify({
-                    query,
-                    tokenId,
-                    iteration,
-                    html: review.html,
-                    issues: review.issues || [],
-                    repairs: review.repairs || [],
-                    createdAt: new Date().toISOString(),
-                  }),
+              const proposed = review?.html || viewer.srcdoc;
+              const safeRepair = window.CodePhiRepairEngine?.applySafe(proposed, review) || {html:proposed,repairs:[],changed:false};
+              localStorage.setItem(
+                "codePhi:repairProposal:v1",
+                JSON.stringify({
+                  query,
+                  tokenId,
+                  iteration,
+                  html: safeRepair.html,
+                  issues: review.issues || [],
+                  repairs: [...(review.repairs || []), ...(safeRepair.repairs || [])],
+                  createdAt: new Date().toISOString(),
+                }),
+              );
+              if (safeRepair.changed && safeRepair.html) {
+                window.CodePhiActionEngine?.captureWorkingRevision?.();
+                viewer.srcdoc = safeRepair.html;
+                setTimeout(() => window.CodePhiActionEngine?.captureWorkingRevision?.(), 100);
+                log(
+                  "Safe repair applied",
+                  (safeRepair.repairs || []).join(" · ") || "Deterministic preview repairs applied.",
+                  "pass",
                 );
+                const repairedCheck = localPreviewPrecheck(viewer.srcdoc);
+                browserState.textContent = repairedCheck.ok
+                  ? "Browser verification: inspected and safe repairs applied."
+                  : "Browser verification: safe repairs applied; "+repairedCheck.issues.length+" item"+(repairedCheck.issues.length===1?"":"s")+" remain.";
+              } else if (review && review.html) {
                 log(
                   "Repair proposal indexed",
-                  "GPT suggestions were saved for the next ranked iteration without replacing the working Infinity page.",
+                  "Browser/GPT repair output was saved as a reversible proposal.",
                   "pass",
                 );
               }
