@@ -2,10 +2,14 @@
 "use strict";
 const esc=s=>String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
 const API_CATALOG=[
- {id:"ebay-browse",name:"eBay Browse API",provider:"eBay",category:"Marketplace",auth:"OAuth 2.0",tags:["shopping","products","marketplace"]},
- {id:"stock-market-data",name:"Stock Market Data",provider:"Alpha Vantage",category:"Finance",auth:"API key",tags:["stocks","quotes","time series","finance"]},
- {id:"metals-prices",name:"Metals Prices API",provider:"Metals-API",category:"Commodities",auth:"API key",tags:["metals","gold","silver","commodities"]}
-];
+ {id:"metal-sentinel-widgets",name:"Metal Sentinel live metal widgets",provider:"Metal Sentinel",category:"Commodities",auth:"None",cost:"Free",access:"No key / no signup",tags:["metals","gold","silver","platinum","palladium","copper","nickel","aluminum","zinc","lead","commodities","prices"],endpoint:"https://metal-sentinel.com/widgets"},
+ {id:"internet-archive",name:"Internet Archive APIs",provider:"Internet Archive",category:"Media",auth:"None",cost:"Free",access:"No key",tags:["audio","video","movies","books","archive","media","search"],endpoint:"https://archive.org/advancedsearch.php"},
+ {id:"mediawiki",name:"MediaWiki / Wikipedia API",provider:"Wikimedia",category:"Knowledge",auth:"None",cost:"Free",access:"No key",tags:["wikipedia","knowledge","research","images","articles","search"],endpoint:"https://en.wikipedia.org/w/api.php"},
+ {id:"crossref",name:"Crossref REST API",provider:"Crossref",category:"Research",auth:"None",cost:"Free",access:"No key",tags:["research","papers","doi","citations","academic","articles"],endpoint:"https://api.crossref.org/works"},
+ {id:"duckduckgo-instant-answer",name:"DuckDuckGo Instant Answer API",provider:"DuckDuckGo",category:"Search",auth:"None",cost:"Free",access:"No key",tags:["search","web","answers","research"],endpoint:"https://api.duckduckgo.com/"},
+ {id:"github-public",name:"GitHub public REST API",provider:"GitHub",category:"Development",auth:"None for public reads",cost:"Free",access:"No key for public reads",tags:["github","code","repositories","commits","development"],endpoint:"https://api.github.com/"},
+ {id:"orange-brook-search",name:"Orange Brook SearXNG",provider:"Infinity / SearXNG",category:"Search",auth:"None from Phi front ends",cost:"Existing infrastructure",access:"Already connected",tags:["search","images","web","code phi","browser","research"],endpoint:"https://orange-brook-a2ac.marvaseater.workers.dev/search"}
+]
 const providerIds=route=>new Set((route?.repositories||[]).map(x=>x.id));
 const terms=value=>String(value||"").toLowerCase().match(/[a-z0-9]+/g)||[];
 function matchingApis(query){
