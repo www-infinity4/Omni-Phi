@@ -216,7 +216,7 @@
             id="machineDirection"
             placeholder="Tell GPT what to change or build next…"
           ></textarea
-          ><button id="machineSend">Build</button>
+          ><button id="machineSend">Generate with Code Phi</button>
         </div>
         <div class="suggest" id="suggestions"></div>
         <div class="feed" id="feed"></div>
@@ -664,6 +664,20 @@
               media,
             ) || "<h1>" + esc(query) + "</h1>";
         }
+        function localPreviewPrecheck(html) {
+          const source=String(html||'');
+          const issues=[];
+          if(!source.trim()) issues.push('Preview is empty.');
+          if(!/<meta[^>]+name=["']viewport["']/i.test(source)) issues.push('Missing mobile viewport metadata.');
+          if(!/<title[\s>]/i.test(source)) issues.push('Missing document title.');
+          if(/Loading visual results…|Loading fresh content/i.test(source)) issues.push('Preview still contains a loading placeholder.');
+          if(/<img\b/i.test(source) && /<img\b(?![^>]*\balt=)/i.test(source)) issues.push('One or more images are missing alt text.');
+          if(/href=["']#["']/i.test(source)) issues.push('One or more links still point to a placeholder.');
+          if(!/<(main|article|section)\b/i.test(source)) issues.push('Preview has no clear content structure.');
+          const result={ok:issues.length===0,issues,checkedAt:new Date().toISOString(),htmlLength:source.length};
+          try{localStorage.setItem('codePhi:localPreviewCheck:v1',JSON.stringify({query,tokenId,iteration,...result}))}catch(_){}
+          return result;
+        }
         async function build(note = "") {
           const epoch = ++buildEpoch;
           educationArtifact = null;
@@ -785,18 +799,25 @@
             })
             .catch(() => {});
           const browser = log(
-            "Cloud Browser self-view",
-            "Cloudflare Browser inspects the rendered HTML, then GPT reports missing pieces and repairs.",
+            "Preview verification",
+            "Code Phi checks the rendered preview locally first, then sends that evidence with the HTML for deeper inspection.",
           );
-          browserState.textContent =
-            "Browser verification: Cloudflare Browser + GPT inspection running…";
           const htmlForReview = viewer.srcdoc;
+          const localCheck = localPreviewPrecheck(htmlForReview);
+          if(localCheck.issues.length){
+            localCheck.issues.slice(0,6).forEach(issue=>log("Local preview issue",issue,"fail"));
+            browserState.textContent = "Browser verification: local pre-check found "+localCheck.issues.length+" item"+(localCheck.issues.length===1?"":"s")+"; deeper inspection running…";
+          }else{
+            finish(browser,"pass","Local preview pre-check passed; deeper inspection running.");
+            browserState.textContent = "Browser verification: local pre-check passed; deeper inspection running…";
+          }
           remote("/code-phi/inspect", {
             query,
             tokenId,
             iteration,
             html: htmlForReview,
             plan,
+            localPreviewCheck: localCheck,
             requirements: [
               "surface broken layout and empty sections",
               "use all token-selected image video and audio",
@@ -840,8 +861,10 @@
             .catch((e) => {
               if (epoch !== buildEpoch) return;
               finish(browser, "fail", String(e.message || e));
-              browserState.textContent =
-                "Browser verification: unavailable; local Code Phi build remains active.";
+              const localCheck=localPreviewPrecheck(viewer.srcdoc);
+              browserState.textContent = localCheck.ok
+                ? "Browser verification: local preview passed; remote inspection unavailable."
+                : "Browser verification: local preview found "+localCheck.issues.length+" item"+(localCheck.issues.length===1?"":"s")+"; remote inspection unavailable.";
             });
           const asset = {
             schema: "infinity-code-asset/v1",
@@ -874,8 +897,11 @@
         document.querySelector("#iterate").onclick = () =>
           build(direction.value.trim());
         document.querySelector("#finalDeploy").onclick = () => {
+          const localCheck=localPreviewPrecheck(viewer.srcdoc);
+          const revisionId="codephi-"+tokenId+"-"+Date.now().toString(36);
           const asset = {
-            schema: "code-phi-deploy/v1",
+            schema: "code-phi-deploy/v2",
+            revisionId,
             query,
             tokenId,
             iteration,
@@ -883,20 +909,22 @@
             direction: applied.join(" · "),
             files: educationArtifact?.files || [],
             blueprint: educationArtifact?.model || null,
+            verification: localCheck,
             createdAt: new Date().toISOString(),
-            status: "ready",
+            status: localCheck.ok ? "published" : "published-with-warnings",
           };
           localStorage.setItem("codePhi:deployReady:v1", JSON.stringify(asset));
-          status.textContent = "Website packaged for final deployment";
-          if (educationArtifact) {
-            const url=URL.createObjectURL(new Blob([JSON.stringify(asset,null,2)],{type:'application/json'}));
-            const a=document.createElement('a');a.href=url;a.download='code-phi-education-package.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-          }
+          let revisions=[];try{revisions=JSON.parse(localStorage.getItem("codePhi:publishedRevisions:v1")||"[]")}catch(_){}
+          revisions=[asset,...(Array.isArray(revisions)?revisions:[]).filter(x=>x?.revisionId!==revisionId)].slice(0,100);
+          localStorage.setItem("codePhi:publishedRevisions:v1", JSON.stringify(revisions));
+          localStorage.setItem("phiShared:webPhiHandoff:v1", JSON.stringify(asset));
+          status.textContent = localCheck.ok ? "Website revision published to Web Phi" : "Website revision published with preview warnings";
           log(
-            "Deploy package ready",
-            "Saved under this research token. Web Phi publishing is the next handoff.",
-            "pass",
+            "Web Phi revision published",
+            "Revision "+revisionId+" is retained under this research token and handed to Web Phi.",
+            localCheck.ok ? "pass" : "fail",
           );
+          location.href="https://www-infinity4.github.io/Web-Phi/?"+new URLSearchParams({q:query,token:tokenId,codephi:"1",revision:revisionId});
         };
         const machine = document.querySelector("#machine"),
           machineDirection = document.querySelector("#machineDirection");
