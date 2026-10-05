@@ -51,7 +51,7 @@ function manifest(route,context,query){
 function visibleIntegration(man){
  const pieces=[];
  if(man.apiCatalog?.length){
-  pieces.push('<section id="phi-integrations" style="margin:24px 0"><h2>Live data integrations</h2><div style="display:grid;gap:10px">'+man.apiCatalog.map(api=>'<article style="padding:14px;border:1px solid #d8cbe1;border-radius:16px;background:#fff"><b>'+esc(api.name)+'</b><p style="margin:5px 0">'+esc(api.provider)+' · '+esc(api.category)+'</p><small>Connector available in APIPhi catalog · authentication required: '+esc(api.auth)+'</small></article>').join("")+'</div></section>');
+  pieces.push('<section id="phi-integrations" style="margin:24px 0"><h2>Live data integrations</h2><div style="display:grid;gap:10px">'+man.apiCatalog.map(api=>'<article style="padding:14px;border:1px solid #d8cbe1;border-radius:16px;background:#fff"><b>'+esc(api.name)+'</b><p style="margin:5px 0">'+esc(api.provider)+' · '+esc(api.category)+'</p><small>Connector ready in APIPhi · '+esc(api.cost||'Free')+' · '+esc(api.access||api.auth||'No key')+'</small></article>').join("")+'</div></section>');
  }
  if(man.widgetPhi){
   pieces.push('<section id="phi-widget" style="margin:24px 0"><h2>Research widget</h2><article style="padding:16px;border-radius:18px;background:#f0e8f6;border:1px solid #d5c0e4"><b>'+esc(man.query||"Code Phi")+'</b><p>This widget is bound to the active research token and can be upgraded through WidgetPhi without dropping the source context.</p></article></section>');
