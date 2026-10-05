@@ -37,6 +37,18 @@
   ]);
 
   const clamp = value => Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+  const read = (key, fallback) => {
+    try {
+      const value = JSON.parse(localStorage.getItem(key) || "null");
+      return value == null ? fallback : value;
+    } catch {
+      return fallback;
+    }
+  };
+  const write = (key, value) => {
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch { return false; }
+  };
 
   function score(candidate) {
     const signals = candidate.signals || {};
@@ -106,7 +118,159 @@
     };
   }
 
+  function ensureControls() {
+    let container = document.querySelector("#rankedActions");
+    if (container) return container;
+    const panel = document.querySelector(".panel");
+    const refine = panel?.querySelector(".refine");
+    if (!panel || !refine) return null;
+    const shell = document.createElement("section");
+    shell.id = "codePhiActionsShell";
+    shell.setAttribute("aria-label", "Code Phi next actions");
+    shell.innerHTML = '<div class="codephi-action-title"><strong>Code Phi next action</strong><span id="codePhiRevisionState">tracking revisions</span></div><div id="rankedActions" class="codephi-actions"></div><div id="codePhiActionTray" class="codephi-action-tray" hidden></div>';
+    panel.insertBefore(shell, refine);
+    const style = document.createElement("style");
+    style.textContent = '#codePhiActionsShell{margin:8px 0;padding:10px;border:1px solid #d6c5e3;border-radius:14px;background:#fbf8fd}.codephi-action-title{display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:.78rem;color:#5c3b70}.codephi-action-title span{font-size:.68rem;color:#7d6e86}.codephi-actions{display:flex;gap:7px;overflow-x:auto;padding-top:8px}.codephi-actions button{white-space:nowrap;padding:8px 10px;font-size:.74rem}.codephi-primary-action{background:#54257b}.codephi-secondary-action{background:#7e6690}.codephi-more-action{background:#eee6f4!important;color:#4d3161!important}.codephi-action-tray{margin-top:8px;padding:9px;border-radius:12px;background:white;max-height:32vh;overflow:auto}.codephi-history-row{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center;padding:8px 0;border-bottom:1px solid #eee}.codephi-history-row small{display:block;color:#766b7c}.codephi-history-row button{padding:7px 9px;font-size:.7rem}.codephi-catalog{display:flex;flex-wrap:wrap;gap:6px}.codephi-catalog button{padding:7px 9px;font-size:.7rem}';
+    document.head.append(style);
+    return shell.querySelector("#rankedActions");
+  }
+
+  function currentToken() {
+    const params = new URLSearchParams(location.search);
+    return params.get("token") || read("omniPhi:lastSearchToken:v1", {})?.tokenId || "";
+  }
+
+  function captureWorkingRevision() {
+    const viewer = document.querySelector("#viewer");
+    const html = viewer?.srcdoc?.trim();
+    if (!html || /Loading fresh content|Building .*…/.test(html)) return;
+    const tokenId = currentToken();
+    const build = read("omniPhi:codeBuild:v3", {});
+    const key = [tokenId, build.iteration || "", html.length, html.slice(-80)].join("|");
+    const existing = read("codePhi:workingRevisions:v1", []);
+    if (existing[0]?.key === key) return;
+    const revision = {
+      key,
+      revisionId: build.id || ("working-" + Date.now().toString(36)),
+      tokenId,
+      query: build.query || new URLSearchParams(location.search).get("q") || "",
+      iteration: build.iteration || null,
+      direction: build.direction || "",
+      html,
+      createdAt: new Date().toISOString(),
+      status: "working"
+    };
+    write("codePhi:workingRevisions:v1", [revision, ...existing.filter(x => x?.key !== key)].slice(0, 30));
+    const state = document.querySelector("#codePhiRevisionState");
+    if (state) state.textContent = "revision " + (revision.iteration || existing.length + 1) + " saved";
+  }
+
+  function allRevisions() {
+    const working = read("codePhi:workingRevisions:v1", []);
+    const published = read("codePhi:publishedRevisions:v1", []);
+    return [...working, ...published]
+      .filter(x => x?.html)
+      .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+  }
+
+  function restoreRevision(revision) {
+    if (!revision?.html) return false;
+    const viewer = document.querySelector("#viewer");
+    if (!viewer) return false;
+    captureWorkingRevision();
+    viewer.srcdoc = revision.html;
+    write("codePhi:restoredRevision:v1", {...revision, restoredAt: new Date().toISOString()});
+    const status = document.querySelector("#status");
+    if (status) status.textContent = "Restored " + (revision.revisionId || "saved revision");
+    const state = document.querySelector("#codePhiRevisionState");
+    if (state) state.textContent = "restored · reversible";
+    return true;
+  }
+
+  function showHistory() {
+    captureWorkingRevision();
+    const tray = document.querySelector("#codePhiActionTray");
+    if (!tray) return;
+    const rows = allRevisions().slice(0, 20);
+    tray.hidden = false;
+    tray.replaceChildren();
+    const heading = document.createElement("strong");
+    heading.textContent = rows.length ? "Revision history" : "No saved revisions yet";
+    tray.append(heading);
+    rows.forEach((revision, index) => {
+      const row = document.createElement("div");
+      row.className = "codephi-history-row";
+      const info = document.createElement("div");
+      const when = revision.createdAt ? new Date(revision.createdAt).toLocaleString() : "saved";
+      info.innerHTML = "<b>" + String(revision.revisionId || "Working revision").replace(/[<>]/g, "") + "</b><small>" + when + (revision.iteration ? " · iteration " + revision.iteration : "") + "</small>";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = index === 0 ? "Load" : "Restore";
+      button.onclick = () => restoreRevision(revision);
+      row.append(info, button);
+      tray.append(row);
+    });
+  }
+
+  function revertLatest() {
+    captureWorkingRevision();
+    const revisions = allRevisions();
+    if (revisions.length < 2) {
+      const status = document.querySelector("#status");
+      if (status) status.textContent = "No earlier revision to restore";
+      return false;
+    }
+    return restoreRevision(revisions[1]);
+  }
+
+  function builtIn(item, choice, onAction) {
+    if (item.id === "preview") {
+      document.querySelector("#viewer")?.scrollIntoView({behavior:"smooth", block:"start"});
+      return true;
+    }
+    if (item.id === "publish") {
+      document.querySelector("#finalDeploy")?.click();
+      return true;
+    }
+    if (item.id === "history") {
+      showHistory();
+      return true;
+    }
+    if (item.id === "revert") {
+      revertLatest();
+      return true;
+    }
+    if (item.id === "revert-retry") {
+      revertLatest();
+      onAction?.(item, choice);
+      return true;
+    }
+    return false;
+  }
+
+  function showCatalog(choice, onAction) {
+    const tray = document.querySelector("#codePhiActionTray");
+    if (!tray) return;
+    tray.hidden = false;
+    tray.replaceChildren();
+    const heading = document.createElement("strong");
+    heading.textContent = "All Code Phi actions";
+    const wrap = document.createElement("div");
+    wrap.className = "codephi-catalog";
+    choice.catalog.forEach(item => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = item.label + " · " + item.score;
+      button.onclick = () => {
+        if (!builtIn(item, choice, onAction)) onAction?.(item, choice);
+      };
+      wrap.append(button);
+    });
+    tray.append(heading, wrap);
+  }
+
   function render(container, choice, onAction) {
+    container = container || ensureControls();
     if (!container || !choice?.primary) return;
     container.replaceChildren();
     const add = (item, primary) => {
@@ -117,12 +281,24 @@
       button.className = primary ? "codephi-primary-action" : "codephi-secondary-action";
       button.textContent = primary ? `${item.label} · ${item.score}` : item.label;
       button.title = primary ? choice.reason : `Ranked ${item.score}/100`;
-      button.addEventListener("click", () => onAction?.(item, choice));
+      button.addEventListener("click", () => {
+        if (!builtIn(item, choice, onAction)) onAction?.(item, choice);
+      });
       container.append(button);
     };
     add(choice.primary, true);
     choice.secondary.forEach(item => add(item, false));
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "codephi-more-action";
+    more.textContent = "All tools";
+    more.onclick = () => showCatalog(choice, onAction);
+    container.append(more);
   }
+
+  ensureControls();
+  setTimeout(captureWorkingRevision, 1200);
+  setInterval(captureWorkingRevision, 2500);
 
   root.CodePhiActionEngine = Object.freeze({
     WEIGHTS,
@@ -131,6 +307,12 @@
     score,
     rank,
     choose,
-    render
+    render,
+    ensureControls,
+    captureWorkingRevision,
+    allRevisions,
+    restoreRevision,
+    showHistory,
+    revertLatest
   });
 })(window);
