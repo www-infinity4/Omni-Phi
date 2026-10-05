@@ -227,7 +227,7 @@
     <script src="./entity-catalog.js?v=20260921-catalog1"></script>
     <script src="./token-context.js?v=20261004-token5"></script>
     <script src="./card-system.js?v=20260922-card10"></script>
-    <script src="./education-builder.js?v=20261004-education3"></script>
+    <script src="./education-builder.js?v=20261004-education3"></script>\n    <script src="./design-pipeline.js?v=20261005-design2"></script>
     <script>
       (() => {
         const BACKEND = "https://orange-brook-a2ac.marvaseater.workers.dev",
@@ -520,9 +520,16 @@
             const node = log('Design learning path','AI is arranging evidence into lessons, examples, comparison tasks and knowledge checks.');
             const model = await window.CodePhiEducation.plan(query,note,sources);
             if (epoch !== buildEpoch || expiredBuilds.has(epoch)) return;
-            educationArtifact = {model,sources,files:window.CodePhiEducation.packageFiles(model,sources,context,tokenId)};
-            viewer.srcdoc = window.CodePhiEducation.render(model,sources,context,tokenId);
-            finish(node,'pass',model.generation === 'ai-draft' ? 'AI curriculum applied to the page layout.' : 'Source-guided curriculum rendered; AI design unavailable or awaiting evidence.');
+            const designPipeline = await window.CodePhiDesignPipeline?.resolve(model) || null;
+            let educationHtml = window.CodePhiEducation.render(model,sources,context,tokenId);
+            if (designPipeline) educationHtml = window.CodePhiDesignPipeline.stamp(educationHtml,designPipeline);
+            const files = window.CodePhiEducation.packageFiles(model,sources,context,tokenId).map(file => ({
+              ...file,
+              content: designPipeline ? window.CodePhiDesignPipeline.stamp(file.content,designPipeline) : file.content
+            }));
+            educationArtifact = {model,sources,files,designPipeline};
+            viewer.srcdoc = educationHtml;
+            finish(node,'pass',designPipeline?.source === 'desiphi' ? 'LayaPhi structure + DesiPhi design contract applied.' : 'LayaPhi structure applied with the Code Phi design-contract fallback.');
             return;
           }
           const tools = route.repositories || [],
