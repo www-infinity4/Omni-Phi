@@ -12,9 +12,13 @@ const API_CATALOG=[
 ]
 const providerIds=route=>new Set((route?.repositories||[]).map(x=>x.id));
 const terms=value=>String(value||"").toLowerCase().match(/[a-z0-9]+/g)||[];
+function freeOnly(api){
+ return api && api.requiresSignup !== true && api.requiresPayment !== true && api.requiresCard !== true &&
+   !/paid|subscription|trial|credit card|billing/i.test([api.cost,api.access,api.auth,api.description].filter(Boolean).join(" "));
+}
 function matchingApis(query){
  const q=new Set(terms(query));
- return API_CATALOG.map(api=>({...api,score:[api.name,api.provider,api.category,...api.tags].flatMap(terms).reduce((n,t)=>n+(q.has(t)?1:0),0)}))
+ return API_CATALOG.filter(freeOnly).map(api=>({...api,score:[api.name,api.provider,api.category,...api.tags].flatMap(terms).reduce((n,t)=>n+(q.has(t)?1:0),0)}))
    .filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
 }
 function quantPacket(context){
@@ -45,7 +49,7 @@ function manifest(route,context,query){
   apiCatalog:ids.has("apiphi")?matchingApis(query):[],
   widgetPhi:ids.has("widgetphi")?{status:"scaffold-contract",request:{type:"build_widget",widget:"research-summary",spec:{title:String(query||"Code Phi"),fields:["Evidence","Media","Sources"]}}}:null,
   quantAI:ids.has("quant-ai")?quantPacket(context):null,
-  rules:{neverExposeSecrets:true,neverInventApiAvailability:true,preserveTokenProvenance:true}
+  rules:{freeOnly:true,rejectSignup:true,rejectPayment:true,rejectCreditCard:true,neverExposeSecrets:true,neverInventApiAvailability:true,preserveTokenProvenance:true}
  };
 }
 function visibleIntegration(man){
