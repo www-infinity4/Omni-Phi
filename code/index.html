@@ -963,7 +963,7 @@
             .catch(() => {});
           const browser = log(
             "Preview verification",
-            "Code Phi checks the rendered preview locally first, then sends that evidence with the HTML for deeper inspection.",
+            "Checking rendered mobile HTML in Cloudflare Browser; GPT reviews browser findings and verifies repairs.",
           );
           const htmlForReview = viewer.srcdoc;
           const localCheck = localPreviewPrecheck(htmlForReview);
@@ -976,75 +976,83 @@
             finish(browser,"pass","Local preview pre-check passed; deeper inspection running.");
             browserState.textContent = "Browser verification: local pre-check passed; deeper inspection running…";
           }
+          // This endpoint uses the actual Cloudflare Browser at mobile viewport.
+          // Inspection can take up to 30s server-side, so never time it out at 5s.
           remote("/code-phi/inspect", {
-            query,
-            tokenId,
-            iteration,
-            html: htmlForReview,
-            plan,
+            query, tokenId, iteration, html: htmlForReview, plan,
             localPreviewCheck: localCheck,
             requirements: [
-              "surface broken layout and empty sections",
-              "use all token-selected image video and audio",
-              "check mobile and accessibility",
-              "check loading empty and error states",
-              "check metadata sources and deploy readiness",
+              "compare rendered DOM to user direction",
+              "check broken media and console errors",
+              "check mobile overflow and accessibility",
+              "check interactions, sources and deploy readiness",
             ],
-          })
-            .then((review) => {
+          }, 45000)
+            .then(async (review) => {
               if (epoch !== buildEpoch) return;
-              finish(
-                browser,
-                review.issues?.length ? "fail" : "pass",
-                review.summary || "GPT completed the missing-piece inspection.",
-              );
-              browserState.textContent =
-                "Browser inspection: " + (review.issues?.length ? 'issues found in' : 'completed for') + " iteration " + iteration + ".";
-              (review.issues || [])
-                .slice(0, 6)
-                .forEach((issue) => log("Missing piece", issue, "fail"));
-              const proposed = review?.html || viewer.srcdoc;
-              const safeRepair = window.CodePhiRepairEngine?.applySafe(proposed, review) || {html:proposed,repairs:[],changed:false};
-              localStorage.setItem(
-                "codePhi:repairProposal:v1",
-                JSON.stringify({
-                  query,
-                  tokenId,
-                  iteration,
-                  html: safeRepair.html,
-                  issues: review.issues || [],
-                  repairs: [...(review.repairs || []), ...(safeRepair.repairs || [])],
-                  createdAt: new Date().toISOString(),
-                }),
-              );
-              if (safeRepair.changed && safeRepair.html) {
-                window.CodePhiActionEngine?.captureWorkingRevision?.();
-                viewer.srcdoc = safeRepair.html;
-                setTimeout(() => window.CodePhiActionEngine?.captureWorkingRevision?.(), 100);
-                log(
-                  "Safe repair applied",
-                  (safeRepair.repairs || []).join(" · ") || "Deterministic preview repairs applied.",
-                  "pass",
-                );
-                const repairedCheck = localPreviewPrecheck(viewer.srcdoc);
-                browserState.textContent = repairedCheck.ok
-                  ? "Browser verification: inspected and safe repairs applied."
-                  : "Browser verification: safe repairs applied; "+repairedCheck.issues.length+" item"+(repairedCheck.issues.length===1?"":"s")+" remain.";
-              } else if (review && review.html) {
-                log(
-                  "Repair proposal indexed",
-                  "Browser/GPT repair output was saved as a reversible proposal.",
-                  "pass",
-                );
+              if (!review?.ok || !review?.inspection) throw Error("No Cloud Browser inspection receipt.");
+              const firstIssues=Array.isArray(review.issues)?review.issues:[];
+              finish(browser, firstIssues.length ? "fail" : "pass",
+                review.summary || "Cloud Browser inspected the rendered website.");
+              browserState.textContent="Cloud Browser mobile inspection completed; GPT is checking its findings.";
+              firstIssues.slice(0,8).forEach(issue=>log("Browser found",issue,"fail"));
+              const deterministic=window.CodePhiRepairEngine?.applySafe(viewer.srcdoc,review) || {html:viewer.srcdoc,repairs:[],changed:false};
+              let proposed=deterministic.html, gpt=null;
+              if (window.CodePhiGPTDirector?.repairFromBrowser) {
+                const result=await window.CodePhiGPTDirector.repairFromBrowser({
+                  query, tokenId, direction: combined, html: proposed, report: review
+                });
+                if (epoch !== buildEpoch) return;
+                gpt=result;
+                if(result.ok && result.changed && result.html) proposed=result.html;
+                else if(!result.ok) log("GPT browser review incomplete",result.reason||"No verified GPT repair.","fail");
               }
+              const changed=proposed!==viewer.srcdoc;
+              const receipt={
+                query,tokenId,iteration,checkedAt:new Date().toISOString(),
+                browser:'Cloudflare Browser',initialIssues:firstIssues,
+                gptChecked:!!gpt?.ok,proposedChanges:changed,
+                deterministicRepairs:deterministic.repairs||[],
+                verifiedAfterRepair:false
+              };
+              // Re-open the generated page in a REAL browser before accepting GPT's patch.
+              if(changed){
+                try{
+                  const confirmed=await remote("/code-phi/inspect",{query,tokenId,iteration,html:proposed},45000);
+                  if(epoch!==buildEpoch)return;
+                  const newIssues=Array.isArray(confirmed?.issues)?confirmed.issues:[];
+                  if(confirmed?.ok&&confirmed?.inspection&&newIssues.length<=firstIssues.length){
+                    window.CodePhiActionEngine?.captureWorkingRevision?.();
+                    viewer.srcdoc=proposed;
+                    receipt.verifiedAfterRepair=true;
+                    receipt.finalIssues=newIssues;
+                    log("Browser-verified GPT repair",
+                      "Reopened generated website at mobile width; issues "+firstIssues.length+" → "+newIssues.length+".","pass");
+                    browserState.textContent="Cloud Browser verified revised website; "+newIssues.length+" remaining issue(s).";
+                    window.CodePhiActionEngine?.captureWorkingRevision?.();
+                  }else{
+                    receipt.finalIssues=newIssues;
+                    log("Proposed fix held for review",
+                      "Second browser pass did not confirm improvement. Original page retained.","fail");
+                    browserState.textContent="Cloud Browser found unverified proposed edits; original preview retained.";
+                  }
+                }catch(e){
+                  log("Proposed fix not installed","Verification failed: "+String(e.message||e),"fail");
+                  browserState.textContent="Second browser pass unavailable; original preview retained.";
+                }
+              }else{
+                receipt.finalIssues=firstIssues;
+                receipt.verifiedAfterRepair=firstIssues.length===0;
+                browserState.textContent=firstIssues.length
+                  ? "Cloud Browser found "+firstIssues.length+" issue(s); GPT did not produce a verified repair."
+                  : "Cloud Browser inspected the preview with no reported blocking errors.";
+              }
+              try{localStorage.setItem("codePhi:browserReceipt:v1",JSON.stringify(receipt))}catch(_){}
             })
             .catch((e) => {
               if (epoch !== buildEpoch) return;
               finish(browser, "fail", String(e.message || e));
-              const localCheck=localPreviewPrecheck(viewer.srcdoc);
-              browserState.textContent = localCheck.ok
-                ? "Browser verification: local preview passed; remote inspection unavailable."
-                : "Browser verification: local preview found "+localCheck.issues.length+" item"+(localCheck.issues.length===1?"":"s")+"; remote inspection unavailable.";
+              browserState.textContent="Cloud Browser inspection unavailable: "+String(e.message||e)+". HTML pre-check is not visual verification.";
             });
           const asset = {
             schema: "infinity-code-asset/v1",
