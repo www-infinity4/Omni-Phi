@@ -55,6 +55,20 @@
   const palettes=[['#142942','#f8f5ef','#ac6e2c'],['#241d2d','#fbf7ee','#6d457b'],['#173b38','#f5f7ef','#147e73'],['#3b2423','#fffaf4','#b76345']];
   return {seed,focus,palette:palettes[seed%palettes.length],layout:seed%3===0?'magazine':seed%3===1?'field-guide':'studio'};
  }
+ function attachImage(html,{src='',title='Created with Oracle',description=''}={}){
+  if(!/^https:\/\//.test(src)&&!/^data:image\/(png|jpeg|webp);base64,/.test(src))return html;
+  const d=new DOMParser().parseFromString(String(html||''),'text/html');
+  const section=d.getElementById('images')||d.querySelector('main')||d.body;
+  if(!section)return html;
+  const existing=d.querySelector('[data-phi-created-asset]');
+  if(existing)existing.remove();
+  const card=d.createElement('figure');card.dataset.phiCreatedAsset='yes';
+  card.style.cssText='margin:18px 0;border:1px solid #d5bdd4;background:#fff;padding:12px;border-radius:15px;max-width:100%';
+  const img=d.createElement('img');img.src=src;img.alt=title;img.style.cssText='width:100%;height:auto;max-height:620px;object-fit:contain;border-radius:11px';
+  const cap=d.createElement('figcaption');cap.textContent=title+(description?' · '+description:'');
+  card.append(img,cap);section.prepend(card);
+  return '<!doctype html>\n'+d.documentElement.outerHTML;
+ }
  function enhance(html,{query='',tokenId='',context={},videos=[]}={}){
   if(!String(html||'').trim()||typeof DOMParser==='undefined')return html;
   const doc=new DOMParser().parseFromString(String(html),'text/html'),title=doc.title||text(query)||'Your website';
@@ -148,5 +162,5 @@
   if(main)main.prepend(provenance);
   return '<!doctype html>\n'+doc.documentElement.outerHTML;
  }
- root.CodePhiSiteExperience=Object.freeze({mediaSource,candidates,paragraphs,themeFor,enhance});
+ root.CodePhiSiteExperience=Object.freeze({mediaSource,candidates,paragraphs,themeFor,enhance,attachImage});
 })(window);
