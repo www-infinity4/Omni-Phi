@@ -61,11 +61,52 @@
   finally{clearTimeout(timer)}
   return response;
  }
+ const EVENT_SCRIPT = `<script>(function(){
+  if(window.__phiPodcastActionsBound)return;
+  window.__phiPodcastActionsBound=true;
+  const status=(card,message)=>{const e=card.querySelector('[data-phi-podcast-status]');if(e)e.textContent=message};
+  document.addEventListener('click',async event=>{
+    const button=event.target.closest('[data-phi-action]'),card=button?.closest('[data-widgetphi-podcast]');
+    if(!card)return;
+    const action=button.dataset.phiAction,source=card.querySelector('[data-phi-source]')?.href||location.href;
+    if(action==='star'){
+      button.dataset.starred=button.dataset.starred==='yes'?'no':'yes';
+      button.textContent=button.dataset.starred==='yes'?'★ Starred':'☆ Star';
+      card.dispatchEvent(new CustomEvent('phi:podcast:star',{bubbles:true,detail:{starred:button.dataset.starred==='yes'}}));
+      status(card,'Favorite updated for this session; no StarCoins have been minted.');
+    }
+    if(action==='share'){
+      try{
+        if(navigator.share)await navigator.share({title:card.querySelector('h3')?.textContent||'Podcast',url:source});
+        else if(navigator.clipboard)await navigator.clipboard.writeText(source);
+        else throw Error('Sharing unavailable');
+        card.dispatchEvent(new CustomEvent('phi:podcast:share-evidence',{bubbles:true,detail:{source}}));
+        status(card,'Shared. Any StarCoin reward requires verification by Infinity’s ledger.');
+      }catch(e){status(card,'Share was cancelled or unsupported; no reward was issued.')}
+    }
+    if(action==='collect'){
+      card.dispatchEvent(new CustomEvent('phi:podcast:collect-request',{bubbles:true,detail:{source}}));
+      status(card,'Collect requested. Connect Unified Wallet to confirm collection and any reward.');
+    }
+  });
+  document.addEventListener('ended',event=>{
+    const card=event.target.closest('[data-widgetphi-podcast]');if(!card)return;
+    card.dispatchEvent(new CustomEvent('phi:podcast:episode-completed',{bubbles:true,detail:{completed:true}}));
+    status(card,'Episode finished. A new episode requires its own creator-set price and verified wallet receipt.');
+  },true);
+  document.addEventListener('toggle',event=>{
+    const card=event.target.closest('[data-widgetphi-podcast]');
+    if(card&&!event.target.open&&event.target.matches('details[data-phi-readmore]')){
+      card.dispatchEvent(new CustomEvent('phi:podcast:story-closed',{bubbles:true}));
+      status(card,'Full description read. Related content can be selected using your Quant history.');
+    }
+  },true);
+})();<\/script>`;
  function render(config){
   const c=normalize(config),first=c.episodes[0];
   const artwork=first.imageUrl?'<img loading="lazy" alt="" src="'+esc(first.imageUrl)+'" style="width:100%;max-height:270px;object-fit:cover;border-radius:10px">':'';
   const media=first.audioUrl?'<audio controls preload="none" src="'+esc(first.audioUrl)+'" style="width:100%"></audio>':
-    '<a href="'+esc(first.sourceUrl)+'" target="_blank" rel="noopener noreferrer">Open official '+esc(c.sourceType)+' episode / player ↗</a>';
+    '<a data-phi-source href="'+esc(first.sourceUrl)+'" target="_blank" rel="noopener noreferrer">Open official '+esc(c.sourceType)+' episode / player ↗</a>';
   const synopsis=esc(first.description||'Episode details will appear when a verified feed, source metadata, or transcript is supplied.');
   const list=c.episodes.map((e,i)=>'<li>'+esc(e.title)+' · '+(i===0?'FREE':c.priceStarCoins+' ★')+'</li>').join('');
   const quant=esc(JSON.stringify(c.quantContext));
@@ -73,14 +114,14 @@
    '<small style="font-weight:800">YELLOW CARD · PODCAST · FIRST EPISODE FREE</small><h2>'+esc(c.title)+'</h2>'+
    '<p>'+esc(c.host||c.sourceType)+' · '+esc(first.duration)+'</p>'+artwork+
    '<h3>'+esc(first.title)+'</h3><p>'+synopsis+'</p>'+
-   (first.full?'<details><summary>Read full episode story</summary><p>'+esc(first.full)+'</p></details>':'')+
+   (first.full?'<details data-phi-readmore><summary>Read full episode story</summary><p>'+esc(first.full)+'</p></details>':'')+
    '<div style="background:#27210f;color:#fff8d5;padding:14px;border-radius:10px">'+media+'</div>'+
    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><button type="button" data-phi-action="star">☆ Star</button><button type="button" data-phi-action="share">Share</button><button type="button" data-phi-action="collect">Collect</button></div>'+
    '<details><summary>Episode list &amp; pricing</summary><ol>'+list+'</ol></details>'+
    '<p>Additional playable episodes: <b>'+c.priceStarCoins+' full StarCoins</b> per unlock. Rewards are issued by Infinity; paid unlocks credit the creator wallet after authoritative settlement.</p>'+
    '<button type="button" disabled aria-label="Paid episodes require confirmed Unified Wallet settlement">Next episode · '+c.priceStarCoins+' ★ (wallet settlement pending)</button>'+
-   '<p role="status"><small>Paid episodes need an authorized player, verified creator Unified Wallet and a server-side ledger. No balances change in preview.</small></p>'+
-   '</section>';
+   '<p role="status" data-phi-podcast-status><small>Paid episodes need an authorized player, verified creator Unified Wallet and a server-side ledger. No balances change in preview.</small></p>'+
+   '</section>'+EVENT_SCRIPT;
  }
  function apply(html,input){
   if(!html)return html;
