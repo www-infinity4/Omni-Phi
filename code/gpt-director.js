@@ -99,5 +99,40 @@ async function compose({query='',tokenId='',direction='',latestDirection='',prev
   return{ok:false,html:reference,reason:clip(String(error?.message||error),230),evidenceCount:evidence.length,model:'AI unavailable'};
  }
 }
-root.CodePhiGPTDirector=Object.freeze({compose,valid,sources,protect});
+/* A genuine browser report comes from the Cloudflare Browser worker, not
+   from string checks against HTML. Ask GPT to repair evidence-backed failures. */
+async function repairFromBrowser({query='',tokenId='',direction='',html='',report={}}={}){
+ const existing=String(html||'');
+ if(!report?.ok||!report?.inspection||!valid(existing))
+  return{ok:false,changed:false,reason:'No verified Cloud Browser inspection; do not claim AI repair.'};
+ const inspection=report.inspection,detected=Array.isArray(report.issues)?report.issues.slice(0,25):[];
+ const safeReport={
+  title:inspection.title,headings:inspection.headings,description:inspection.description,
+  consoleErrors:inspection.consoleErrors,pageErrors:inspection.pageErrors,
+  failedRequests:(inspection.failedRequests||[]).slice(0,12),
+  diagnostics:inspection.diagnostics,images:(inspection.images||[]).slice(0,16),
+  visibleText:clip(inspection.text,5000),issues:detected
+ };
+ const prompt=[
+  'You are GPT grading AND repairing an actual Code Phi website after a real Cloudflare Browser mobile inspection at 412px.',
+  'Act as a practical expert design editor. Critically compare the user direction with the page structure, working media, missing content, control behavior and Cloud Browser failures.',
+  'User topic: '+query,'Quant token: '+tokenId,'Complete user direction: '+direction,
+  'Browser evidence: '+JSON.stringify(safeReport),
+  'Do not claim to have seen a screenshot: the browser provided DOM, runtime, network and viewport checks, not pixels.',
+  'Fix actual broken images, HTML, mobile overflow, empty areas, missing essentials and user-direction mismatches. Do not make cosmetic changes if the site already follows the request.',
+  'Preserve legitimate images, provider embeds, podcast and WidgetPhi cards, links, on-page interactions and all prior approved features. Do not invent images, sources, data, citations or wallet transactions.',
+  'When any change is necessary return the COMPLETE corrected HTML only (doctype through body), no Markdown. If the page already fulfills the brief and is sound, return the SAME HTML.',
+  'CURRENT PAGE: '+clip(existing,30000)
+ ].join('\n\n');
+ try{
+  const response=await ask(prompt,26000);
+  const retained=protect(existing,response.html);
+  if(retained)throw Error(retained);
+  return{ok:true,changed:tidy(response.html)!==tidy(existing),html:response.html,
+   issues:detected,summary:response.summary||'GPT evaluated the rendered browser evidence.'};
+ }catch(error){
+  return{ok:false,changed:false,reason:clip(String(error?.message||error),220),issues:detected};
+ }
+}
+root.CodePhiGPTDirector=Object.freeze({compose,repairFromBrowser,valid,sources,protect});
 })(window);
