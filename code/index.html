@@ -746,17 +746,26 @@
             "Search + assemble",
             "Pulling fresh results for this exact token, then building the requested product.",
           );
-          viewer.srcdoc =
-            '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font:16px system-ui;padding:28px"><h2>Building ' +
-            esc(query) +
-            "…</h2><p>Loading fresh content for this token.</p></body>";
+          // Render immediately using only original Quant evidence; never fabricate sources.
+          const earlyContext=window.CodePhiTokenContext||{};
+          const earlyItems=(earlyContext.all||[]).slice(0,8).filter(x=>x&&x.title);
+          const fallbackLinks=earlyItems.map(x=>({
+            title:String(x.title||'').slice(0,120),
+            url:String(x.sourceUrl||x.url||'')
+          })).filter(x=>{try{return new URL(x.url).protocol==='https:'}catch{return false}});
+          const opening='<h1>'+esc(query||'Your website')+'</h1><p>This page is using the original Quant search as its starting point. Verified media and stories are loading.</p>';
+          const evidence= fallbackLinks.length?'<h2>Collected research</h2><ul>'+fallbackLinks.map(x=>'<li><a rel="noopener noreferrer" target="_blank" href="'+esc(x.url)+'">'+esc(x.title)+'</a></li>').join('')+'</ul>':
+            '<p>No verified research was supplied with this token yet. Continue gathering images, video, audio and sources.</p>';
+          const earlyHtml='<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font:16px/1.5 system-ui;padding:20px;background:#faf7fd;color:#261333"><main>'+opening+evidence+'</main></body></html>';
+          viewer.srcdoc=podcastSpec&&window.CodePhiPodcast ? window.CodePhiPodcast.apply(earlyHtml,podcastSpec):earlyHtml;
+          browserState.textContent='Preview ready from Quant context. Research and media enrichment continue in the background.';
           try {
             await Promise.race([
               render(route, iteration, combined, epoch),
               new Promise((_, reject) =>
                 setTimeout(
                   () => reject(new Error("Search sources timed out")),
-                  40000,
+                  25000,
                 ),
               ),
             ]);
