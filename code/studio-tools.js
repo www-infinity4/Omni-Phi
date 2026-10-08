@@ -80,9 +80,9 @@
    }catch(error){status.textContent='No finished asset: '+String(error?.message||error).slice(0,210)}
    finally{inProgress=false;button.disabled=false}
   }
-  $('studioArtwork')?.addEventListener('click',()=>{$('siteAssetLab').scrollIntoView({behavior:'smooth',block:'center'});refreshSources()});
-  $('studioVideos')?.addEventListener('click',()=>{$('siteVideoLab').scrollIntoView({behavior:'smooth',block:'center'});refreshVideos()});
-  $('studioPodcast')?.addEventListener('click',()=>$('podcastMaker')?.scrollIntoView({behavior:'smooth',block:'center'}));
+  $('studioArtwork')?.addEventListener('click',()=>{$('siteAssetLab').hidden=false;$('siteAssetLab').scrollIntoView({behavior:'smooth',block:'center'});refreshSources()});
+  $('studioVideos')?.addEventListener('click',()=>{$('siteVideoLab').hidden=false;$('siteVideoLab').scrollIntoView({behavior:'smooth',block:'center'});refreshVideos()});
+  $('studioPodcast')?.addEventListener('click',()=>{$('podcastMaker').hidden=false;$('podcastMaker').scrollIntoView({behavior:'smooth',block:'center'})});
   $('assetGenerate')?.addEventListener('click',()=>void generate());
   $('assetUse')?.addEventListener('click',()=>{if(asset)refreshPreview();$('assetFeedback').textContent='Artwork added to this site preview. For publishing, keep the generated image in durable hosting; temporary data URLs are not permanent assets.'});
   $('videoAdd')?.addEventListener('click',()=>{
