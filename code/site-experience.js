@@ -56,7 +56,7 @@
   const seed=hashed(String(token||query)),c=context?.counts||{},subject=String(query||'').toLowerCase();
   const focus=/\b(album|music|podcast|concert|sound|radio)\b/.test(subject)||Number(c.audio)>Number(c.images)?'listening':
    /\b(film|movie|youtube|video|clip)\b/.test(subject)||Number(c.video)>Number(c.images)?'cinema':
-   /\b(paint|art|photograph|museum|sport|baseball|athlete|card|poster)\b/.test(subject)||Number(c.images)>1?'visual':'editorial';
+   /\b(paint|art|photograph|museum|sport|baseball|athlete|card|poster)\b/.test(subject)||Number(c.images)>1?'visual':(['listening','cinema','visual'].includes(context?.privateInterestFocus)?context.privateInterestFocus:'editorial');
   const palettes=[['#142942','#f8f5ef','#ac6e2c'],['#241d2d','#fbf7ee','#6d457b'],['#173b38','#f5f7ef','#147e73'],['#3b2423','#fffaf4','#b76345']];
   return {seed,focus,palette:palettes[seed%palettes.length],layout:seed%3===0?'magazine':seed%3===1?'field-guide':'studio'};
  }
