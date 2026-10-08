@@ -9,9 +9,14 @@
   const original=https(raw);if(!original)return null;
   const u=new URL(original),h=u.hostname.toLowerCase().replace(/^www\./,'');let id='',provider='',embed='';
   if(h==='youtube.com'||h==='m.youtube.com'||h==='youtube-nocookie.com'||h==='youtu.be'){
-   id=h==='youtu.be'?u.pathname.split('/')[1]:u.searchParams.get('v')||u.pathname.match(/\/(?:shorts|embed|live)\/([^/?#]+)/)?.[1]||'';
-   if(!/^[a-zA-Z0-9_-]{11}$/.test(id))return null;
-   provider='YouTube';embed='https://www.youtube-nocookie.com/embed/'+id+'?rel=0';
+   const list=u.searchParams.get('list')||'';
+   if((u.pathname==='/playlist'||!u.searchParams.get('v'))&&/^[A-Za-z0-9_-]{12,80}$/.test(list)){
+    id=list;provider='YouTube playlist';embed='https://www.youtube-nocookie.com/embed/videoseries?list='+encodeURIComponent(id);
+   }else{
+    id=h==='youtu.be'?u.pathname.split('/')[1]:u.searchParams.get('v')||u.pathname.match(/\/(?:shorts|embed|live)\/([^/?#]+)/)?.[1]||'';
+    if(!/^[a-zA-Z0-9_-]{11}$/.test(id))return null;
+    provider='YouTube';embed='https://www.youtube-nocookie.com/embed/'+id+'?rel=0';
+   }
   }else if(h==='vimeo.com'||h==='player.vimeo.com'){
    id=u.pathname.match(/\/(?:video\/)?(\d{5,12})/)?.[1]||'';
    if(!id)return null;
@@ -74,6 +79,7 @@
   const doc=new DOMParser().parseFromString(String(html),'text/html'),title=doc.title||text(query)||'Your website';
   const theme=themeFor(query,tokenId,context),[ink,paper,accent]=theme.palette;
   const body=doc.body;body.dataset.phiStyle=theme.layout;body.dataset.phiFocus=theme.focus;
+  doc.getElementById('codephi-site-experience')?.remove();
   const style=doc.createElement('style');style.id='codephi-site-experience';
   style.textContent=`:root{--phi-ink:${ink};--phi-paper:${paper};--phi-accent:${accent}}
   body{background:var(--phi-paper)!important;color:var(--phi-ink)!important;font:16px/1.55 system-ui,sans-serif!important;max-width:1100px!important;margin:0 auto!important}
@@ -117,8 +123,12 @@
   for(const arrow of doc.querySelectorAll('.rail-arrow'))arrow.remove();
   // Existing card rail script generates arrows. Suppress after it executes;
   // keep the existing audio-player script intact.
-  const onReady=doc.createElement('script');onReady.textContent="document.addEventListener('DOMContentLoaded',()=>document.querySelectorAll('.rail-arrow').forEach(x=>x.remove()));";body.append(onReady);
+  doc.getElementById('codephi-rail-cleanup')?.remove();
+  const onReady=doc.createElement('script');onReady.id='codephi-rail-cleanup';onReady.textContent="document.addEventListener('DOMContentLoaded',()=>document.querySelectorAll('.rail-arrow').forEach(x=>x.remove()));";body.append(onReady);
   const overview=doc.querySelector('#overview .phi-card');
+  const overviewTitle=doc.querySelector('#overview > h2');if(overviewTitle)overviewTitle.textContent='The essentials';
+  const kindLabel=overview?.querySelector('.type');if(kindLabel)kindLabel.textContent='Reader’s guide';
+  const small=doc.querySelector('header small');if(small)small.textContent='CURATED WITH PHI · '+theme.focus.toUpperCase();
   const hero=doc.querySelector('header p');
   const full=context?.overview||overview?.querySelector('p')?.textContent||'';
   const chunks=paragraphs(full,380);
@@ -138,7 +148,7 @@
   for(const image of doc.querySelectorAll('img')){
    const src=https(image.getAttribute('src'));
    if(!src||/\.svg(?:\?|$)/i.test(src)&&!/^https:\/\//.test(src)){image.remove();continue}
-   image.loading='lazy';image.referrerPolicy='no-referrer';image.addEventListener; // runtime is added separately below
+   image.loading='lazy';image.referrerPolicy='strict-origin-when-cross-origin';
    image.setAttribute('onerror',"this.style.display='none';this.closest('.image-tile')?.classList.add('image-unavailable')");
   }
   const gathered=candidates(context,videos);
@@ -153,11 +163,14 @@
     const link=doc.createElement('a');link.href=v.url;link.textContent='Original video ↗';link.rel='noopener noreferrer';link.target='_blank';card.append(link);
     videoArea.append(card);
    }
-   const runtime=doc.createElement('script');
+   doc.getElementById('codephi-video-loader')?.remove();
+   const runtime=doc.createElement('script');runtime.id='codephi-video-loader';
    runtime.textContent="document.addEventListener('click',function(e){var b=e.target.closest('[data-phi-embed]');if(!b)return;var src=b.dataset.phiEmbed;if(!/^https:\\/\\/(www\\.youtube-nocookie\\.com|player\\.vimeo\\.com|archive\\.org)\\//.test(src))return;var f=document.createElement('iframe');f.src=src;f.title=b.getAttribute('aria-label');f.loading='lazy';f.allow='accelerometer;autoplay;encrypted-media;picture-in-picture;fullscreen';f.allowFullscreen=true;f.referrerPolicy='strict-origin-when-cross-origin';b.replaceWith(f);});";
    body.append(runtime);
   }
+  doc.querySelector('meta[name="phi-quant-source"]')?.remove();
   const meta=doc.createElement('meta');meta.name='phi-quant-source';meta.content=String(tokenId).slice(0,120);doc.head.append(meta);
+  doc.querySelector('.phi-provenance')?.remove();
   const provenance=doc.createElement('p');provenance.className='phi-provenance';provenance.textContent='This edition follows your selected research and Quant interests. Media remains credited to its original sources.';
   if(main)main.prepend(provenance);
   return '<!doctype html>\n'+doc.documentElement.outerHTML;
