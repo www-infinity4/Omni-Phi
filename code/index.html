@@ -287,6 +287,7 @@
     <script src="./entity-catalog.js?v=20260921-catalog1"></script>
     <script src="./token-context.js?v=20261004-token5"></script>
     <script src="./site-experience.js?v=20261008-site1"></script>
+    <script src="./studio-tools.js?v=20261008-tools1"></script>
     <script src="https://quantaphi.org/phi-visual-render.js?v=20261008-image1"></script>
     <script src="./podcast-widget.js?v=20261008-card3"></script>
     <script src="./build-sequence.js?v=20261008-sequence1"></script>
@@ -333,6 +334,8 @@
         let iteration = 0;
         let buildEpoch = 0, educationArtifact = null;
         const expiredBuilds = new Set();
+        let latestSearchSources=[],latestMedia=[];
+        const studioTools=window.CodePhiStudioTools?.mount({viewer,query,tokenId,context:()=>window.CodePhiTokenContext||{}});
         let creatorWalletState = null;
         const podcastKey = "codePhi:podcastWidget:" + tokenId;
         let podcastSpec = (() => { try { return JSON.parse(localStorage.getItem(podcastKey) || "null") } catch { return null } })();
@@ -731,6 +734,8 @@
           if (!visuals.length) visuals = await searchImages(query);
           if (!visuals.length) visuals = await fallbackImages(query);
           const media = await archiveMedia(blueprint.title || query);
+          latestSearchSources=results.slice(0,48);
+          latestMedia=media.slice(0,25);
           const entityBundle = window.InfinityEntityCatalog?.resolve(query);
           if (entityBundle?.cards?.length)
             results = [...entityBundle.cards, ...results];
@@ -804,6 +809,7 @@
             '<p>No verified research was supplied with this token yet. Continue gathering images, video, audio and sources.</p>';
           const earlyHtml='<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font:16px/1.5 system-ui;padding:20px;background:#faf7fd;color:#261333"><main>'+opening+evidence+'</main></body></html>';
           viewer.srcdoc=podcastSpec&&window.CodePhiPodcast ? window.CodePhiPodcast.apply(earlyHtml,podcastSpec):earlyHtml;
+          if(window.CodePhiSiteExperience)viewer.srcdoc=window.CodePhiSiteExperience.enhance(viewer.srcdoc,{query,tokenId,context:earlyContext,videos:studioTools?.videos()||[]});
           browserState.textContent='Preview ready from Quant context. Research and media enrichment continue in the background.';
           try {
             await Promise.race([
@@ -857,6 +863,17 @@
             const check=window.CodePhiPodcast.audit(viewer.srcdoc);
             log("WidgetPhi podcast",check.ok?"First episode free · metadata and Quant packet preserved.":check.missing.join(" · "),check.ok?"pass":"fail");
           }
+          if(window.CodePhiSiteExperience){
+            viewer.srcdoc=window.CodePhiSiteExperience.enhance(viewer.srcdoc,{
+              query,tokenId,context:window.CodePhiTokenContext||{},
+              videos:[...latestSearchSources,...latestMedia,...(studioTools?.videos()||[])]
+            });
+            const made=studioTools?.asset();
+            if(made)viewer.srcdoc=window.CodePhiSiteExperience.attachImage(viewer.srcdoc,made);
+            studioTools?.refreshSources();
+            log("Oracle site experience","Responsive site composition, Quant-selected sections, source-aware media and readable research applied.","pass");
+          }
+
           finish(
             assemble,
             "pass",
