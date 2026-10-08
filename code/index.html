@@ -305,6 +305,7 @@
     <script src="./build-sequence.js?v=20261008-sequence1"></script>
     <script src="./card-system.js?v=20260922-card10"></script>
     <script src="./education-builder.js?v=20261004-education3"></script>\n    <script src="./design-pipeline.js?v=20261005-design2"></script>\n    <script src="./provider-bridge.js?v=20261005-provider1"></script>\n    <script src="./repair-engine.js?v=20261005-repair1"></script>
+    <script src="./gpt-director.js?v=20261008-directed1"></script>
     <script>
       (() => {
         const BACKEND = "https://orange-brook-a2ac.marvaseater.workers.dev",
@@ -780,6 +781,7 @@
           return result;
         }
         async function build(note = "") {
+          const previousHtml = iteration > 0 ? String(viewer.srcdoc || "") : "";
           const epoch = ++buildEpoch;
           educationArtifact = null;
           if (note && !applied.includes(note)) applied.push(note);
@@ -889,11 +891,43 @@
             log("Oracle site experience","Responsive site composition, Quant-selected sections, source-aware media and readable research applied.","pass");
           }
 
+          // A source-backed template is scaffolding, not GPT fulfilling the user's request.
+          // For a refinement, send the previous rendered website to the AI editor.
+          const designStep = log("GPT reads and renders request",
+            "Original research, user directions, selected media and last website sent to Oracle.");
+          let aiRendered = false;
+          if (window.CodePhiGPTDirector) {
+            const directed = await window.CodePhiGPTDirector.compose({
+              query, tokenId, direction: combined, latestDirection: note,
+              iteration, previousHtml, draftHtml: viewer.srcdoc, context: siteContext()
+            });
+            if (epoch !== buildEpoch) return;
+            if (directed.ok) {
+              const repaired = window.CodePhiRepairEngine?.applySafe(directed.html) || {html:directed.html};
+              viewer.srcdoc = repaired.html;
+              if (educationArtifact?.files?.length) educationArtifact.files[0].content = viewer.srcdoc;
+              aiRendered = true;
+              finish(designStep, "pass", directed.summary);
+              log("GPT applied website direction",
+                "GPT generated HTML from the same search token and "+directed.evidenceCount+" verified source references.", "pass");
+            } else {
+              if (previousHtml) viewer.srcdoc = previousHtml;
+              finish(designStep, "fail", directed.reason || "AI generation unavailable.");
+              log("AI build unavailable",
+                "Previous working page retained. A template fallback is not reported as GPT success.", "fail");
+              browserState.textContent="GPT website design unavailable; previous working preview retained.";
+            }
+          } else {
+            if (previousHtml) viewer.srcdoc = previousHtml;
+            finish(designStep,"fail","GPT website director has not loaded.");
+          }
           finish(
             assemble,
-            "pass",
-            "Fresh token results wired into the live HTML viewer.",
+            aiRendered ? "pass" : "fail",
+            aiRendered ? "GPT-designed HTML loaded in preview." :
+              "Source template only; not a successful GPT website render.",
           );
+
           wireSuggestions();
           const inspect = log(
             "Structure build",
@@ -1038,7 +1072,7 @@
             "infinity:codeAssets:v1",
             JSON.stringify(assets.slice(0, 100)),
           );
-          status.textContent = "Iteration " + iteration + " rendered";
+          status.textContent = aiRendered ? "Iteration " + iteration + " rendered by GPT" : "Template preview only · GPT iteration unavailable";
         }
         document.querySelector("#iterate").onclick = () =>
           build(direction.value.trim());
