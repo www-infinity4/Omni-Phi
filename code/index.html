@@ -162,6 +162,22 @@
           max-width: 480px;
         }
       }
+      .studio-quickbar{margin:12px 0 16px;background:linear-gradient(130deg,#201c36,#392b52)!important;color:#fff!important;border:1px solid #7a6c90!important;border-radius:23px!important;box-shadow:0 14px 30px #21172a29!important}
+      .studio-quickbar strong{color:#ffe3a7;letter-spacing:.08em;font-size:12px}
+      .studio-quickbar .muted{color:#e4d9ee}
+      .studio-workbench[hidden],#podcastMaker[hidden]{display:none!important}
+      body{background:radial-gradient(circle at 100% 0,#e4d2f6 0,transparent 400px),#f8f7fc!important}
+      .panel{border-radius:19px!important;box-shadow:0 9px 26px #21172a0e!important}
+      .btn,button{border-radius:17px}
+      .studio-tools{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+      .studio-tools button{background:#242a48;color:#fff;border:1px solid #859fc7;border-radius:18px;min-height:42px;padding:9px 12px;font:inherit;font-size:12px;font-weight:800;flex:1 1 135px}
+      .studio-workbench{margin:13px 0;padding:13px;background:#fffdf9;border:1px solid #cbbcd0;border-radius:14px}
+      .studio-workbench label{display:block;margin-top:8px;font-size:12px;font-weight:750}
+      .studio-workbench input,.studio-workbench textarea,.studio-workbench select{font:inherit;max-width:100%;box-sizing:border-box;padding:9px;background:white;color:#24152f;border:1px solid #ab94b8;border-radius:11px}
+      .studio-workbench button{margin-top:9px;border-radius:15px;padding:11px 14px}
+      .studio-workbench:focus-within{border-color:#8053a6}
+      #assetResult{margin:10px 0;border-radius:12px}
+      #videoSelections{font-size:12px;line-height:1.5}
     </style>
   </head>
   <body>
@@ -179,6 +195,15 @@
         <span class="status" id="status">Connecting search…</span>
       </div>
       <div class="token" id="token"></div>
+      <section class="panel studio-quickbar" aria-label="Oracle Creator Studio tools">
+        <strong>ORACLE CREATOR STUDIO</strong>
+        <p class="muted">Build a unique website, prepare visual assets, and choose WidgetPhi extensions.</p>
+            <div class="studio-tools">
+              <button type="button" id="studioArtwork">Create site artwork</button>
+              <button type="button" id="studioVideos">Curate a video feed</button>
+              <button type="button" id="studioPodcast">Add a podcast widget</button>
+            </div>
+      </section>
       <div class="grid">
         <section class="panel">
           <h2>Live HTML build</h2>
@@ -195,7 +220,34 @@
             ><button id="iterate">Iterate</button
             ><button id="finalDeploy">Final Deploy Website</button>
           </div>
-          <section class="panel" id="podcastMaker" aria-label="WidgetPhi podcast card">
+          <section class="panel" id="creatorStudio" aria-label="Code Phi Oracle Creator Studio">
+            <h2>Oracle Creator Studio</h2>
+            <p class="muted">These are builder tools. Use them to create assets, curate videos, or add WidgetPhi cards; the tools themselves do not have to appear on the finished website.</p>
+            <section class="studio-workbench" id="siteAssetLab" hidden aria-label="Site asset generator">
+              <h3>Create a site image with Oracle</h3>
+              <p class="muted">Select an image already used in this site's research or upload a reference; Oracle reads it before creating new artwork.</p>
+              <label for="assetReference">Reference image found in the site</label>
+              <select id="assetReference" style="width:100%"><option value="">Text-only image or manual upload</option></select>
+              <label for="assetFile">Or upload a reference photo</label>
+              <input type="file" id="assetFile" accept="image/png,image/jpeg,image/webp">
+              <label for="assetPrompt">Describe the new artwork and style</label>
+              <textarea id="assetPrompt" rows="3" placeholder="Create an original editorial cartoon of the subject in the selected photo. Preserve recognizable identity and avoid invented lettering."></textarea>
+              <button type="button" id="assetGenerate">Create with Oracle image generator</button>
+              <p id="assetFeedback" role="status" class="muted">Real AI image generator · never a stock-photo placeholder.</p>
+              <img id="assetResult" alt="Generated site artwork preview" style="display:none;width:100%;max-height:420px;object-fit:contain">
+              <button type="button" id="assetUse" disabled>Add artwork to my site</button>
+            </section>
+            <section class="studio-workbench" id="siteVideoLab" hidden aria-label="Video feed curation">
+              <h3>Video Feed Studio</h3>
+              <p class="muted">Choose YouTube, Vimeo, or Internet Archive videos. Videos from your selected search results are also included. The finished page loads the original provider's player when visitors tap Watch.</p>
+              <label for="videoLink">YouTube, Vimeo, or Internet Archive URL</label>
+              <input id="videoLink" type="url" placeholder="https://www.youtube.com/watch?v=..." style="box-sizing:border-box;width:100%">
+              <button type="button" id="videoAdd">Add to website video feed</button>
+              <p id="videoFeedback" role="status" class="muted">Curated links remain attached to this Quant search.</p>
+              <div id="videoSelections"></div>
+            </section>
+          </section>
+          <section class="panel" id="podcastMaker" hidden aria-label="WidgetPhi podcast card">
             <h2>WidgetPhi · Yellow Podcast / Spaces Card</h2>
             <p class="muted">Enter an episode URL, an RSS feed, or authorized media. Code Phi scans what the source makes available and fills in only verified fields.</p>
             <label for="podcastSource">Episode or feed link</label>
@@ -245,6 +297,10 @@
     <script src="../assets/capability-router.js?v=20260920-c13b0-catalog1"></script>
     <script src="./entity-catalog.js?v=20260921-catalog1"></script>
     <script src="./token-context.js?v=20261004-token5"></script>
+    <script src="./quant-personalizer.js?v=20261008-quant1"></script>
+    <script src="./site-experience.js?v=20261008-site1"></script>
+    <script src="./studio-tools.js?v=20261008-tools1"></script>
+    <script src="https://quantaphi.org/phi-visual-render.js?v=20261008-image1"></script>
     <script src="./podcast-widget.js?v=20261008-card3"></script>
     <script src="./build-sequence.js?v=20261008-sequence1"></script>
     <script src="./card-system.js?v=20260922-card10"></script>
@@ -290,6 +346,11 @@
         let iteration = 0;
         let buildEpoch = 0, educationArtifact = null;
         const expiredBuilds = new Set();
+        let latestSearchSources=[],latestMedia=[];
+        const privateQuantSignals=window.CodePhiQuantPersonalizer?.score(query,window.CodePhiTokenContext||{})||{};
+        const siteContext=()=>({...window.CodePhiTokenContext,privateInterestFocus:privateQuantSignals.focus||'editorial',
+          all:[...(window.CodePhiTokenContext?.all||[]),...latestSearchSources,...latestMedia].slice(0,90)});
+        const studioTools=window.CodePhiStudioTools?.mount({viewer,query,tokenId,context:siteContext});
         let creatorWalletState = null;
         const podcastKey = "codePhi:podcastWidget:" + tokenId;
         let podcastSpec = (() => { try { return JSON.parse(localStorage.getItem(podcastKey) || "null") } catch { return null } })();
@@ -688,6 +749,8 @@
           if (!visuals.length) visuals = await searchImages(query);
           if (!visuals.length) visuals = await fallbackImages(query);
           const media = await archiveMedia(blueprint.title || query);
+          latestSearchSources=results.slice(0,48);
+          latestMedia=media.slice(0,25);
           const entityBundle = window.InfinityEntityCatalog?.resolve(query);
           if (entityBundle?.cards?.length)
             results = [...entityBundle.cards, ...results];
@@ -761,6 +824,7 @@
             '<p>No verified research was supplied with this token yet. Continue gathering images, video, audio and sources.</p>';
           const earlyHtml='<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="font:16px/1.5 system-ui;padding:20px;background:#faf7fd;color:#261333"><main>'+opening+evidence+'</main></body></html>';
           viewer.srcdoc=podcastSpec&&window.CodePhiPodcast ? window.CodePhiPodcast.apply(earlyHtml,podcastSpec):earlyHtml;
+          if(window.CodePhiSiteExperience)viewer.srcdoc=window.CodePhiSiteExperience.enhance(viewer.srcdoc,{query,tokenId,context:{...earlyContext,privateInterestFocus:privateQuantSignals.focus},videos:studioTools?.videos()||[]});
           browserState.textContent='Preview ready from Quant context. Research and media enrichment continue in the background.';
           try {
             await Promise.race([
@@ -814,6 +878,17 @@
             const check=window.CodePhiPodcast.audit(viewer.srcdoc);
             log("WidgetPhi podcast",check.ok?"First episode free · metadata and Quant packet preserved.":check.missing.join(" · "),check.ok?"pass":"fail");
           }
+          if(window.CodePhiSiteExperience){
+            viewer.srcdoc=window.CodePhiSiteExperience.enhance(viewer.srcdoc,{
+              query,tokenId,context:siteContext(),
+              videos:[...latestSearchSources,...latestMedia,...(studioTools?.videos()||[])]
+            });
+            const made=studioTools?.asset();
+            if(made)viewer.srcdoc=window.CodePhiSiteExperience.attachImage(viewer.srcdoc,made);
+            studioTools?.refreshSources();
+            log("Oracle site experience","Responsive site composition, Quant-selected sections, source-aware media and readable research applied.","pass");
+          }
+
           finish(
             assemble,
             "pass",

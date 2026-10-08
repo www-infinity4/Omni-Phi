@@ -8,7 +8,9 @@ const API_CATALOG=[
  {id:"crossref",name:"Crossref REST API",provider:"Crossref",category:"Research",auth:"None",cost:"Free",access:"No key",tags:["research","papers","doi","citations","academic","articles"],endpoint:"https://api.crossref.org/works"},
  {id:"duckduckgo-instant-answer",name:"DuckDuckGo Instant Answer API",provider:"DuckDuckGo",category:"Search",auth:"None",cost:"Free",access:"No key",tags:["search","web","answers","research"],endpoint:"https://api.duckduckgo.com/"},
  {id:"github-public",name:"GitHub public REST API",provider:"GitHub",category:"Development",auth:"None for public reads",cost:"Free",access:"No key for public reads",tags:["github","code","repositories","commits","development"],endpoint:"https://api.github.com/"},
- {id:"orange-brook-search",name:"Orange Brook SearXNG",provider:"Infinity / SearXNG",category:"Search",auth:"None from Phi front ends",cost:"Existing infrastructure",access:"Already connected",tags:["search","images","web","code phi","browser","research"],endpoint:"https://orange-brook-a2ac.marvaseater.workers.dev/search"}
+ {id:"orange-brook-search",name:"Orange Brook SearXNG",provider:"Infinity / SearXNG",category:"Search",auth:"None from Phi front ends",cost:"Existing infrastructure",access:"Already connected",tags:["search","images","web","code phi","browser","research"],endpoint:"https://orange-brook-a2ac.marvaseater.workers.dev/search"},
+ {id:"youtube-privacy-embed",name:"YouTube public video/playlist player",provider:"YouTube",category:"Video",auth:"None for known IDs",cost:"Free embed",access:"Public source link",tags:["youtube","video","playlist","embed"],endpoint:"https://www.youtube-nocookie.com/embed/"},
+ {id:"vimeo-public-embed",name:"Vimeo public video player",provider:"Vimeo",category:"Video",auth:"None",cost:"Free embed",access:"Public source link",tags:["vimeo","video","embed"],endpoint:"https://player.vimeo.com/video/"}
 ]
 const providerIds=route=>new Set((route?.repositories||[]).map(x=>x.id));
 const terms=value=>String(value||"").toLowerCase().match(/[a-z0-9]+/g)||[];
@@ -47,27 +49,16 @@ function manifest(route,context,query){
   query:String(query||""),
   providers:selected.map(({id,name,repo,role})=>({id,name,repo,role})),
   apiCatalog:ids.has("apiphi")?matchingApis(query):[],
-  widgetPhi:ids.has("widgetphi")?{status:"scaffold-contract",request:{type:"build_widget",widget:"research-summary",spec:{title:String(query||"Code Phi"),fields:["Evidence","Media","Sources"]}}}:null,
-  quantAI:ids.has("quant-ai")?quantPacket(context):null,
+  widgetPhi:{status:"real-widget-catalog",supported:["podcast-card","video-feed","stock-card","market-ticker","stock-wallet"],selection:"Only user-selected and source-supported widgets belong on the published site"},
+  quantAI:quantPacket(context),
   rules:{freeOnly:true,rejectSignup:true,rejectPayment:true,rejectCreditCard:true,neverExposeSecrets:true,neverInventApiAvailability:true,preserveTokenProvenance:true}
  };
 }
-function visibleIntegration(man){
- const pieces=[];
- if(man.apiCatalog?.length){
-  pieces.push('<section id="phi-integrations" style="margin:24px 0"><h2>Live data integrations</h2><div style="display:grid;gap:10px">'+man.apiCatalog.map(api=>'<article style="padding:14px;border:1px solid #d8cbe1;border-radius:16px;background:#fff"><b>'+esc(api.name)+'</b><p style="margin:5px 0">'+esc(api.provider)+' · '+esc(api.category)+'</p><small>Connector ready in APIPhi · '+esc(api.cost||'Free')+' · '+esc(api.access||api.auth||'No key')+'</small></article>').join("")+'</div></section>');
- }
- if(man.widgetPhi){
-  pieces.push('<section id="phi-widget" style="margin:24px 0"><h2>Research widget</h2><article style="padding:16px;border-radius:18px;background:#f0e8f6;border:1px solid #d5c0e4"><b>'+esc(man.query||"Code Phi")+'</b><p>This widget is bound to the active research token and can be upgraded through WidgetPhi without dropping the source context.</p></article></section>');
- }
- if(man.quantAI){
-  const c=man.quantAI.counts||{};
-  pieces.push('<section id="quant-context" style="margin:24px 0"><h2>Quant context</h2><article style="padding:16px;border-radius:18px;background:#fff;border:1px solid #d5c0e4"><b>Research packet preserved</b><p>'+Number(c.cards||0)+' cards · '+Number(c.images||0)+' images · '+Number(c.video||0)+' video · '+Number(c.audio||0)+' audio</p><small>No direct identity or sensitive profile data is embedded in this build.</small></article></section>');
- }
- return pieces.join("");
-}
+// Catalogs and Quant provenance are builder metadata. Never spam a visitor's
+// finished website with capability catalogs, research scaffolds or token debug panels.
+function visibleIntegration(){return "";}
 function apply(html,route,context,query){
- const source=String(html||""); if(!source)return source;
+ const source=String(html||"").replace(/<script[^>]*id=["']codephi-provider-manifest["'][^>]*>[\s\S]*?<\/script>/gi,""); if(!source)return source;
  const man=manifest(route,context,query);
  const json=JSON.stringify(man).replace(/</g,"\\u003c");
  const visible=visibleIntegration(man);
