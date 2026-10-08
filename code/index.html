@@ -209,6 +209,8 @@
             <label for="podcastFile">Optional authorized audio file or metadata</label>
             <input id="podcastFile" type="file" accept="audio/*,.xml,.rss,.json" style="width:100%" />
             <p class="muted">Audio files need durable hosting before publishing. No guest wallet, card, trial, or API key is required. Paid access waits for verified Unified Wallet settlement.</p>
+            <button id="podcastWalletCheck" type="button">Check my Unified Wallet</button>
+            <p id="podcastWalletStatus" role="status" class="muted">Creator wallet not verified · first episode remains free.</p>
             <button id="podcastAdd" type="button">Scan link &amp; add yellow card</button>
             <p id="podcastFeedback" role="status" class="muted">First episode free · creator sets the later price.</p>
           </section>
@@ -243,7 +245,7 @@
     <script src="../assets/capability-router.js?v=20260920-c13b0-catalog1"></script>
     <script src="./entity-catalog.js?v=20260921-catalog1"></script>
     <script src="./token-context.js?v=20261004-token5"></script>
-    <script src="./podcast-widget.js?v=20261008-card1"></script>
+    <script src="./podcast-widget.js?v=20261008-card3"></script>
     <script src="./build-sequence.js?v=20261008-sequence1"></script>
     <script src="./card-system.js?v=20260922-card10"></script>
     <script src="./education-builder.js?v=20261004-education3"></script>\n    <script src="./design-pipeline.js?v=20261005-design2"></script>\n    <script src="./provider-bridge.js?v=20261005-provider1"></script>\n    <script src="./repair-engine.js?v=20261005-repair1"></script>
@@ -288,6 +290,7 @@
         let iteration = 0;
         let buildEpoch = 0, educationArtifact = null;
         const expiredBuilds = new Set();
+        let creatorWalletState = null;
         const podcastKey = "codePhi:podcastWidget:" + tokenId;
         let podcastSpec = (() => { try { return JSON.parse(localStorage.getItem(podcastKey) || "null") } catch { return null } })();
         if (podcastSpec) {
@@ -964,6 +967,17 @@
         }
         document.querySelector("#iterate").onclick = () =>
           build(direction.value.trim());
+        document.querySelector("#podcastWalletCheck").onclick = async () => {
+          const statusEl=document.querySelector("#podcastWalletStatus");
+          try{
+            statusEl.textContent="Checking existing Unified Wallet account…";
+            creatorWalletState=await window.CodePhiPodcast.verifyCreatorWallet();
+            statusEl.textContent="Creator Unified Wallet verified. Paid settlement still requires the payment service.";
+          }catch(error){
+            creatorWalletState=null;
+            statusEl.textContent=(error.message||"Unified Wallet unavailable")+". Connect your existing wallet in Omni Phi before requesting paid access.";
+          }
+        };
         document.querySelector("#podcastAdd").onclick = async () => {
           const feedback=document.querySelector("#podcastFeedback");
           const button=document.querySelector("#podcastAdd");
@@ -980,7 +994,7 @@
             podcastSpec=window.CodePhiPodcast.normalize({
               sourceUrl:link,title:title||"Podcast / Spaces",host:scanned.host||title,
               priceStarCoins:document.querySelector("#podcastPrice").value,
-              episodes,query,tokenId
+              creatorWalletId:creatorWalletState?.accountId||"",episodes,query,tokenId
             });
             localStorage.setItem(podcastKey,JSON.stringify(podcastSpec));
             const preview=viewer.srcdoc||"<!doctype html><html><body><main><h1>"+esc(query||"Your site")+"</h1></main></body></html>";

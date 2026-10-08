@@ -9,6 +9,19 @@
  const isXML=x=>/\.xml(\?|$)|rss|feed|podcast/i.test(x);
  const classify=x=>{let h='';try{h=new URL(x).hostname.toLowerCase()}catch{}return /(^|\.)x\.com$|(^|\.)twitter\.com$/.test(h)?'X Spaces':/facebook\.com$/.test(h)?'Facebook':/spotify\.com$/.test(h)?'Spotify':/podcasts\.apple\.com$/.test(h)?'Apple Podcasts':isXML(x)?'RSS':'Episode link'};
  const validPrice=n=>Number.isInteger(Number(n))&&Number(n)>=0&&Number(n)<=100;
+ async function verifyCreatorWallet(){
+  // Account identity is signed by the existing first-party ledger.
+  // Never trust a creator ID typed into HTML or stored in localStorage.
+  const endpoint='https://unified-wallet.marvaseater.workers.dev/v1/wallet/state';
+  const transport=root.StarQuestCloudLedger?.authenticatedFetch || root.QuantaCloudConnection?.authenticatedFetch;
+  if(!transport)throw Error('Unified Wallet is not connected on this page.');
+  const response=await transport(endpoint,{cache:'no-store'});
+  if(!response?.ok)throw Error('Unified Wallet identity could not be confirmed.');
+  const data=await response.json();
+  const accountId=String(data?.user?.id||'');
+  if(!data?.ok||!/^[-_a-zA-Z0-9]{8,128}$/.test(accountId))throw Error('An authoritative Unified Wallet account is required.');
+  return {connected:true,accountId};
+ }
  function normalize(input){
   const link=url(input?.sourceUrl);if(!link)throw Error('Enter an HTTPS episode or RSS feed link.');
   const price=Number(input?.priceStarCoins??1);if(!validPrice(price))throw Error('Price must be a whole StarCoin amount between 0 and 100.');
@@ -142,5 +155,5 @@
   if(/data-phi-action="share"/.test(text)&&!(/unified.wallet|server-side ledger/i.test(text)))missing.push('Wallet/reward contract unclear');
   return {ok:missing.length===0,missing};
  }
- root.CodePhiPodcast=Object.freeze({normalize,scan,render,apply,audit,classify});
+ root.CodePhiPodcast=Object.freeze({normalize,scan,render,apply,audit,classify,verifyCreatorWallet});
 })(window);
