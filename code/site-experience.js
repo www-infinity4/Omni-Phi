@@ -151,6 +151,22 @@
    image.loading='lazy';image.referrerPolicy='strict-origin-when-cross-origin';
    image.setAttribute('onerror',"this.style.display='none';this.closest('.image-tile')?.classList.add('image-unavailable')");
   }
+  // Long stories start with a human-readable teaser and an accessible full account.
+  for(const card of doc.querySelectorAll('.phi-card.story,.phi-card.research')){
+   const paragraph=card.querySelector('p');
+   if(!paragraph||paragraph.textContent.length<490)continue;
+   const chunks=paragraphs(paragraph.textContent,320);
+   if(chunks.length<2)continue;
+   paragraph.textContent=chunks[0];
+   let details=card.querySelector('details.phi-full-story');
+   if(!details){
+    details=doc.createElement('details');details.className='phi-full-story';
+    const summary=doc.createElement('summary');summary.textContent='Read full story';
+    details.append(summary);card.append(details);
+   }
+   details.replaceChildren(details.querySelector('summary'));
+   for(const chunk of chunks.slice(1)){const p=doc.createElement('p');p.textContent=chunk;details.append(p)}
+  }
   const gathered=candidates(context,videos);
   const videoArea=doc.querySelector('#video .rail');
   if(videoArea&&gathered.length){
@@ -169,6 +185,33 @@
    body.append(runtime);
   }
   doc.querySelector('meta[name="phi-quant-source"]')?.remove();
+  doc.getElementById('codephi-lifecycle')?.remove();
+  const lifecycle=doc.createElement('script');lifecycle.id='codephi-lifecycle';
+  lifecycle.textContent=`(function(){
+   const advance=card=>{
+    const rail=card?.parentElement;if(!rail||!rail.classList.contains('rail')||rail.children.length<2)return;
+    if(card.dataset.phiReadComplete==='yes')return;
+    card.dataset.phiReadComplete='yes';
+    rail.append(card);
+    const first=rail.querySelector('.phi-card');
+    const heading=first?.querySelector('h3');
+    if(heading)heading.setAttribute('tabindex','-1');
+    const status=document.querySelector('#phi-reading-status');
+    if(status)status.textContent=heading?'Next: '+heading.textContent:'Next selected discovery ready';
+   };
+   document.addEventListener('ended',e=>{
+    if(e.target.matches('audio,video'))advance(e.target.closest('.phi-card'));
+   },true);
+   document.addEventListener('toggle',e=>{
+    const detail=e.target;
+    if(!detail.matches('details.phi-full-story'))return;
+    if(detail.open)detail.dataset.phiOpened='yes';
+    else if(detail.dataset.phiOpened==='yes')advance(detail.closest('.phi-card'));
+   },true);
+  })();`;
+  body.append(lifecycle);
+  const feedback=doc.createElement('p');feedback.id='phi-reading-status';feedback.style.cssText='font-size:12px;color:#655772;margin:8px 0';feedback.setAttribute('aria-live','polite');
+  if(main)main.append(feedback);
   const meta=doc.createElement('meta');meta.name='phi-quant-source';meta.content=String(tokenId).slice(0,120);doc.head.append(meta);
   doc.querySelector('.phi-provenance')?.remove();
   const provenance=doc.createElement('p');provenance.className='phi-provenance';provenance.textContent='This edition follows your selected research and Quant interests. Media remains credited to its original sources.';
