@@ -40,18 +40,30 @@ function sourceCards(results){
  return (results||[]).slice(0,8).map(x=>({title:x.title||"Source",text:String(x.content||x.description||"").slice(0,420),url:x.url||"#"}));
 }
 function relevant(item,query){
- const words=String(query||"").toLowerCase().split(/\W+/).filter(x=>x.length>2&&!/^(the|and|for|with|music|images?|videos?|audio|sound)$/.test(x));
- // Match the identity of the result, not incidental names buried in a playlist description.
- const hay=String((item?.title||"")+" "+(item?.url||"")).toLowerCase();
- return words.length===0||words.every(word=>hay.includes(word));
+ const stop=/^(the|and|for|with|from|about|what|site|make|build|create|research|overview|cartoon|cartoons|stylized|image|images|photo|photos|video|videos|audio|music|story|stories|web|page|website|art|design|original)$/;
+ const terms=[...new Set(String(query||"").toLowerCase().split(/\W+/).filter(x=>x.length>2&&!stop.test(x)))].slice(0,7);
+ const hay=String((item?.title||"")+" "+(item?.sourceTitle||"")+" "+(item?.url||"")).toLowerCase();
+ if(!terms.length)return true;
+ const hits=terms.filter(word=>hay.includes(word)).length;
+ // Preserve strong named-entity matches without requiring every style word.
+ return hits>=Math.min(2,terms.length)&&hits>=Math.ceil(terms.length*.6);
+}
+function safeImage(value){
+ const s=String(value||"").trim();
+ if(/^data:image\/(png|jpeg|webp);base64,/i.test(s)&&s.length<800000)return s;
+ try{const u=new URL(s);if(u.protocol!=='https:')return '';if(/\.(svg|gif)(\?|$)/i.test(u.pathname))return '';return u.href}catch{return''}
+}
+function visualImage(item){
+ return safeImage(item.image||item.imageUrl||item.img_src||item.thumbnail_src||item.thumbnail||(
+ /\.(?:png|jpe?g|webp)(?:\?|$)/i.test(String(item.url||""))?item.url:""));
 }
 function render(query,results,direction,visuals,tokenId,media,context){
  const p=infer(query),sources=sourceCards(results),selectedStories=[...(context?.cards||[]),...(context?.images||[])].map(x=>({title:x.title,text:String(x.extract||x.text||('Selected visual evidence for '+query+'.')).slice(0,900),url:x.sourceUrl||x.url,image:x.image||x.imageUrl})),stories=p.stories.length?p.stories.map(x=>({title:x[0],text:x[1]})):[...selectedStories,...sources].slice(0,18);
  const chosenAudio=(context?.audio||[]).map(x=>({id:x.id,title:x.title,text:String(x.extract||x.description||"").slice(0,500),url:x.url,image:x.image})),chosenVideo=(context?.video||[]).map(x=>({id:x.id,title:x.title,text:String(x.extract||x.description||"").slice(0,500),url:x.url,image:x.image,embed:x.id?'https://archive.org/embed/'+encodeURIComponent(x.id):''}));
  const supplemental=(media||[]).filter(x=>relevant(x,p.title));
  const audio=[...chosenAudio,...supplemental.filter(x=>x.type==="audio").map(x=>({id:x.id,title:x.title,text:String(x.description||"").slice(0,500),url:x.url,image:x.image}))].filter((x,i,a)=>a.findIndex(y=>(y.url||y.title)===(x.url||x.title))===i).slice(0,30),video=[...chosenVideo,...supplemental.filter(x=>x.type==="movies").map(x=>({id:x.id,title:x.title,text:String(x.description||"").slice(0,500),url:x.url,image:x.image,embed:x.id?'https://archive.org/embed/'+encodeURIComponent(x.id):''}))].filter((x,i,a)=>a.findIndex(y=>(y.url||y.title)===(x.url||x.title))===i).slice(0,30);
- const selectedVisuals=(context?.images||[]).map(x=>({url:x.image||x.imageUrl||x.url,href:x.sourceUrl||x.url||'#',title:x.title}));
- const searchedVisuals=(visuals||[]).filter(x=>relevant(x,p.title));
+ const selectedVisuals=(context?.images||[]).map(x=>({url:visualImage(x),href:x.sourceUrl||x.url||'#',title:x.title}));
+ const searchedVisuals=(visuals||[]).filter(x=>relevant(x,p.title)).map(x=>({...x,url:visualImage(x)}));
  visuals=[...selectedVisuals,...searchedVisuals].filter((x,i,a)=>x.url&&a.findIndex(y=>y.url===x.url)===i);
  const nav=['Overview','Stories','Images','Video','Sound','Sources'].map(x=>{const id=x==='Sound'?'audio':x.toLowerCase();return '<button type="button" onclick="document.getElementById(\''+id+'\').scrollIntoView({behavior:\'smooth\'});document.body.classList.remove(\'menu-open\')">'+x+'</button>'}).join("");
  const cards=(items,type)=>items.map(x=>'<article class="phi-card '+type+'"><span class="type">'+COLORS[type].label+'</span>'+(x.image?'<img loading="lazy" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:14px;margin:10px 0" src="'+esc(x.image)+'" alt="'+esc(x.title)+'">':'')+'<h3>'+esc(x.title)+'</h3><p>'+esc(x.text)+'</p>'+(x.embed?'<iframe loading="lazy" style="width:100%;height:180px;border:0;border-radius:14px;margin:8px 0" src="'+esc(x.embed)+'" title="'+esc(x.title)+'" allow="autoplay; fullscreen" allowfullscreen></iframe>':'')+(x.url&&x.url!=="#"?'<a class="more" href="'+esc(x.url)+'" target="_blank" rel="noopener">Open source</a>':"")+'</article>').join("");
