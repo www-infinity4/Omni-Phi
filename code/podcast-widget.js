@@ -27,7 +27,7 @@
    priceStarCoins:price,firstFree:true,wallet:'unified-wallet',
    creatorWalletId:plain(input.creatorWalletId||'',128),
    paymentState:'server-verification-required',episodes,
-   quantContext:{query:plain(input.query||'',180),tokenId:plain(input.tokenId||'',90)}};
+   quantContext:{query:plain(input.quantContext?.query||input.query||'',180),tokenId:plain(input.quantContext?.tokenId||input.tokenId||'',90)}};
  }
  async function scan(source){
   const link=url(source);if(!link)throw Error('A valid HTTPS episode or RSS link is required.');
