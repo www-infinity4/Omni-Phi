@@ -53,6 +53,18 @@
    if(!/^image\/(png|jpeg|webp)$/.test(blob.type)||blob.size>10e6)throw Error('The reference image is not a supported file. Upload a PNG/JPG/WebP.');
    return new File([blob],'site-reference.'+(blob.type==='image/png'?'png':'jpg'),{type:blob.type});
   }
+  async function compactSiteImage(src){
+   if(!/^data:image\/(png|jpeg|webp);base64,/.test(String(src)))return src;
+   const img=await new Promise((ok,fail)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>fail(Error('Generated image cannot be resized'));i.src=src});
+   const max=1200,scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+   const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+   const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,canvas.width,canvas.height);
+   for(const quality of [.84,.72,.58]){
+    const data=canvas.toDataURL('image/jpeg',quality);
+    if(data.length<650000)return data;
+   }
+   throw Error('This artwork is too large for website storage. Download or host the image before publishing it.');
+  }
   async function generate(){
    if(inProgress)return;
    const status=$('assetFeedback'),prompt=$('assetPrompt').value.trim();
@@ -84,7 +96,17 @@
   $('studioVideos')?.addEventListener('click',()=>{$('siteVideoLab').hidden=false;$('siteVideoLab').scrollIntoView({behavior:'smooth',block:'center'});refreshVideos()});
   $('studioPodcast')?.addEventListener('click',()=>{$('podcastMaker').hidden=false;$('podcastMaker').scrollIntoView({behavior:'smooth',block:'center'})});
   $('assetGenerate')?.addEventListener('click',()=>void generate());
-  $('assetUse')?.addEventListener('click',()=>{if(asset)refreshPreview();$('assetFeedback').textContent='Artwork added to this site preview. For publishing, keep the generated image in durable hosting; temporary data URLs are not permanent assets.'});
+  $('assetUse')?.addEventListener('click',async()=>{
+   if(!asset)return;
+   const btn=$('assetUse');btn.disabled=true;
+   try{
+    const compact=await compactSiteImage(asset.src);
+    asset={...asset,src:compact,siteOptimized:true};
+    refreshPreview();
+    $('assetFeedback').textContent='Optimized artwork added to this site's preview. Review it in the complete site before publishing. A provider-hosted URL is preferable for long-term sharing.';
+   }catch(error){$('assetFeedback').textContent='Artwork kept in the asset preview: '+error.message}
+   finally{btn.disabled=false}
+  });
   $('videoAdd')?.addEventListener('click',()=>{
    const value=$('videoLink').value.trim(),v=studio.mediaSource(value);
    if(!v){$('videoFeedback').textContent='Use an actual YouTube watch/short, Vimeo video, or Internet Archive item URL. No unrelated result will be substituted.';return}
