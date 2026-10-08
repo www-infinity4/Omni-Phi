@@ -195,6 +195,23 @@
             ><button id="iterate">Iterate</button
             ><button id="finalDeploy">Final Deploy Website</button>
           </div>
+          <section class="panel" id="podcastMaker" aria-label="WidgetPhi podcast card">
+            <h2>WidgetPhi · Yellow Podcast / Spaces Card</h2>
+            <p class="muted">Enter an episode URL, an RSS feed, or authorized media. Code Phi scans what the source makes available and fills in only verified fields.</p>
+            <label for="podcastSource">Episode or feed link</label>
+            <input id="podcastSource" type="url" placeholder="https://x.com/i/spaces/… or podcast RSS" style="width:100%;box-sizing:border-box" />
+            <label for="podcastTitle">Podcast title / creator</label>
+            <input id="podcastTitle" placeholder="Fred's Spaces" style="width:100%;box-sizing:border-box" />
+            <label for="podcastEpisode">First episode title (if available)</label>
+            <input id="podcastEpisode" placeholder="Auto-scan or enter verified episode title" style="width:100%;box-sizing:border-box" />
+            <label for="podcastPrice">StarCoins for each additional episode</label>
+            <input id="podcastPrice" type="number" min="0" max="100" step="1" value="1" style="width:90px" />
+            <label for="podcastFile">Optional authorized audio file or metadata</label>
+            <input id="podcastFile" type="file" accept="audio/*,.xml,.rss,.json" style="width:100%" />
+            <p class="muted">Audio files need durable hosting before publishing. No guest wallet, card, trial, or API key is required. Paid access waits for verified Unified Wallet settlement.</p>
+            <button id="podcastAdd" type="button">Scan link &amp; add yellow card</button>
+            <p id="podcastFeedback" role="status" class="muted">First episode free · creator sets the later price.</p>
+          </section>
           <p class="muted" id="browserState">
             Browser verification: waiting for a connected Cloud Browser backend.
           </p>
@@ -226,6 +243,7 @@
     <script src="../assets/capability-router.js?v=20260920-c13b0-catalog1"></script>
     <script src="./entity-catalog.js?v=20260921-catalog1"></script>
     <script src="./token-context.js?v=20261004-token5"></script>
+    <script src="./podcast-widget.js?v=20261008-card1"></script>
     <script src="./card-system.js?v=20260922-card10"></script>
     <script src="./education-builder.js?v=20261004-education3"></script>\n    <script src="./design-pipeline.js?v=20261005-design2"></script>\n    <script src="./provider-bridge.js?v=20261005-provider1"></script>\n    <script src="./repair-engine.js?v=20261005-repair1"></script>
     <script>
@@ -269,6 +287,15 @@
         let iteration = 0;
         let buildEpoch = 0, educationArtifact = null;
         const expiredBuilds = new Set();
+        const podcastKey = "codePhi:podcastWidget:" + tokenId;
+        let podcastSpec = (() => { try { return JSON.parse(localStorage.getItem(podcastKey) || "null") } catch { return null } })();
+        if (podcastSpec) {
+          document.querySelector("#podcastSource").value=podcastSpec.sourceUrl || "";
+          document.querySelector("#podcastTitle").value=podcastSpec.title || "";
+          document.querySelector("#podcastEpisode").value=podcastSpec.episodes?.[0]?.title || "";
+          document.querySelector("#podcastPrice").value=String(podcastSpec.priceStarCoins ?? 1);
+        }
+
         const savedDirection = (() => { try { return JSON.parse(localStorage.getItem('omniPhi:websiteDirection:v1') || 'null'); } catch { return null; } })();
         const sitePath = p.get('path') || (savedDirection?.tokenId === tokenId ? savedDirection.path : '') || '';
         const isEducationBuild = note => /education|educational|curriculum|lesson|learning|teach|student|grade|school|explain/i.test([query,sitePath,note].filter(Boolean).join(' '));
@@ -769,6 +796,11 @@
               query,
             );
           }
+          if (podcastSpec && window.CodePhiPodcast) {
+            viewer.srcdoc = window.CodePhiPodcast.apply(viewer.srcdoc, podcastSpec);
+            const check=window.CodePhiPodcast.audit(viewer.srcdoc);
+            log("WidgetPhi podcast",check.ok?"First episode free · metadata and Quant packet preserved.":check.missing.join(" · "),check.ok?"pass":"fail");
+          }
           finish(
             assemble,
             "pass",
@@ -926,6 +958,32 @@
         }
         document.querySelector("#iterate").onclick = () =>
           build(direction.value.trim());
+        document.querySelector("#podcastAdd").onclick = async () => {
+          const feedback=document.querySelector("#podcastFeedback");
+          const button=document.querySelector("#podcastAdd");
+          button.disabled=true; feedback.textContent="Reading the episode source…";
+          try {
+            const link=document.querySelector("#podcastSource").value.trim();
+            const scanned=await window.CodePhiPodcast.scan(link);
+            const file=document.querySelector("#podcastFile").files?.[0];
+            if(file)feedback.textContent="Selected "+file.name+". File must be uploaded to durable hosting before playback can be published.";
+            const title=document.querySelector("#podcastTitle").value.trim() || scanned.title;
+            const explicitEpisode=document.querySelector("#podcastEpisode").value.trim();
+            const episodes=scanned.episodes.length?scanned.episodes:[{title:explicitEpisode||"Episode details pending verification",sourceUrl:link}];
+            if(explicitEpisode)episodes[0].title=explicitEpisode;
+            podcastSpec=window.CodePhiPodcast.normalize({
+              sourceUrl:link,title:title||"Podcast / Spaces",host:scanned.host||title,
+              priceStarCoins:document.querySelector("#podcastPrice").value,
+              episodes,query,tokenId
+            });
+            localStorage.setItem(podcastKey,JSON.stringify(podcastSpec));
+            const preview=viewer.srcdoc||"<!doctype html><html><body><main><h1>"+esc(query||"Your site")+"</h1></main></body></html>";
+            viewer.srcdoc=window.CodePhiPodcast.apply(preview,podcastSpec);
+            feedback.textContent=(scanned.note||"")+" Yellow card added to this search token. First episode free; wallet transfers are not active in preview.";
+            log("WidgetPhi podcast card","Yellow episode card placed in the site preview for token "+tokenId+".","pass");
+          }catch(error){feedback.textContent=error.message||"Could not add the podcast."}
+          finally{button.disabled=false}
+        };
         document.querySelector("#finalDeploy").onclick = () => {
           const localCheck=localPreviewPrecheck(viewer.srcdoc);
           const revisionId="codephi-"+tokenId+"-"+Date.now().toString(36);
