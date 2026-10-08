@@ -244,6 +244,7 @@
     <script src="./entity-catalog.js?v=20260921-catalog1"></script>
     <script src="./token-context.js?v=20261004-token5"></script>
     <script src="./podcast-widget.js?v=20261008-card1"></script>
+    <script src="./build-sequence.js?v=20261008-sequence1"></script>
     <script src="./card-system.js?v=20260922-card10"></script>
     <script src="./education-builder.js?v=20261004-education3"></script>\n    <script src="./design-pipeline.js?v=20261005-design2"></script>\n    <script src="./provider-bridge.js?v=20261005-provider1"></script>\n    <script src="./repair-engine.js?v=20261005-repair1"></script>
     <script>
@@ -814,14 +815,8 @@
           let plan = {
             query,
             direction: combined,
-            stages: [
-              "research/evidence",
-              "media",
-              "content structure",
-              "layout/design",
-              "interactions",
-              "quality pass",
-            ],
+            stages: (window.CodePhiBuildSequence?.phases||[]).map(x=>x.id),
+            capabilityOrder: (window.CodePhiBuildSequence?.phases||[]).map(({id,tool,label})=>({id,tool,label})),
             tools: (route.repositories || []).map((x) => x.id),
           };
           finish(
@@ -851,6 +846,8 @@
           );
           const htmlForReview = viewer.srcdoc;
           const localCheck = localPreviewPrecheck(htmlForReview);
+          const capabilityCheck=window.CodePhiBuildSequence?.review(htmlForReview,{tokenId});
+          for(const gap of capabilityCheck?.missing||[])log("Capability check",gap,"fail");
           if(localCheck.issues.length){
             localCheck.issues.slice(0,6).forEach(issue=>log("Local preview issue",issue,"fail"));
             browserState.textContent = "Browser verification: local pre-check found "+localCheck.issues.length+" item"+(localCheck.issues.length===1?"":"s")+"; deeper inspection running…";
