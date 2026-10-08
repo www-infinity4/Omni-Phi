@@ -162,6 +162,15 @@
           max-width: 480px;
         }
       }
+      .studio-tools{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+      .studio-tools button{background:#242a48;color:#fff;border:1px solid #859fc7;border-radius:18px;min-height:42px;padding:9px 12px;font:inherit;font-size:12px;font-weight:800;flex:1 1 135px}
+      .studio-workbench{margin:13px 0;padding:13px;background:#fffdf9;border:1px solid #cbbcd0;border-radius:14px}
+      .studio-workbench label{display:block;margin-top:8px;font-size:12px;font-weight:750}
+      .studio-workbench input,.studio-workbench textarea,.studio-workbench select{font:inherit;max-width:100%;box-sizing:border-box;padding:9px;background:white;color:#24152f;border:1px solid #ab94b8;border-radius:11px}
+      .studio-workbench button{margin-top:9px;border-radius:15px;padding:11px 14px}
+      .studio-workbench:focus-within{border-color:#8053a6}
+      #assetResult{margin:10px 0;border-radius:12px}
+      #videoSelections{font-size:12px;line-height:1.5}
     </style>
   </head>
   <body>
@@ -195,6 +204,38 @@
             ><button id="iterate">Iterate</button
             ><button id="finalDeploy">Final Deploy Website</button>
           </div>
+          <section class="panel" id="creatorStudio" aria-label="Code Phi Oracle Creator Studio">
+            <h2>Oracle Creator Studio</h2>
+            <p class="muted">These are builder tools. Use them to create assets, curate videos, or add WidgetPhi cards; the tools themselves do not have to appear on the finished website.</p>
+            <div class="studio-tools">
+              <button type="button" id="studioArtwork">Create site artwork</button>
+              <button type="button" id="studioVideos">Curate a video feed</button>
+              <button type="button" id="studioPodcast">Add a podcast widget</button>
+            </div>
+            <section class="studio-workbench" id="siteAssetLab" aria-label="Site asset generator">
+              <h3>Create a site image with Oracle</h3>
+              <p class="muted">Select an image already used in this site's research or upload a reference; Oracle reads it before creating new artwork.</p>
+              <label for="assetReference">Reference image found in the site</label>
+              <select id="assetReference" style="width:100%"><option value="">Text-only image or manual upload</option></select>
+              <label for="assetFile">Or upload a reference photo</label>
+              <input type="file" id="assetFile" accept="image/png,image/jpeg,image/webp">
+              <label for="assetPrompt">Describe the new artwork and style</label>
+              <textarea id="assetPrompt" rows="3" placeholder="Create an original editorial cartoon of the subject in the selected photo. Preserve recognizable identity and avoid invented lettering."></textarea>
+              <button type="button" id="assetGenerate">Create with Oracle image generator</button>
+              <p id="assetFeedback" role="status" class="muted">Real AI image generator · never a stock-photo placeholder.</p>
+              <img id="assetResult" alt="Generated site artwork preview" style="display:none;width:100%;max-height:420px;object-fit:contain">
+              <button type="button" id="assetUse" disabled>Add artwork to my site</button>
+            </section>
+            <section class="studio-workbench" id="siteVideoLab" aria-label="Video feed curation">
+              <h3>Video Feed Studio</h3>
+              <p class="muted">Choose YouTube, Vimeo, or Internet Archive videos. Videos from your selected search results are also included. The finished page loads the original provider's player when visitors tap Watch.</p>
+              <label for="videoLink">YouTube, Vimeo, or Internet Archive URL</label>
+              <input id="videoLink" type="url" placeholder="https://www.youtube.com/watch?v=..." style="box-sizing:border-box;width:100%">
+              <button type="button" id="videoAdd">Add to website video feed</button>
+              <p id="videoFeedback" role="status" class="muted">Curated links remain attached to this Quant search.</p>
+              <div id="videoSelections"></div>
+            </section>
+          </section>
           <section class="panel" id="podcastMaker" aria-label="WidgetPhi podcast card">
             <h2>WidgetPhi · Yellow Podcast / Spaces Card</h2>
             <p class="muted">Enter an episode URL, an RSS feed, or authorized media. Code Phi scans what the source makes available and fills in only verified fields.</p>
@@ -245,6 +286,8 @@
     <script src="../assets/capability-router.js?v=20260920-c13b0-catalog1"></script>
     <script src="./entity-catalog.js?v=20260921-catalog1"></script>
     <script src="./token-context.js?v=20261004-token5"></script>
+    <script src="./site-experience.js?v=20261008-site1"></script>
+    <script src="https://quantaphi.org/phi-visual-render.js?v=20261008-image1"></script>
     <script src="./podcast-widget.js?v=20261008-card3"></script>
     <script src="./build-sequence.js?v=20261008-sequence1"></script>
     <script src="./card-system.js?v=20260922-card10"></script>
