@@ -207,6 +207,14 @@
       <div class="grid">
         <section class="panel">
           <h2>Live HTML build</h2>
+          <div class="studio-tools" style="display:flex;flex-wrap:wrap;gap:9px;margin:9px 0 14px">
+            <button id="openInfinityEngine" type="button" aria-expanded="false" aria-controls="infinityEnginePanel">Infinity Phi · shared builder engine</button>
+          </div>
+          <div id="infinityEnginePanel" hidden style="margin:14px 0;border:1px solid #b99bed;border-radius:20px;padding:10px;background:#f5efff">
+            <strong style="display:block;color:#3b2367;margin-bottom:8px">Infinity Phi code agent · same token and search subject</strong>
+            <iframe id="infinityEngineFrame" title="Infinity Phi code builder engine" style="width:100%;min-height:72vh;border:1px solid #bd9ce6;border-radius:16px;background:white" loading="lazy" referrerpolicy="strict-origin"></iframe>
+            <p class="muted">The shared Infinity builder runs here without copying or replacing Omni's current project. It may ask you to choose the matching Infinity token.</p>
+          </div>
           <iframe
             class="viewer"
             id="viewer"
@@ -1201,6 +1209,17 @@
             log("Public deployment needs attention",reason,"fail");
           }finally{publishButton.disabled=false}
         };
+        document.querySelector("#openInfinityEngine")?.addEventListener("click",function(){
+          const panel=document.querySelector("#infinityEnginePanel"),frame=document.querySelector("#infinityEngineFrame");
+          const opening=panel.hidden;panel.hidden=!opening;this.setAttribute("aria-expanded",String(opening));
+          if(opening){
+            const url=new URL("https://quantaphi.org/infinity-phi/phi/code/builder/");
+            url.searchParams.set("q",[query,applied.join(" ")].filter(Boolean).join(" · ").slice(0,1200));
+            if(tokenId)url.searchParams.set("token",tokenId);
+            frame.src=url.href;
+            panel.scrollIntoView({behavior:"smooth",block:"start"});
+          }
+        });
         const machine = document.querySelector("#machine"),
           machineDirection = document.querySelector("#machineDirection");
         document.querySelector("#machineToggle").onclick = () =>
