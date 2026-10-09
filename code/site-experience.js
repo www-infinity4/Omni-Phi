@@ -75,7 +75,7 @@
   return '<!doctype html>\n'+d.documentElement.outerHTML;
  }
  function ensureStoryReaders(doc){
-  for(const card of doc.querySelectorAll('.phi-card.story,.phi-card.research,article[data-story-id],article[data-story-url]')){
+  for(const card of doc.querySelectorAll('.phi-card.story,.phi-card.research,article.story-card,#stories article,article[data-phi-story],article[data-story-id],article[data-story-url]')){
    if(card.querySelector('details.phi-full-story,details[data-full-story]'))continue;
    const original=card.querySelector('p'),source=card.querySelector('a.more,a[href^="https://"]');
    const full=(card.dataset.fullStory||original?.textContent||'').trim();
@@ -111,7 +111,7 @@
   // details behavior. Existing links/buttons still keep their own actions.
   if(!doc.getElementById('phi-story-card-open')){
    const script=doc.createElement('script');script.id='phi-story-card-open';
-   script.textContent="document.addEventListener('click',function(event){const card=event.target.closest('.phi-card.story,.phi-card.research');if(!card||event.target.closest('a,button,summary,details,input,select,textarea,[contenteditable]'))return;const reader=card.querySelector('details.phi-full-story');if(reader)reader.open=!reader.open;});";
+   script.textContent="document.addEventListener('click',function(event){const card=event.target.closest('.phi-card.story,.phi-card.research,article.story-card,#stories article,article[data-phi-story]');if(!card||event.target.closest('a,button,summary,details,input,select,textarea,[contenteditable]'))return;const reader=card.querySelector('details.phi-full-story');if(reader)reader.open=!reader.open;});";
    doc.body.append(script);
   }
   const css=doc.createElement('style');css.id='phi-story-reader-style';
