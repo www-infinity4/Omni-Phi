@@ -298,7 +298,7 @@
     <script src="./entity-catalog.js?v=20260921-catalog1"></script>
     <script src="./token-context.js?v=20261004-token5"></script>
     <script src="./quant-personalizer.js?v=20261008-quant1"></script>
-    <script src="./site-experience.js?v=20261008-site1"></script>
+    <script src="./site-experience.js?v=20261009-site1"></script>
     <script src="./studio-tools.js?v=20261008-tools1"></script>
     <script src="https://quantaphi.org/phi-visual-render.js?v=20261008-image1"></script>
     <script src="./podcast-widget.js?v=20261008-card3"></script>
@@ -904,7 +904,7 @@
             if (epoch !== buildEpoch) return;
             if (directed.ok) {
               const repaired = window.CodePhiRepairEngine?.applySafe(directed.html) || {html:directed.html};
-              viewer.srcdoc = repaired.html;
+              viewer.srcdoc = window.CodePhiSiteExperience?.addReaders?.(repaired.html) || repaired.html;
               if (educationArtifact?.files?.length) educationArtifact.files[0].content = viewer.srcdoc;
               aiRendered = true;
               finish(designStep, "pass", directed.summary);
@@ -1122,6 +1122,7 @@
           finally{button.disabled=false}
         };
         document.querySelector("#finalDeploy").onclick = () => {
+          viewer.srcdoc=window.CodePhiSiteExperience?.addReaders?.(viewer.srcdoc)||viewer.srcdoc;
           const localCheck=localPreviewPrecheck(viewer.srcdoc);
           const revisionId="codephi-"+tokenId+"-"+Date.now().toString(36);
           const asset = {
