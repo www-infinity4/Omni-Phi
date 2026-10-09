@@ -1121,7 +1121,36 @@
           }catch(error){feedback.textContent=error.message||"Could not add the podcast."}
           finally{button.disabled=false}
         };
-        document.querySelector("#finalDeploy").onclick = () => {
+        async function codePhiPublishToken(){
+          if(typeof window.QuantaCloudConnection?.resolveDeviceToken==='function'){
+            const found=await window.QuantaCloudConnection.resolveDeviceToken();
+            if(found)return found;
+          }
+          // Same storage-origin device identity as QuantaPhi wallet. Do not
+          // guess when several accounts are present.
+          const readToken=key=>{
+            try{
+              const raw=localStorage.getItem(key)||'';
+              if(/^sq_[A-Za-z0-9_-]{32,}$/.test(raw))return raw;
+              const parsed=JSON.parse(raw);
+              return /^sq_[A-Za-z0-9_-]{32,}$/.test(parsed?.deviceToken||'')?parsed.deviceToken:'';
+            }catch{return''}
+          };
+          try{
+            const session=JSON.parse(localStorage.getItem('starquest_session')||'null');
+            const user=String(session?.username||session?.key||'').trim().toLowerCase();
+            if(user){const exact=readToken('starquest_ledger_device_v1:'+user);if(exact)return exact}
+            const found=new Set();
+            for(let i=0;i<localStorage.length;i++){
+              const key=localStorage.key(i)||'';
+              if(key.startsWith('starquest_ledger_device_v1:')){
+                const token=readToken(key);if(token)found.add(token);
+              }
+            }
+            return found.size===1?[...found][0]:'';
+          }catch{return''}
+        }
+        document.querySelector("#finalDeploy").onclick = async () => {
           viewer.srcdoc=window.CodePhiSiteExperience?.addReaders?.(viewer.srcdoc)||viewer.srcdoc;
           const localCheck=localPreviewPrecheck(viewer.srcdoc);
           const revisionId="codephi-"+tokenId+"-"+Date.now().toString(36);
@@ -1139,18 +1168,38 @@
             createdAt: new Date().toISOString(),
             status: localCheck.ok ? "published" : "published-with-warnings",
           };
-          localStorage.setItem("codePhi:deployReady:v1", JSON.stringify(asset));
-          let revisions=[];try{revisions=JSON.parse(localStorage.getItem("codePhi:publishedRevisions:v1")||"[]")}catch(_){}
-          revisions=[asset,...(Array.isArray(revisions)?revisions:[]).filter(x=>x?.revisionId!==revisionId)].slice(0,100);
-          localStorage.setItem("codePhi:publishedRevisions:v1", JSON.stringify(revisions));
+          localStorage.setItem("codePhi:deployReady:v1", JSON.stringify({...asset,status:"pending-publication"}));
           localStorage.setItem("phiShared:webPhiHandoff:v1", JSON.stringify(asset));
-          status.textContent = localCheck.ok ? "Website revision published to Web Phi" : "Website revision published with preview warnings";
-          log(
-            "Web Phi revision published",
-            "Revision "+revisionId+" is retained under this research token and handed to Web Phi.",
-            localCheck.ok ? "pass" : "fail",
-          );
-          location.href="https://www-infinity4.github.io/Web-Phi/?"+new URLSearchParams({q:query,token:tokenId,codephi:"1",revision:revisionId});
+          const publishButton=document.querySelector("#finalDeploy");
+          publishButton.disabled=true;
+          status.textContent="Publishing this website to QuantaPhi's public page store…";
+          try{
+            if(!localCheck.ok)throw Error("Preview needs repair: "+localCheck.issues.slice(0,3).join("; "));
+            const deviceToken=await codePhiPublishToken();
+            if(!deviceToken)throw Error("No unambiguous connected wallet identity. Reopen QuantaPhi on this same browser to reconnect before publishing.");
+            const response=await fetch("https://quanta-phi-ledger.marvaseater.workers.dev/v1/pages",{
+              method:"POST",headers:{"content-type":"application/json","authorization":"Bearer "+deviceToken},
+              body:JSON.stringify({revision_id:revisionId,html:viewer.srcdoc,title:query||"Infinity website",source_token:tokenId}),
+              signal:AbortSignal.timeout(25000)
+            });
+            const reply=await response.json().catch(()=>({}));
+            if(!response.ok||!reply.ok||!/^https:\/\/quantaphi\.org\/page\/\?id=p_[a-z0-9]{20,40}$/.test(reply.url||""))
+              throw Error(reply.error||"Public page store did not confirm publication (HTTP "+response.status+").");
+            asset.publicUrl=reply.url;asset.slug=reply.slug;asset.status="published";
+            localStorage.setItem("codePhi:deployReady:v1", JSON.stringify(asset));
+            let revisions=[];try{revisions=JSON.parse(localStorage.getItem("codePhi:publishedRevisions:v1")||"[]")}catch(_){}
+            revisions=[asset,...(Array.isArray(revisions)?revisions:[]).filter(x=>x?.revisionId!==revisionId)].slice(0,100);
+            localStorage.setItem("codePhi:publishedRevisions:v1",JSON.stringify(revisions));
+            status.textContent="Public website saved. Opening your QuantaPhi page…";
+            log("Public website saved",reply.url,"pass");
+            location.assign(reply.url);
+          }catch(error){
+            asset.status="publish-failed";
+            localStorage.setItem("codePhi:deployReady:v1",JSON.stringify(asset));
+            const reason=String(error?.message||error);
+            status.textContent="Website saved on this device but NOT publicly published: "+reason;
+            log("Public deployment needs attention",reason,"fail");
+          }finally{publishButton.disabled=false}
         };
         const machine = document.querySelector("#machine"),
           machineDirection = document.querySelector("#machineDirection");
