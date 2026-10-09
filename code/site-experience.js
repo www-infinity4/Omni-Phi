@@ -74,6 +74,58 @@
   card.append(img,cap);section.prepend(card);
   return '<!doctype html>\n'+d.documentElement.outerHTML;
  }
+ function ensureStoryReaders(doc){
+  for(const card of doc.querySelectorAll('.phi-card.story,.phi-card.research,article[data-story-id],article[data-story-url]')){
+   if(card.querySelector('details.phi-full-story,details[data-full-story]'))continue;
+   const original=card.querySelector('p'),source=card.querySelector('a.more,a[href^="https://"]');
+   const full=(card.dataset.fullStory||original?.textContent||'').trim();
+   const sourceHref=source?.getAttribute('href')||card.dataset.storyUrl||'';
+   if(!full&&!sourceHref)continue;
+   const chunks=paragraphs(full,340);
+   const detail=doc.createElement('details');detail.className='phi-full-story';
+   const summary=doc.createElement('summary');
+   summary.textContent=full.length>=250?'Read full story':'Read story & source';
+   detail.append(summary);
+   if(full){
+    if(original){
+     const teaser=full.length>180?full.slice(0,180).replace(/\s+\S*$/,'')+'…':full.slice(0,110)+(full.length>110?'…':'');
+     original.textContent=teaser;
+    }
+    for(const part of chunks){
+     const paragraph=doc.createElement('p');paragraph.textContent=part;detail.append(paragraph);
+    }
+   }
+   if(/^https:\/\//i.test(sourceHref)){
+    const anchor=doc.createElement('a');anchor.href=sourceHref;anchor.textContent='Continue at original source ↗';
+    anchor.target='_blank';anchor.rel='noopener noreferrer';detail.append(anchor);
+   }
+   // A source snippet is evidence, not a generated full-length article.
+   if(full.length<250){
+    const note=doc.createElement('small');
+    note.textContent='Short source extract. Open the original source for additional material.';
+    detail.append(note);
+   }
+   card.append(detail);
+  }
+  // Whole card activation supports touch screens and keyboard-safe native
+  // details behavior. Existing links/buttons still keep their own actions.
+  if(!doc.getElementById('phi-story-card-open')){
+   const script=doc.createElement('script');script.id='phi-story-card-open';
+   script.textContent="document.addEventListener('click',function(event){const card=event.target.closest('.phi-card.story,.phi-card.research');if(!card||event.target.closest('a,button,summary,details,input,select,textarea,[contenteditable]'))return;const reader=card.querySelector('details.phi-full-story');if(reader)reader.open=!reader.open;});";
+   doc.body.append(script);
+  }
+  const css=doc.createElement('style');css.id='phi-story-reader-style';
+  css.textContent='.phi-card.story,.phi-card.research{cursor:pointer}.phi-full-story{margin-top:14px;border-top:1px solid #ab8dca;padding-top:11px}.phi-full-story summary{cursor:pointer;font-weight:900;display:block;padding:11px 13px;border:1px solid #9f7dcd;border-radius:999px;color:#482077;background:#f6efff}.phi-full-story[open] summary{margin-bottom:12px}.phi-full-story p{margin:9px 0;white-space:normal;line-height:1.65}.phi-full-story a{display:inline-block;margin-top:12px;color:#6427a4;font-weight:800}.phi-full-story small{display:block;margin-top:9px}';
+  if(!doc.getElementById(css.id))doc.head.append(css);
+  return doc;
+ }
+ function addReaders(html){
+  try{
+   const doc=new DOMParser().parseFromString(String(html||''),'text/html');
+   ensureStoryReaders(doc);
+   return '<!doctype html>\n'+doc.documentElement.outerHTML;
+  }catch{return String(html||'')}
+ }
  function enhance(html,{query='',tokenId='',context={},videos=[]}={}){
   if(!String(html||'').trim()||typeof DOMParser==='undefined')return html;
   const doc=new DOMParser().parseFromString(String(html),'text/html'),title=doc.title||text(query)||'Your website';
@@ -151,22 +203,9 @@
    image.loading='lazy';image.referrerPolicy='strict-origin-when-cross-origin';
    image.setAttribute('onerror',"this.style.display='none';this.closest('.image-tile')?.classList.add('image-unavailable')");
   }
-  // Long stories start with a human-readable teaser and an accessible full account.
-  for(const card of doc.querySelectorAll('.phi-card.story,.phi-card.research')){
-   const paragraph=card.querySelector('p');
-   if(!paragraph||paragraph.textContent.length<490)continue;
-   const chunks=paragraphs(paragraph.textContent,320);
-   if(chunks.length<2)continue;
-   paragraph.textContent=chunks[0];
-   let details=card.querySelector('details.phi-full-story');
-   if(!details){
-    details=doc.createElement('details');details.className='phi-full-story';
-    const summary=doc.createElement('summary');summary.textContent='Read full story';
-    details.append(summary);card.append(details);
-   }
-   details.replaceChildren(details.querySelector('summary'));
-   for(const chunk of chunks.slice(1)){const p=doc.createElement('p');p.textContent=chunk;details.append(p)}
-  }
+  // EVERY story card needs a meaningful reading action. Do not duplicate
+  // the teaser as the full story or pretend a short source extract is complete.
+  ensureStoryReaders(doc);
   const gathered=candidates(context,videos);
   const videoArea=doc.querySelector('#video .rail');
   if(videoArea&&gathered.length){
@@ -218,5 +257,5 @@
   if(main)main.prepend(provenance);
   return '<!doctype html>\n'+doc.documentElement.outerHTML;
  }
- root.CodePhiSiteExperience=Object.freeze({mediaSource,candidates,paragraphs,themeFor,enhance,attachImage});
+ root.CodePhiSiteExperience=Object.freeze({mediaSource,candidates,paragraphs,themeFor,enhance,attachImage,addReaders});
 })(window);
