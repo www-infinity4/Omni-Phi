@@ -71,7 +71,7 @@ function protect(existing,generated){
 }
 async function compose({query='',tokenId='',direction='',latestDirection='',previousHtml='',draftHtml='',context={},iteration=1}={}){
  const previous=String(previousHtml||''),draft=String(draftHtml||'');
- const editing=!!(iteration>1&&previous.trim());
+ const editing=Boolean(previous.trim());
  const reference=editing?previous:draft;
  const evidence=sources(context);
  const instructions=[
