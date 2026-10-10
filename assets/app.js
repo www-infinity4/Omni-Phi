@@ -527,6 +527,29 @@
   const OMNI_PENDING_CREDITS='omniPhi:pendingStarCoinPayouts:v1';
   const pendingCredits=()=>{try{const a=JSON.parse(localStorage.getItem(OMNI_PENDING_CREDITS)||'[]');return Array.isArray(a)?a:[]}catch{return []}};
   const savePendingCredits=items=>{try{localStorage.setItem(OMNI_PENDING_CREDITS,JSON.stringify(items.slice(-800)));return true}catch{return false}};
+  // Preserve the evidence even if the catalog script loads after a quick tap.
+  const OMNI_EVIDENCE_KEY='omniPhi:pendingStarCoinEvidence:v1';
+  const pendingEvidence=()=>{try{const v=JSON.parse(localStorage.getItem(OMNI_EVIDENCE_KEY)||'[]');return Array.isArray(v)?v:[]}catch{return []}};
+  const persistEvidence=items=>{try{localStorage.setItem(OMNI_EVIDENCE_KEY,JSON.stringify(items.slice(-800)));return true}catch{return false}};
+  let evidenceFlushing=false;
+  function rememberEvidence(action,ref,card){
+    const items=pendingEvidence();
+    if(!items.some(x=>x.action===action&&x.ref===ref))persistEvidence([...items,{action,ref,card}]);
+    void flushEvidence();
+  }
+  async function flushEvidence(){
+    if(evidenceFlushing||!window.OmniStarCatalog?.record)return;
+    evidenceFlushing=true;
+    try{
+      for(const item of pendingEvidence().slice(0,100)){
+        try{
+          const result=await window.OmniStarCatalog.record(item.action,item.ref,item.card);
+          if(!result?.queued)break;
+          persistEvidence(pendingEvidence().filter(x=>x.action!==item.action||x.ref!==item.ref));
+        }catch(error){console.warn('Omni StarCoin evidence retained for retry',error);break}
+      }
+    }finally{evidenceFlushing=false}
+  }
   let creditRetrying=false;
   function awardStarCoinCredit(action,reference,card={}) {
     const ref=String(reference||'').trim();
@@ -548,7 +571,7 @@
     }
     savePendingCredits(pendingCredits().filter(x=>x.action!==action||x.ref!==ref));
     // The action catalog retains the exact card/quant data; a retry cannot pay twice.
-    void window.OmniStarCatalog?.record(action,ref,card);
+    rememberEvidence(action,ref,card);
     const outcome={...detail,action,pending:false,duplicate:!!detail?.alreadyRecorded,
       progressToNextCoin:detail?.progressToNextCoin??0,awarded:detail?.awarded||0};
     window.dispatchEvent(new CustomEvent('omni:starcoin-receipt',{detail:{...outcome,reference:ref,card}}));
@@ -571,7 +594,7 @@
     const loader=document.createElement('script');
     loader.src=url('assets/star-coin-catalog.js?v=20261010-wallet-receipts1');
     loader.async=true;
-    loader.onload=()=>{void window.OmniStarCatalog?.flush();flushPendingCredits()};
+    loader.onload=()=>{void window.OmniStarCatalog?.flush();flushEvidence();flushPendingCredits()};
     document.head.appendChild(loader);
   }
     function creditInfinitySearch(query) {
