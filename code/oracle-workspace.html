@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#160c26">
+  <meta name="description" content="Code Phi Oracle Studio — one live website builder for Infinity Phi and Omni Phi.">
+  <title>Code Phi · Oracle Studio</title>
+  <link rel="stylesheet" href="./oracle-workspace.css?v=20261009-rebuild1">
+  <script src="./gpt-director.js?v=20261009-workspace1" defer></script>
+  <script src="./repair-engine.js?v=20261009-workspace1" defer></script>
+  <script src="./oracle-workspace.js?v=20261009-rebuild1" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">φ</span>
+        <span><strong>CODE PHI</strong><small>ORACLE STUDIO</small></span>
+      </div>
+      <nav class="toplinks" aria-label="Phi navigation">
+        <a href="https://quantaphi.org/infinity-phi/">Infinity</a>
+        <a href="https://quantaphi.org/omni-phi/">Omni</a>
+        <a href="https://quantaphi.org/">Quanta</a>
+      </nav>
+    </header>
+    <main>
+      <section class="project-strip" aria-label="Current website project">
+        <div class="project-copy">
+          <span class="eyebrow">YOUR ACTIVE PROJECT</span>
+          <h1 id="projectName">Your website</h1>
+          <p id="projectMeta">Start with a search or describe the site you want.</p>
+        </div>
+        <div class="project-actions">
+          <span class="state-dot" aria-hidden="true"></span>
+          <span id="engineBadge" role="status">Editor ready</span>
+        </div>
+      </section>
+      <div class="workspace">
+        <section class="canvas-panel" aria-label="Website viewer">
+          <div class="canvas-top">
+            <div class="browser-title"><span class="traffic"><i></i><i></i><i></i></span><span id="previewLabel">LIVE WEBSITE VIEWER</span></div>
+            <div class="canvas-tools">
+              <button id="deviceToggle" class="tool-btn" type="button" aria-pressed="false">Mobile</button>
+              <button id="sourceToggle" class="tool-btn" type="button" aria-pressed="false">HTML</button>
+              <button id="fullToggle" class="tool-btn" type="button" aria-pressed="false">Expand</button>
+            </div>
+          </div>
+          <div id="canvasFrame" class="canvas-frame">
+            <iframe id="viewer" title="Generated Code Phi website" sandbox="allow-scripts allow-forms allow-modals allow-popups" referrerpolicy="no-referrer"></iframe>
+            <div id="viewerLoading" class="loading" hidden><span class="spinner" aria-hidden="true"></span><strong>Oracle is building your next version…</strong><small>The working website stays visible.</small></div>
+          </div>
+          <div class="source-panel" id="sourcePanel" hidden>
+            <div class="source-head"><strong>Edit website HTML</strong><span>Preview changes before saving.</span></div>
+            <textarea id="htmlSource" spellcheck="false" aria-label="Website HTML source code"></textarea>
+            <button id="applyHtml" type="button" class="button primary small">Apply HTML to viewer</button>
+          </div>
+          <footer class="canvas-foot">
+            <span id="revisionLabel">Revision 1 · Original starter</span>
+            <span id="saveLabel">Not yet saved</span>
+          </footer>
+        </section>
+        <aside class="oracle-panel" aria-label="Oracle controls">
+          <div class="oracle-title"><span class="oracle-sun">✦</span><div><span class="eyebrow">THE CREATION ENGINE</span><h2>Ask Oracle</h2></div></div>
+          <label for="subject">Website subject</label>
+          <input id="subject" type="text" autocomplete="off" placeholder="What are you creating?">
+          <label for="instruction">Build or change your website</label>
+          <textarea id="instruction" rows="5" placeholder="Describe what you want to build, or tell Oracle what to change in the preview."></textarea>
+          <button id="buildButton" class="button primary wide" type="button">✦ Build / Iterate website</button>
+          <div class="quick-ideas" id="quickIdeas" aria-label="Ideas to apply">
+            <button type="button" data-idea="Use elegant Oracle-style electric cards and uniform pill buttons.">Oracle cards</button>
+            <button type="button" data-idea="Add an original full story reader with a short preview and readable sections.">Story reader</button>
+            <button type="button" data-idea="Improve mobile navigation and keep every action functional.">Mobile polish</button>
+            <button type="button" data-idea="Create beautiful responsive image and video areas from verified source links only.">Media sections</button>
+          </div>
+          <div class="oracle-divider"></div>
+          <h3>Working version</h3>
+          <p class="supporting">Improve the existing website without clearing what already works.</p>
+          <div class="action-grid">
+            <button type="button" id="undoButton" class="button secondary">↶ Undo</button>
+            <button type="button" id="saveButton" class="button secondary">Save</button>
+            <button type="button" id="exportButton" class="button secondary">Export HTML</button>
+            <button type="button" id="publishButton" class="button secondary">Publish site</button>
+          </div>
+          <button type="button" id="builderToggle" class="builder-link" aria-expanded="false" aria-controls="infinityPanel">Open Infinity builder <span aria-hidden="true">↗</span></button>
+          <div class="notice" id="statusMessage" role="status" aria-live="polite">Your working website appears in the viewer. Describe a change to make the next version.</div>
+        </aside>
+      </div>
+      <section id="infinityPanel" class="companion" hidden>
+        <div class="companion-header"><div><span class="eyebrow">CONNECTED BUILDER</span><h2>Infinity Phi website engine</h2><p>Uses the same topic and sends its generated preview back into this viewer.</p></div><button id="builderClose" class="tool-btn" type="button">Close</button></div>
+        <iframe id="infinityEngineFrame" title="Infinity Phi companion website builder" loading="lazy" referrerpolicy="strict-origin" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"></iframe>
+      </section>
+      <section class="activity" aria-label="Oracle build history">
+        <div><span class="eyebrow">ORACLE ACTIVITY</span><h2>Build history</h2></div>
+        <ol id="historyList"><li>Workspace initialized.</li></ol>
+      </section>
+    </main>
+    <footer class="site-foot">CODE PHI · ONE EDITOR FOR INFINITY &amp; OMNI · ORIGINAL RESEARCH PRESERVED</footer>
+  </div>
+</body>
+</html>
