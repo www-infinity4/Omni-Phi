@@ -87,7 +87,7 @@
     const url = landingUrl(card);
     const title = clean(card?.title || card?.sourceTitle || 'Omni Phi card', 220);
     const full = clean(card?.extract || card?.body || card?.description || '', 1600);
-    const text = full.slice(0, 150).replace(/\\s+\\S*$/, '') + (full.length > 150 ? '… Explore the story in Infinity Phi.' : ' · Explore in Infinity Phi.');
+    const text = full.slice(0, 150).replace(/\s+\S*$/, '') + (full.length > 150 ? '… Explore the story in Infinity Phi.' : ' · Explore in Infinity Phi.');
     if (!navigator.share) {
       try { await navigator.clipboard.writeText(url); return { copied: true, shareUrl: url }; } catch { return { error: true, shareUrl: url }; }
     }
