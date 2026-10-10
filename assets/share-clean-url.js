@@ -20,8 +20,12 @@
   }
 
   function sharePreviewUrl(card) {
-    const share = new URL(SHARE_PAGE);
-    share.searchParams.set('target', exactResearchTarget(card));
+    const share = new URL('https://quantaphi.org/omni-phi/overview/');
+    const research = OmniPhi.activeResearch?.();
+    const query = clean(research?.query || card?.searchQuery || card?.title || '', 100);
+    if (query) share.searchParams.set('q', query);
+    const key = clean(card?.id || card?.storyKey || '', 36);
+    if (/^[a-z0-9_-]{3,36}$/i.test(key)) share.searchParams.set('story', key);
     return share.toString();
   }
 
@@ -30,7 +34,8 @@
   }
 
   function cardText(card) {
-    return clean(card?.extract || card?.body || card?.description || '', 420);
+    const full = clean(card?.extract || card?.body || card?.description || '', 1600);
+    return full.slice(0, 150).replace(/\\s+\\S*$/, '') + (full.length > 150 ? '… Read in Omni Phi.' : ' · Explore in Omni Phi.');
   }
 
   OmniPhi.shareCard = async function shareExactCard(card) {
