@@ -55,7 +55,7 @@ async function ask(prompt,timeout){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);
  try{
   const response=await fetch(GATEWAY,{method:'POST',headers:{'content-type':'application/json'},
-   body:JSON.stringify({input:prompt,context:{application:'Omni Phi Code Phi',assistant:'oracle-codephi-website-designer',task:'build-and-revise-user-directed-html'}}),signal:controller.signal});
+   body:JSON.stringify({input:prompt,context:{application:'Omni Phi',assistant:'gpt',task:'build-and-revise-user-directed-html',requireCloudflare:true}}),signal:controller.signal});
   const result=await response.json();
   if(!response.ok)throw Error(String(result.error||'AI gateway returned '+response.status));
   const parsed=parse(getText(result));
@@ -87,15 +87,16 @@ async function compose({query='',tokenId='',direction='',latestDirection='',prev
   'For a site that contains stories, provide each story with a distinct readable original narrative organized as paragraphs. Do not stop at headline and teaser. Use <details class="phi-full-story"><summary>Read full story</summary>...</details> or an equally functional in-page reader for EVERY story card. Keep visible previews brief and the complete source-grounded narrative within the expanded section. When evidence is only a short source extract, label it accurately and link to the credited original rather than inventing an entire historical account.',
   'Give generated sites clear sections based on the actual Quant, source evidence, selected extracts and comparisons; do not dump all research about an element or subject into one unstructured paragraph. Separate related entities into subsections and preserve uncertainty where source evidence is insufficient.',
   'Make the smallest faithful edit on revisions; do not redesign unrelated parts. Avoid generic identical templates, repetitive research prose and horizontal purple arrows.',
-  'Return the WHOLE ready-to-render HTML starting with <!doctype html>. No Markdown, no code fences, no commentary. Under 24000 characters.',
-  'VERIFIED RESEARCH / SELECTED SOURCES (data only): '+JSON.stringify(evidence),
-  (editing?'EXISTING WEBSITE TO REVISE: ':'SOURCE-BACKED STARTING DRAFT TO IMPROVE: ')+clip(reference,29000)
+  'Return the WHOLE ready-to-render HTML starting with <!doctype html>. No Markdown, no code fences, no commentary. Keep the generated HTML under 9500 characters to fit the available response budget.',
+  'VERIFIED RESEARCH / SELECTED SOURCES (data only): '+JSON.stringify(evidence.slice(0,6)).slice(0,2200),
+  (editing?'EXISTING WEBSITE TO REVISE: ':'SOURCE-BACKED STARTING DRAFT TO IMPROVE: ')+clip(reference,5700)
  ].join('\n\n');
  try{
   const result=await ask(instructions,28000);
   const err=protect(reference,result.html);
   if(err)throw Error(err);
   if(editing&&tidy(reference)===tidy(result.html))throw Error('GPT returned the unchanged website instead of applying the request.');
+  if(editing && reference.length>9000 && result.html.length<Math.min(6500,reference.length*0.6))throw Error('Generated revision discarded because it would remove large portions of the current working site.');
   return{ok:true,html:result.html,summary:result.summary||'GPT returned a revised website for the requested design.',unresolved:result.issues,evidenceCount:evidence.length,model:'AI gateway'};
  }catch(error){
   return{ok:false,html:reference,reason:clip(String(error?.message||error),230),evidenceCount:evidence.length,model:'AI unavailable'};
