@@ -7,13 +7,12 @@
 
   function landingUrl(card) {
     const research = OmniPhi.activeResearch?.();
-    const query = clean(research?.query || card?.searchQuery || card?.title || '', 500);
-    const params = new URLSearchParams({ q: query, run: '1' });
-    params.set('cardTitle', clean(card?.title || card?.sourceTitle || 'Omni Phi card', 220));
-    params.set('cardBody', clean(card?.extract || card?.body || card?.description || '', 650));
-    if (card?.url) params.set('source', clean(card.url, 1400));
-    if (card?.image || card?.imageUrl) params.set('image', clean(card.image || card.imageUrl, 1400));
-    return `https://www-infinity4.github.io/C13b0/phi/?${params.toString()}`;
+    const query = clean(research?.query || card?.searchQuery || card?.title || '', 100);
+    const url = new URL('https://quantaphi.org/infinity-phi/');
+    if (query) url.searchParams.set('q', query);
+    const id = clean(card?.id || card?.storyKey || '', 36);
+    if (/^[a-z0-9_-]{3,36}$/i.test(id)) url.searchParams.set('story', id);
+    return url.href;
   }
 
   function roundedRect(ctx, x, y, w, h, r) {
@@ -74,7 +73,7 @@
     }
     const label = clean(card?.domain || card?.provider || 'Omni Phi', 90);
     const title = clean(card?.title || card?.sourceTitle || 'Omni Phi card', 220);
-    const body = clean(card?.extract || card?.body || card?.description || '', 700);
+    const body = clean(card?.extract || card?.body || card?.description || '', 185);
     ctx.fillStyle = '#ffd85a'; ctx.font = '900 26px Arial,sans-serif'; ctx.fillText(label, left, top);
     ctx.fillStyle = '#fff7e6'; ctx.font = '900 47px Arial,sans-serif'; let y = top + 62;
     wrapLines(ctx, title, width, image ? 4 : 3).forEach((line) => { ctx.fillText(line, left, y); y += 55; });
@@ -87,7 +86,8 @@
   OmniPhi.shareCard = async function shareRenderedOrangeCard(card) {
     const url = landingUrl(card);
     const title = clean(card?.title || card?.sourceTitle || 'Omni Phi card', 220);
-    const text = clean(card?.extract || card?.body || card?.description || '', 520);
+    const full = clean(card?.extract || card?.body || card?.description || '', 1600);
+    const text = full.slice(0, 150).replace(/\\s+\\S*$/, '') + (full.length > 150 ? '… Explore the story in Infinity Phi.' : ' · Explore in Infinity Phi.');
     if (!navigator.share) {
       try { await navigator.clipboard.writeText(url); return { copied: true, shareUrl: url }; } catch { return { error: true, shareUrl: url }; }
     }
