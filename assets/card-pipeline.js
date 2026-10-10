@@ -241,7 +241,7 @@
     const shareUrl = sharePreviewUrl(card);
     const title = clean(card?.title || card?.sourceTitle || 'Omni Phi card', 220);
     const full = clean(card?.extract || card?.body || card?.description || '', 1600);
-    const text = (full.slice(0, 150).replace(/\\s+\\S*$/, '') || full.slice(0, 150)) + (full.length > 150 ? '… Read the story in Omni Phi.' : ' · Explore in Omni Phi.');
+    const text = (full.slice(0, 150).replace(/\s+\S*$/, '') || full.slice(0, 150)) + (full.length > 150 ? '… Read the story in Omni Phi.' : ' · Explore in Omni Phi.');
 
     if (!navigator.share) {
       try {
