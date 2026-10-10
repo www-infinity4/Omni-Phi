@@ -789,7 +789,7 @@
           return result;
         }
         async function build(note = "") {
-          const previousHtml = iteration > 0 ? String(viewer.srcdoc || "") : "";
+          const previousHtml = String(viewer.srcdoc || "");
           const epoch = ++buildEpoch;
           educationArtifact = null;
           if (note && !applied.includes(note)) applied.push(note);
