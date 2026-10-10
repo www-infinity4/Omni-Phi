@@ -39,7 +39,7 @@
     const key=item.url||item.title.toLowerCase();
     if(unique.has(key))return false;unique.add(key);return true;
   }).slice(0,15);
-  const overview=safeText(scopedResearch?.overview||storedSeed?.overview||directionSeed?.overview||'',1450);
+  let overview=safeText(scopedResearch?.overview||storedSeed?.overview||directionSeed?.overview||'',1450);
   const projectKey=()=> 'phiOracle:project:v2:'+safeText(tokenId||query||'default',110);
   const notes=[];
   let busy=false,rev=0,history=[],html='',expanded=false,linked=false;
@@ -122,9 +122,11 @@
     $('applyHtml').disabled=value;$('engineBadge').textContent=value?'Oracle creating…':'Editor ready';
     $('buildButton').textContent=value?'Creating next version…':'✦ Build / Iterate website';
   }
+  function historyURL(url){window.history.replaceState(window.history.state,'',url.href);}
   function setNewTopic(newTopic){
     if(!newTopic||newTopic===query)return;
-    query=newTopic;tokenId='';history=[];rev=0;
+    query=newTopic;tokenId='';history=[];rev=0;overview='';
+    const currentURL=new URL(location.href);currentURL.searchParams.set('q',query);currentURL.searchParams.delete('token');historyURL(currentURL);
     // A manually typed new topic does not inherit the unrelated previous token.
     evidence.length=0;
     projectHeading();
@@ -332,6 +334,7 @@
   window.CodePhiWorkshopHost=Object.freeze({
     state:()=>({query,tokenId,html,evidence:evidence.slice(),overview}),
     display,setBusy,announce,eventLog,
+    setResearch:items=>{for(const item of items){if(!evidence.some(x=>x.url===item.url))evidence.push(item);}evidence.splice(24);overview=evidence.slice(0,3).map(x=>x.extract).filter(Boolean).join(' ');projectHeading();try{localStorage.setItem('omniPhi:lastResearch:v1',JSON.stringify({query,overview,sources:evidence}));localStorage.setItem('omniPhi:codeSeed:v1',JSON.stringify({query,tokenId,overview,sources:evidence}));}catch{}if(!html.includes('data-codephi-workshop'))display(buildStarter(),'Research content loaded');},
     addEvidence:item=>{if(!evidence.some(x=>(x.url||x.sourceUrl)===(item.url||item.sourceUrl))){evidence.push(item);projectHeading();}}
   });
   bind();
