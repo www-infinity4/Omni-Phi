@@ -534,8 +534,9 @@
   let evidenceFlushing=false;
   function rememberEvidence(action,ref,card){
     const items=pendingEvidence();
-    if(!items.some(x=>x.action===action&&x.ref===ref))persistEvidence([...items,{action,ref,card}]);
-    void flushEvidence();
+    const stored=items.some(x=>x.action===action&&x.ref===ref)||persistEvidence([...items,{action,ref,card}]);
+    if(stored)void flushEvidence();
+    return stored;
   }
   async function flushEvidence(){
     if(evidenceFlushing||!window.OmniStarCatalog?.record)return;
@@ -555,27 +556,17 @@
     const ref=String(reference||'').trim();
     if(!ref||!['collect','share','star','build_image','fix_image','extract','compare'].includes(action))
       return {awarded:0,error:'invalid_reward_reference'};
-    const cp=window.ControlPhi;
-    const previous=pendingCredits();
-    if(!cp?.ensureActionCredit||!cp?.ensureShareCredit){
-      if(!previous.some(x=>x.action===action&&x.ref===ref))savePendingCredits([...previous,{action,ref,card}]);
-      return {awarded:0,pending:true,progressToNextCoin:0};
+    const saved=rememberEvidence(action,ref,card);
+    if(!saved){
+      const old=pendingCredits();
+      if(!old.some(x=>x.action===action&&x.ref===ref))
+        savePendingCredits([...old,{action,ref,card}]);
     }
-    let detail;
-    try{
-      detail=action==='share'?cp.ensureShareCredit(ref,'web_share_api'):cp.ensureActionCredit(ref,action);
-    }catch(error){
-      if(!previous.some(x=>x.action===action&&x.ref===ref))savePendingCredits([...previous,{action,ref,card}]);
-      console.warn('Omni StarCoin payout queued until wallet is available',error);
-      return {awarded:0,pending:true,progressToNextCoin:0};
-    }
-    savePendingCredits(pendingCredits().filter(x=>x.action!==action||x.ref!==ref));
-    // The action catalog retains the exact card/quant data; a retry cannot pay twice.
-    rememberEvidence(action,ref,card);
-    const outcome={...detail,action,pending:false,duplicate:!!detail?.alreadyRecorded,
-      progressToNextCoin:detail?.progressToNextCoin??0,awarded:detail?.awarded||0};
-    window.dispatchEvent(new CustomEvent('omni:starcoin-receipt',{detail:{...outcome,reference:ref,card}}));
-    return outcome;
+    // No browser-only minting. Quanta's authenticated D1 payout transaction
+    // both catalogs the exact evidence and settles the same StarQuest account.
+    const result={action,reference:ref,awarded:0,pending:true,queued:saved};
+    window.dispatchEvent(new CustomEvent('omni:starcoin-receipt',{detail:{...result,card}}));
+    return result;
   }
   function awardStarCoinShare(reference,card={}) {
     // Each confirmed share is a distinct event. Refreshing the page is not a share.
@@ -583,16 +574,20 @@
     return awardStarCoinCredit('share',String(reference||location.href)+':share:'+eventId,card);
   }
   function flushPendingCredits(){
-    if(creditRetrying||!window.ControlPhi?.ensureActionCredit)return;
+    if(creditRetrying)return;
     creditRetrying=true;
-    try{for(const item of pendingCredits().slice(0,100))awardStarCoinCredit(item.action,item.ref,item.card)}
-    finally{creditRetrying=false}
+    try{
+      for(const item of pendingCredits().slice(0,100)){
+        if(rememberEvidence(item.action,item.ref,item.card))
+          savePendingCredits(pendingCredits().filter(x=>x.action!==item.action||x.ref!==item.ref));
+      }
+    }finally{creditRetrying=false}
   }
   for(const event of ['load','online','focus'])window.addEventListener(event,flushPendingCredits);
   window.addEventListener('omni:wallet-ready',flushPendingCredits);
   if(!window.OmniStarCatalog){
     const loader=document.createElement('script');
-    loader.src=url('assets/star-coin-catalog.js?v=20261010-wallet-receipts1');
+    loader.src=url('assets/star-coin-catalog.js?v=20261010-server-settlement2');
     loader.async=true;
     loader.onload=()=>{void window.OmniStarCatalog?.flush();flushEvidence();flushPendingCredits()};
     document.head.appendChild(loader);
