@@ -1,7 +1,7 @@
 /* Keep the actual viewer visible; notifications never scroll the document. */
 (()=>{'use strict';const panel=document.querySelector('.canvas-panel'),host=window.CodePhiWorkshopHost;if(!panel||!host)return;
 const bar=document.createElement('div');bar.id='buildPreviewBar';bar.innerHTML='<p id="buildPreviewMessage" role="status" aria-live="polite">Preparing your website…</p><div><button id="buildPreviewStop" class="button secondary">Stop build</button><button id="buildPreviewExit" class="button secondary">Back to editor</button></div>';panel.append(bar);
-let active=false;const original=host.setBusy;/* host is frozen; observe the existing build button instead. */
+let active=false;/* Observe the existing build button without replacing the frozen host. */
 function enter(){active=true;document.body.classList.add('build-takeover');document.getElementById('viewerLoading').hidden=true;document.getElementById('buildPreviewStop').hidden=false;notify('Oracle is preparing the next iteration. Your website remains visible.');}
 function notify(text,role){document.getElementById('buildPreviewMessage').textContent=String(text);bar.dataset.role=role||'oracle';}
 function exit(){document.body.classList.remove('build-takeover');}
