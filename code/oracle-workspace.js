@@ -79,7 +79,7 @@
       '*{box-sizing:border-box}html,body{margin:0}body{font:16px/1.65 system-ui,sans-serif;background:#110d1d;color:#f8f3ff}header{background:linear-gradient(130deg,#24143b,#593776);padding:18px clamp(18px,4vw,56px);display:flex;gap:15px;align-items:center;justify-content:space-between}header b{letter-spacing:.13em;color:#ffe5a5;font-size:12px}header a{color:#fff;text-decoration:none;border:1px solid #e9ceff69;border-radius:999px;padding:7px 13px;font-size:12px;font-weight:800}main{width:min(1040px,94vw);margin:auto;padding:clamp(32px,8vw,90px) 0}small{font-size:11px;font-weight:900;letter-spacing:.17em;color:#fbd38a}.hero{background:radial-gradient(ellipse at 90% 0,#633884 0,transparent 55%),#261a38;padding:clamp(25px,5vw,70px);border:1px solid #8a579c;border-radius:27px;box-shadow:0 24px 80px #06030e99}.hero h1{font-size:clamp(37px,7vw,76px);line-height:1.05;letter-spacing:-.055em;overflow-wrap:break-word;margin:14px 0 24px}.lede{max-width:780px;color:#e6d9ee;font-size:clamp(16px,2vw,19px)}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}.actions a{background:#ffe0a3;color:#241235;border-radius:999px;padding:12px 20px;font-weight:900;text-decoration:none}.actions a+ a{background:#6a3589;color:#fff}.section-head{margin:45px 0 19px;font-size:25px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px}.feature{padding:24px;border:1px solid #684c80;border-radius:21px;background:#241a34}.feature h2{font-size:20px;line-height:1.3;margin:13px 0 8px}.feature p{color:#dccddd}.feature a{display:inline-flex;margin-top:7px;color:#ffe2a5;font-weight:800;text-decoration:none}.empty{grid-column:1/-1}footer{text-align:center;margin:50px auto 0;color:#b79cc7;font-size:12px}@media(max-width:600px){header{flex-wrap:wrap}.hero{padding:25px}.cards{grid-template-columns:1fr}}'+
       '</style></head><body><header><b>CODE PHI · RESEARCH EDITION</b><a href="https://quantaphi.org/">QuantaPhi ↗</a></header><main><section class="hero"><small>WELCOME TO YOUR WEBSITE</small><h1>'+escapeHtml(topic)+'</h1>'+body+'<div class="actions"><a href="https://quantaphi.org/infinity-phi/?q='+linkTerm+'" target="_blank" rel="noopener">Explore in Infinity Phi</a><a href="https://quantaphi.org/omni-phi/overview/?q='+linkTerm+'" target="_blank" rel="noopener">Research in Omni Phi</a></div></section><h2 class="section-head">Research &amp; ideas</h2><div class="cards">'+features+'</div><footer>Created with Code Phi · Oracle Studio</footer></main></body></html>';
   }
-  const valid=next=>typeof next==='string'&&next.length>100&&next.length<550000&&/<(?:main|article|section)\b/i.test(next)&&/<html\b/i.test(next)&&/<\/html>/i.test(next);
+  const valid=next=>typeof next==='string'&&next.length>100&&next.length<900000&&/<(?:main|article|section)\b/i.test(next)&&/<html\b/i.test(next)&&/<\/html>/i.test(next);
   function persist(silent=false){
     if(!valid(html))return false;
     const project={schema:'codephi/oracle/v2',query,tokenId,html,history:history.slice(-9),revision:rev,updatedAt:new Date().toISOString(),sourceCount:evidence.length};
@@ -311,6 +311,27 @@
       instruction.focus();
     }));
     window.addEventListener('beforeunload',()=>{if(valid(html))persist(true)});
+    // Reconnect the original artwork and video tools. Their changes are
+    // captured as full undoable Oracle revisions rather than silently editing
+    // the iframe and losing the saved workspace state.
+    if(window.CodePhiStudioTools?.mount && window.CodePhiSiteExperience){
+      window.CodePhiStudioTools.mount({
+        viewer, query, tokenId,
+        context:()=>({
+          query,all:evidence,
+          images:evidence.filter(item=>item.image).map(item=>({...item,imageUrl:item.image}))
+        })
+      });
+      const studioObserver=new MutationObserver(()=>{
+        const candidate=viewer.srcdoc;
+        if(!busy && valid(candidate) && candidate!==html){
+          display(candidate,'Media Studio update');
+          announce('Media Studio updated this website. The previous revision remains available through Undo.','success');
+        }
+      });
+      studioObserver.observe(viewer,{attributes:true,attributeFilter:['srcdoc']});
+      eventLog('Artwork and playable video tools connected');
+    }
     if(linked)sendToCompanion();
   }
   bind();
