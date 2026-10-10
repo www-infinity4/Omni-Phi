@@ -3,16 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#160c26">
+  <meta name="theme-color" content="#faf8f4">
   <meta name="description" content="Code Phi Oracle Studio — one live website builder for Infinity Phi and Omni Phi.">
   <title>Code Phi · Oracle Studio</title>
-  <link rel="stylesheet" href="./oracle-workspace.css?v=20261009-rebuild1">
+  <link rel="stylesheet" href="./oracle-workspace.css?v=20261010-workshop1">
   <script src="./gpt-director.js?v=20261009-workspace1" defer></script>
   <script src="./site-experience.js?v=20261009-workspace4" defer></script>
   <script src="https://quantaphi.org/phi-visual-render.js?v=20261009-workspace2" defer></script>
   <script src="./studio-tools.js?v=20261009-workspace3" defer></script>
   <script src="./repair-engine.js?v=20261009-workspace1" defer></script>
-  <script src="./oracle-workspace.js?v=20261009-rebuild3" defer></script>
+  <script src="./oracle-workspace.js?v=20261010-workshop1" defer></script>
+  <script src="./workshop-orchestrator.js?v=20261010-workshop1" defer></script>
 </head>
 <body>
   <div class="shell">
@@ -69,12 +70,14 @@
           <input id="subject" type="text" autocomplete="off" placeholder="What are you creating?">
           <label for="instruction">Build or change your website</label>
           <textarea id="instruction" rows="5" placeholder="Describe what you want to build, or tell Oracle what to change in the preview."></textarea>
+          <label for="layoutChoice">Layout direction</label>
+          <select id="layoutChoice"><option value="auto">Let Oracle choose</option><option value="Editorial shop with a featured item and compact supporting cards">Editorial shop</option><option value="White card grid with clear categories and product descriptions">Card grid</option><option value="Visual gallery with a dedicated gallery view">Visual gallery</option><option value="Magazine layout with source-backed stories and selected media">Magazine</option></select>
+          <label for="aiProvider">AI designer</label><select id="aiProvider"><option value="cloudflare">GPT-OSS on Cloudflare</option><option value="openai">My OpenAI connection</option><option value="anthropic">My Claude connection</option><option value="gemini">My Gemini connection</option></select>
+          <label class="artwork-toggle"><input id="autoArtwork" type="checkbox" checked> Create original artwork when no source image exists</label>
           <button id="buildButton" class="button primary wide" type="button">✦ Build / Iterate website</button>
+          <button id="stopBuild" class="button secondary" type="button" hidden>Stop after current step</button>
+          <p id="suggestionLabel" class="supporting">Follow-up actions appear after Oracle reviews the build.</p>
           <div class="quick-ideas" id="quickIdeas" aria-label="Ideas to apply">
-            <button type="button" data-idea="Use elegant Oracle-style electric cards and uniform pill buttons.">Oracle cards</button>
-            <button type="button" data-idea="Add an original full story reader with a short preview and readable sections.">Story reader</button>
-            <button type="button" data-idea="Improve mobile navigation and keep every action functional.">Mobile polish</button>
-            <button type="button" data-idea="Create beautiful responsive image and video areas from verified source links only.">Media sections</button>
           </div>
           <div class="oracle-divider"></div>
           <h3>Working version</h3>
@@ -89,7 +92,36 @@
           <div class="notice" id="statusMessage" role="status" aria-live="polite">Your working website appears in the viewer. Describe a change to make the next version.</div>
         </aside>
       </div>
+      <section class="conversation-panel" aria-label="Oracle conversation">
+        <header><div><span class="eyebrow">LIVE WORKSHOP</span><h2>Working with Oracle</h2></div><p id="modelStatus">Checking AI connection…</p></header>
+        <div id="oracleConversation" class="conversation" aria-live="polite" aria-relevant="additions"></div>
+      </section>
+      <section class="workshop-panel" aria-label="Component sandboxes">
+        <span class="eyebrow">BUILD · INSPECT · PLACE</span><h2>Your components</h2>
+        <p>Each finished element runs in its own browser sandbox. Change its page placement or inspect it separately.</p>
+        <div id="componentList" class="component-list"></div>
+      </section>
+      <section id="sandboxPanel" class="workshop-panel" hidden aria-label="Isolated component viewer"><header class="media-head"><h2 id="sandboxName">Component sandbox</h2><button id="closeSandbox" class="button secondary" type="button">Close sandbox</button></header><iframe id="sandboxPreview" title="Isolated component preview" sandbox="allow-scripts allow-popups" referrerpolicy="no-referrer"></iframe></section>
+      <section class="workshop-panel" aria-label="Service connections">
+        <header class="media-head"><div><span class="eyebrow">CONNECTED SERVICES</span><h2>Your workshop connections</h2><p id="connectionSummary">Checking the Cloudflare workshop…</p></div><button id="refreshConnections" type="button" class="button secondary">Check connections</button></header>
+        <p id="skillCatalog" class="supporting"></p>
+        <details><summary>Connect another AI designer</summary><p>GPT-OSS already works through Cloudflare. To use your own OpenAI, Claude, or Gemini account, connect its API key here. Your build instructions and selected source copies are sent to the designer you choose. Keys are encrypted for this one-hour session and never included in site HTML.</p><label for="extraProvider">Provider</label><select id="extraProvider"><option value="openai">OpenAI</option><option value="anthropic">Claude / Anthropic</option><option value="gemini">Gemini / Google</option></select><label for="extraToken">Your provider API key</label><input id="extraToken" type="password" autocomplete="off"><div class="component-controls"><button id="connectAI" class="button primary" type="button">Connect designer</button><button id="disconnectAI" class="button secondary" type="button">Disconnect designer</button></div><label for="extraModel">Available account models</label><select id="extraModel"><option value="">Connect to load models</option></select><p id="extraFeedback" role="status">Optional connections use the provider’s account usage and availability.</p></details>
+        <details><summary>Connect your Cloudflare account</summary><p>Connect a scoped API token with Account read and the resource read permissions you need. This session can list Workers, D1 databases, and R2 buckets. The token is encrypted in an HttpOnly session cookie for one hour and is never supplied to generated pages.</p>
+          <label for="cloudflareAccount">Cloudflare account ID</label><input id="cloudflareAccount" autocomplete="off" placeholder="32-character account ID">
+          <label for="cloudflareToken">Scoped Cloudflare API token</label><input id="cloudflareToken" type="password" autocomplete="off" placeholder="Read-only token">
+          <div class="component-controls"><button id="connectCloudflare" class="button primary" type="button">Connect account</button><button id="listResources" class="button secondary" type="button">List my resources</button><button id="disconnectCloudflare" class="button secondary" type="button">Disconnect</button></div><p id="cloudflareAccountStatus" role="status"></p><div id="cloudflareResources"></div>
+        </details>
+        <details><summary>Import GitHub files into the workshop</summary><p>Copy source from a pinned commit into this workshop. Public repositories work without a token. Private repositories can use a fine-grained read-only token. Imports do not write to GitHub. HTML can run in an isolated browser preview; Node, Python, and package builds require a server container and are not executed here.</p>
+          <label for="repositoryUrl">Repository</label><input id="repositoryUrl" placeholder="owner/repository or GitHub URL">
+          <div class="import-options"><div><label for="repositoryFolder">Folder (optional)</label><input id="repositoryFolder" placeholder="src/components"></div><div><label for="repositoryRef">Branch or commit (optional)</label><input id="repositoryRef" placeholder="Default branch"></div></div>
+          <button id="importGithub" class="button primary" type="button">Copy source into sandbox</button>
+          <label for="githubToken">Optional private-repository read token</label><input id="githubToken" type="password" autocomplete="off"><div class="component-controls"><button id="connectGithub" class="button secondary" type="button">Connect private reads</button><button id="disconnectGithub" class="button secondary" type="button">Disconnect private reads</button></div>
+          <label for="localFiles">Or import local source files</label><input id="localFiles" type="file" multiple accept=".html,.css,.js,.jsx,.ts,.tsx,.json,.md,.svg,.txt">
+          <p id="importFeedback" role="status">Select a folder for a focused source snapshot. Up to 24 text files and 900 KB per import.</p><div id="importedFiles"></div><textarea id="importSource" hidden readonly aria-label="Imported source file"></textarea>
+        </details>
+      </section>
       <section id="mediaStudio" class="media-studio" aria-label="Oracle media tools">
+        <details class="media-search"><summary>Find source images and videos</summary><label for="mediaQuery">Media search and recording-era details</label><input id="mediaQuery" placeholder="Artist, original performance, recording year, or subject"><label for="mediaCategory">Source type</label><select id="mediaCategory"><option value="images">Images</option><option value="videos">Video</option><option value="general">Research</option></select><button id="searchMedia" class="button primary" type="button">Find sources</button><p id="mediaFeedback" role="status">Select source evidence before asking Oracle to build a media section.</p><div id="mediaResults"></div></details>
         <header class="media-head"><div><span class="eyebrow">CREATOR TOOLS</span><h2>Media Studio</h2><p>Add new artwork or selected playable video to the actual website preview above.</p></div>
           <div class="media-launch">
             <button id="studioArtwork" class="button secondary" type="button">Original artwork</button>
