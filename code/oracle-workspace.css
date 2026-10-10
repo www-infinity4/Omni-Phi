@@ -76,3 +76,21 @@ body.full .canvas-frame{height:calc(100dvh - 152px);min-height:350px}
 body.full .masthead{min-height:60px}
 @media(max-width:900px){.workspace{grid-template-columns:1fr}.oracle-panel{position:static;display:block}.canvas-frame{height:65dvh;min-height:400px}.project-strip{padding:18px 2px}}
 @media(max-width:600px){.shell{padding:0 9px}.masthead{min-height:68px;gap:7px}.brand{gap:7px}.brand-mark{width:36px;height:36px;font-size:26px;border-radius:12px}.brand strong{font-size:14px}.brand small{font-size:8px}.toplinks{gap:3px}.toplinks a{min-height:37px;padding:7px 9px;font-size:10px}.project-actions{font-size:10px}.project-copy h1{font-size:23px}.canvas-top{height:auto;min-height:52px;padding:8px}.browser-title{font-size:9px;gap:8px}.canvas-tools{gap:3px}.tool-btn{font-size:10px;padding:7px 8px}.canvas-frame{height:65dvh;min-height:370px}.oracle-panel{padding:17px}.canvas-foot{font-size:10px}.activity{padding:14px}.loading strong{font-size:11px}.loading small{font-size:10px}}
+
+.media-studio{margin-top:16px;padding:18px 20px;border:1px solid var(--edge);background:linear-gradient(140deg,#24152f,#1e122b);border-radius:22px}
+.media-head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.media-head h2{margin:3px 0 4px;font-size:20px}
+.media-head p{margin:0;color:var(--muted);font-size:12px}
+.media-launch{display:flex;gap:8px;flex-wrap:wrap}
+.media-lab{margin-top:15px;padding:18px;background:#130d22;border:1px solid #71578b;border-radius:17px}
+.media-lab h3{margin:0 0 6px;font-size:17px}
+.media-lab p{color:#d6c2e2;font-size:12px}
+.media-lab label{display:block;font-size:12px;font-weight:800;color:#eadbf4;margin:14px 0 6px}
+.media-lab input,.media-lab textarea,.media-lab select{max-width:100%;width:100%;background:#21142f;color:#fefaff;border:1px solid #715587;border-radius:12px;padding:10px 12px}
+.media-lab input[type=file]{font-size:12px}
+.media-lab img{width:min(100%,680px);max-height:530px;object-fit:contain;margin:13px 0;border-radius:14px;display:none}
+.media-lab .button{margin:12px 0 4px}
+#videoSelections p{margin:10px 0;padding:7px 0;border-bottom:1px solid #705483;overflow-wrap:anywhere}
+#videoSelections button{min-height:34px;border-radius:999px;color:#fff;background:#60377e;border:1px solid #8462a1}
+body.full .media-studio{display:none}
+@media(max-width:600px){.media-studio{padding:14px}.media-launch{width:100%}.media-launch button{flex:1}}
