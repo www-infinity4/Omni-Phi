@@ -126,3 +126,17 @@ body.full .conversation-panel,body.full .workshop-panel{display:none}
 @media(max-width:900px){.workspace{grid-template-columns:1fr}.oracle-panel{position:static}.conversation-panel,.workshop-panel{padding:17px}}
 @media(max-width:600px){.import-options{grid-template-columns:1fr}.conversation-message{max-width:100%;padding:13px}.component-controls .button{font-size:11px}.canvas-frame{min-height:350px}}
 
+
+/* Full-screen iteration view: the canvas owns the viewport, not an overlay. */
+#buildPreviewBar{display:none}
+body.build-takeover{overflow:hidden}
+body.build-takeover .canvas-panel{position:fixed;inset:0;z-index:1000;border:0;border-radius:0;display:flex;flex-direction:column;background:#fff;box-shadow:none}
+body.build-takeover .canvas-top{flex:0 0 auto;min-height:50px}
+body.build-takeover .canvas-frame{flex:1;min-height:0;height:auto;padding:0;background:#fff}
+body.build-takeover #viewer{border-radius:0;background:#fff}
+body.build-takeover .canvas-foot,body.build-takeover #viewerLoading,body.build-takeover .source-panel{display:none!important}
+body.build-takeover #buildPreviewBar{display:flex;flex:0 0 auto;gap:12px;align-items:center;justify-content:space-between;padding:12px max(14px,env(safe-area-inset-left)) max(12px,env(safe-area-inset-bottom));background:#fffaf1;border-top:1px solid #dfcfb4;max-height:28dvh;overflow:auto}
+#buildPreviewBar p{margin:0;font-size:13px;line-height:1.5;max-width:900px;color:#514456;overflow-wrap:anywhere}
+#buildPreviewBar>div{display:flex;gap:8px;flex-shrink:0}
+#buildPreviewBar[data-role=error]{background:#fff1ef}
+@media(max-width:600px){body.build-takeover #buildPreviewBar{align-items:flex-start;flex-direction:column;gap:8px}#buildPreviewBar .button{min-height:36px;font-size:11px;padding:7px 12px}}
