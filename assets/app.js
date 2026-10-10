@@ -236,7 +236,7 @@
     if (sharedExisting) Object.assign(sharedExisting, saved, { collectedAt: sharedExisting.collectedAt || saved.collectedAt });
     else shared.unshift(saved);
     jsonSet(STORAGE.sharedCollection, shared);
-    p.lastCollectReward = isNew ? awardStarCoinCredit("collect", saved.storyKey) : { progressToNextCoin: starProgress(), awarded: 0, duplicate: true };
+    p.lastCollectReward = isNew ? awardStarCoinCredit("collect", saved.storyKey, {...saved,tokenId:source.tokenId||"",searchQuery:source.searchQuery||saved.searchQuery}) : { progressToNextCoin: starProgress(), awarded: 0, duplicate: true };
     return p;
   }
 
@@ -522,28 +522,59 @@
     }
     unified.updatedAt=Date.now();unified.source="omni-phi";jsonSet("infinity_unified_wallet_v1",unified);
   }
-  function awardStarCoinCredit(action,reference) {
-    const store=walletStore(),wallet=store.wallet,ref=String(reference||"").trim(),eventType=action==="share"?"share_credit":"collect_credit";
-    wallet.tokens=Math.max(0,Number(wallet.tokens)||0);
-    wallet.shareCount=Math.max(0,Number(wallet.shareCount)||0);
-    wallet.pendingShareCredits=Math.max(0,Number(wallet.pendingShareCredits)||0);
-    wallet.shareEvents=Array.isArray(wallet.shareEvents)?wallet.shareEvents:[];
-    wallet.ledger=Array.isArray(wallet.ledger)?wallet.ledger:[];
-    if(action==="collect"&&wallet.ledger.some(e=>e?.type===eventType&&e?.referenceId===ref))return{progressToNextCoin:wallet.pendingShareCredits,awarded:0,balance:wallet.tokens,duplicate:true};
-    const id=`phi-${action}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
-    if(action==="share"){wallet.shareCount+=1;wallet.shareEvents.push({id,attemptId:id,contentId:ref,reference:ref,method:"web_share_api",confirmed:true,verified:true,createdAt:Date.now(),source:"omni-phi"})}
-    wallet.pendingShareCredits+=1;let awarded=0;
-    while(wallet.pendingShareCredits>=10){wallet.pendingShareCredits-=10;wallet.tokens+=1;awarded+=1}
-    wallet.ledger.push({id:`tx-${id}`,type:eventType,amount:awarded,credit:.1,balance:wallet.tokens,pendingShareCredits:wallet.pendingShareCredits,referenceId:ref,createdAt:Date.now(),source:"omni-phi"});
-    wallet.shareEvents=wallet.shareEvents.slice(-250);wallet.ledger=wallet.ledger.slice(-500);store.save();mirrorStarWallet(wallet);
-    const detail={progressToNextCoin:wallet.pendingShareCredits,awarded,balance:wallet.tokens,action,source:"omni-phi"};
-    window.dispatchEvent(new CustomEvent("starquest:share-progress",{detail}));
-    window.dispatchEvent(new CustomEvent("controlphi:wallet-change",{detail}));
-    window.dispatchEvent(new Event("infinity-wallet-updated"));
-    return detail;
+  // A successful action has one StarQuest payout path and one D1 evidence receipt.
+  // Do not update a second browser-only balance: Control Phi queues the real wallet receipt.
+  const OMNI_PENDING_CREDITS='omniPhi:pendingStarCoinPayouts:v1';
+  const pendingCredits=()=>{try{const a=JSON.parse(localStorage.getItem(OMNI_PENDING_CREDITS)||'[]');return Array.isArray(a)?a:[]}catch{return []}};
+  const savePendingCredits=items=>{try{localStorage.setItem(OMNI_PENDING_CREDITS,JSON.stringify(items.slice(-800)));return true}catch{return false}};
+  let creditRetrying=false;
+  function awardStarCoinCredit(action,reference,card={}) {
+    const ref=String(reference||'').trim();
+    if(!ref||!['collect','share','star','build_image','fix_image','extract','compare'].includes(action))
+      return {awarded:0,error:'invalid_reward_reference'};
+    const cp=window.ControlPhi;
+    const previous=pendingCredits();
+    if(!cp?.ensureActionCredit||!cp?.ensureShareCredit){
+      if(!previous.some(x=>x.action===action&&x.ref===ref))savePendingCredits([...previous,{action,ref,card}]);
+      return {awarded:0,pending:true,progressToNextCoin:0};
+    }
+    let detail;
+    try{
+      detail=action==='share'?cp.ensureShareCredit(ref,'web_share_api'):cp.ensureActionCredit(ref,action);
+    }catch(error){
+      if(!previous.some(x=>x.action===action&&x.ref===ref))savePendingCredits([...previous,{action,ref,card}]);
+      console.warn('Omni StarCoin payout queued until wallet is available',error);
+      return {awarded:0,pending:true,progressToNextCoin:0};
+    }
+    savePendingCredits(pendingCredits().filter(x=>x.action!==action||x.ref!==ref));
+    // The action catalog retains the exact card/quant data; a retry cannot pay twice.
+    void window.OmniStarCatalog?.record(action,ref,card);
+    const outcome={...detail,action,pending:false,duplicate:!!detail?.alreadyRecorded,
+      progressToNextCoin:detail?.progressToNextCoin??0,awarded:detail?.awarded||0};
+    window.dispatchEvent(new CustomEvent('omni:starcoin-receipt',{detail:{...outcome,reference:ref,card}}));
+    return outcome;
   }
-  function awardStarCoinShare(reference) { return awardStarCoinCredit("share",reference); }
-  function creditInfinitySearch(query) {
+  function awardStarCoinShare(reference,card={}) {
+    // Each confirmed share is a distinct event. Refreshing the page is not a share.
+    const eventId=(window.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));
+    return awardStarCoinCredit('share',String(reference||location.href)+':share:'+eventId,card);
+  }
+  function flushPendingCredits(){
+    if(creditRetrying||!window.ControlPhi?.ensureActionCredit)return;
+    creditRetrying=true;
+    try{for(const item of pendingCredits().slice(0,100))awardStarCoinCredit(item.action,item.ref,item.card)}
+    finally{creditRetrying=false}
+  }
+  for(const event of ['load','online','focus'])window.addEventListener(event,flushPendingCredits);
+  window.addEventListener('omni:wallet-ready',flushPendingCredits);
+  if(!window.OmniStarCatalog){
+    const loader=document.createElement('script');
+    loader.src=url('assets/star-coin-catalog.js?v=20261010-wallet-receipts1');
+    loader.async=true;
+    loader.onload=()=>{void window.OmniStarCatalog?.flush();flushPendingCredits()};
+    document.head.appendChild(loader);
+  }
+    function creditInfinitySearch(query) {
     const q=String(query||"").replace(/\s+/g," ").trim();if(!q)return"";
     const store=walletStore(),wallet=store.wallet,now=Date.now(),tokenId=`omni-${now.toString(36)}-${Math.random().toString(36).slice(2,8)}`;
     window.InfinityTokenCount?.register?.(tokenId);
@@ -590,7 +621,7 @@
     if(!navigator.share){try{await navigator.clipboard.writeText(shareUrl);return {copied:true}}catch{return {error:true}}}
     try{
       await navigator.share({title:card.title||"Omni Phi card",text:String(card.extract||card.body||"").slice(0,320),url:shareUrl});
-      return awardStarCoinShare(shareUrl);
+      return awardStarCoinShare(shareUrl,{...card,storyKey,shareUrl,searchQuery:activeResearch()?.query||card.searchQuery||"",tokenId:card.tokenId||activeResearch()?.tokenId||""});
     }catch(error){return error&&error.name==="AbortError"?{cancelled:true}:{error:true}}
   }
 
