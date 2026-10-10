@@ -227,15 +227,21 @@
   }
 
   function sharePreviewUrl(card) {
-    const share = new URL(OMNI_SHARE_PAGE);
-    share.searchParams.set('target', exactResearchTarget(card));
+    // No nested target URLs, full stories, image URLs or long text in the tweet link.
+    const research = OmniPhi.activeResearch?.();
+    const terms = clean(research?.query || card?.searchQuery || card?.title || card?.sourceTitle || '', 100);
+    const share = new URL('https://quantaphi.org/omni-phi/overview/');
+    if (terms) share.searchParams.set('q', terms);
+    const key = clean(card?.id || card?.storyKey || '', 36);
+    if (/^[a-z0-9_-]{3,36}$/i.test(key)) share.searchParams.set('story', key);
     return share.toString();
   }
 
   OmniPhi.shareCard = async function shareExactCard(card) {
     const shareUrl = sharePreviewUrl(card);
     const title = clean(card?.title || card?.sourceTitle || 'Omni Phi card', 220);
-    const text = clean(card?.extract || card?.body || card?.description || '', 420);
+    const full = clean(card?.extract || card?.body || card?.description || '', 1600);
+    const text = (full.slice(0, 150).replace(/\\s+\\S*$/, '') || full.slice(0, 150)) + (full.length > 150 ? '… Read the story in Omni Phi.' : ' · Explore in Omni Phi.');
 
     if (!navigator.share) {
       try {
