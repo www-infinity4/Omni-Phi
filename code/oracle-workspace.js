@@ -68,16 +68,8 @@
   }
   function buildStarter(){
     const topic=query||'Your next website';
-    const linkTerm=encodeURIComponent(query.slice(0,120));
-    const body=overview?
-      '<p class="lede">'+escapeHtml(overview)+'</p>':
-      '<p class="lede">Your website starts here. Enter a direction in the Oracle Studio to develop the content, structure, and design.</p>';
-    const features=evidence.length?
-      evidence.map((card,i)=>'<article class="feature"><small>RESEARCH '+String(i+1).padStart(2,'0')+'</small><h2>'+escapeHtml(card.title||'Research source')+'</h2><p>'+escapeHtml(card.extract||'Explore the original source for additional context.')+'</p>'+(card.url?'<a href="'+escapeHtml(card.url)+'" target="_blank" rel="noopener noreferrer">Open verified source ↗</a>':'')+'</article>').join(''):
-      '<article class="feature empty"><small>YOUR FIRST SECTION</small><h2>Build a complete website from this subject</h2><p>The Oracle workspace can add article sections, research cards, media, interactive controls, and custom design. No unsupported source claims have been added.</p></article>';
-    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHtml(topic)+'</title><style>'+
-      '*{box-sizing:border-box}html,body{margin:0}body{font:16px/1.65 system-ui,sans-serif;background:#110d1d;color:#f8f3ff}header{background:linear-gradient(130deg,#24143b,#593776);padding:18px clamp(18px,4vw,56px);display:flex;gap:15px;align-items:center;justify-content:space-between}header b{letter-spacing:.13em;color:#ffe5a5;font-size:12px}header a{color:#fff;text-decoration:none;border:1px solid #e9ceff69;border-radius:999px;padding:7px 13px;font-size:12px;font-weight:800}main{width:min(1040px,94vw);margin:auto;padding:clamp(32px,8vw,90px) 0}small{font-size:11px;font-weight:900;letter-spacing:.17em;color:#fbd38a}.hero{background:radial-gradient(ellipse at 90% 0,#633884 0,transparent 55%),#261a38;padding:clamp(25px,5vw,70px);border:1px solid #8a579c;border-radius:27px;box-shadow:0 24px 80px #06030e99}.hero h1{font-size:clamp(37px,7vw,76px);line-height:1.05;letter-spacing:-.055em;overflow-wrap:break-word;margin:14px 0 24px}.lede{max-width:780px;color:#e6d9ee;font-size:clamp(16px,2vw,19px)}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}.actions a{background:#ffe0a3;color:#241235;border-radius:999px;padding:12px 20px;font-weight:900;text-decoration:none}.actions a+ a{background:#6a3589;color:#fff}.section-head{margin:45px 0 19px;font-size:25px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px}.feature{padding:24px;border:1px solid #684c80;border-radius:21px;background:#241a34}.feature h2{font-size:20px;line-height:1.3;margin:13px 0 8px}.feature p{color:#dccddd}.feature a{display:inline-flex;margin-top:7px;color:#ffe2a5;font-weight:800;text-decoration:none}.empty{grid-column:1/-1}footer{text-align:center;margin:50px auto 0;color:#b79cc7;font-size:12px}@media(max-width:600px){header{flex-wrap:wrap}.hero{padding:25px}.cards{grid-template-columns:1fr}}'+
-      '</style></head><body><header><b>CODE PHI · RESEARCH EDITION</b><a href="https://quantaphi.org/">QuantaPhi ↗</a></header><main><section class="hero"><small>WELCOME TO YOUR WEBSITE</small><h1>'+escapeHtml(topic)+'</h1>'+body+'<div class="actions"><a href="https://quantaphi.org/infinity-phi/?q='+linkTerm+'" target="_blank" rel="noopener">Explore in Infinity Phi</a><a href="https://quantaphi.org/omni-phi/overview/?q='+linkTerm+'" target="_blank" rel="noopener">Research in Omni Phi</a></div></section><h2 class="section-head">Research &amp; ideas</h2><div class="cards">'+features+'</div><footer>Created with Code Phi · Oracle Studio</footer></main></body></html>';
+    const cards=evidence.map(card=>'<article><h2>'+escapeHtml(card.title||'Source')+'</h2><p>'+escapeHtml(card.extract||'')+'</p>'+(card.url?'<a href="'+escapeHtml(card.url)+'" target="_blank" rel="noopener noreferrer">Read source</a>':'')+'</article>').join('');
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escapeHtml(topic)+'</title><style>*{box-sizing:border-box}body{margin:0;background:#faf8f4;color:#312b35;font:16px/1.65 system-ui}header{padding:20px 5%;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e9decd;background:white}header b{font-size:12px;letter-spacing:.14em;color:#8e6b38}a{color:#705286}main{width:min(1120px,94%);margin:32px auto}.hero{padding:clamp(25px,5vw,65px);background:white;border:1px solid #ebdfcd;border-radius:24px}.hero h1{font-size:clamp(32px,6vw,68px);line-height:1.15;letter-spacing:-.04em;margin:5px 0 20px}.hero p{max-width:760px;color:#746675}article{margin:20px 0;padding:24px;border:1px solid #e4d8eb;background:white;border-radius:20px}article h2{font-size:22px;line-height:1.35}footer{padding:26px 5%;font-size:12px;color:#8f7e96;border-top:1px solid #e9decd}</style></head><body><header><b>'+escapeHtml(topic)+'</b><a href="https://quantaphi.org/" target="_blank" rel="noopener">QuantaPhi</a></header><main><section class="hero"><h1>'+escapeHtml(topic)+'</h1>'+(overview?'<p>'+escapeHtml(overview)+'</p>':'')+'</section>'+cards+'</main><footer>Created with Code Phi</footer></body></html>';
   }
   const valid=next=>typeof next==='string'&&next.length>100&&next.length<900000&&/<(?:main|article|section)\b/i.test(next)&&/<html\b/i.test(next)&&/<\/html>/i.test(next);
   function persist(silent=false){
@@ -104,6 +96,7 @@
     $('undoButton').disabled=history.length<=1;
     if(shouldSave)persist(true);
     eventLog(description);
+    window.dispatchEvent(new CustomEvent('codephi:revision',{detail:{html:next}}));
     return true;
   }
   function restore(){
@@ -142,6 +135,7 @@
     const requested=safeText(subject.value,400);
     if(!requested){subject.focus();announce('Enter the website subject first.','error');return;}
     if(requested!==query)setNewTopic(requested);
+    if(window.CodePhiWorkshopOrchestrator){await window.CodePhiWorkshopOrchestrator.run();return;}
     const note=safeText(instruction.value,1400)||'Build a polished, functional, mobile-first website using the subject and collected sources.';
     if(!window.CodePhiGPTDirector?.compose){
       announce('The Oracle AI connection script did not load. You can still edit HTML, save, restore, and export the current site.','error');setBadge('AI unavailable');return;
@@ -179,6 +173,7 @@
     $('undoButton').disabled=history.length<=1;
     if(!$('sourcePanel').hidden)$('htmlSource').value=html;
     persist(true);announce('Previous working website restored.','success');eventLog('Reverted one version');
+    window.dispatchEvent(new CustomEvent('codephi:revision',{detail:{html}}));
   }
   function exportHtml(){
     if(!valid(html)){announce('There is no complete HTML to export.','error');return;}
@@ -334,5 +329,11 @@
     }
     if(linked)sendToCompanion();
   }
+  window.CodePhiWorkshopHost=Object.freeze({
+    state:()=>({query,tokenId,html,evidence:evidence.slice(),overview}),
+    display,setBusy,announce,eventLog,
+    addEvidence:item=>{if(!evidence.some(x=>(x.url||x.sourceUrl)===(item.url||item.sourceUrl))){evidence.push(item);projectHeading();}}
+  });
   bind();
 })();
+
