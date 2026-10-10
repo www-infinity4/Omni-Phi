@@ -35,7 +35,7 @@
 
   function cardText(card) {
     const full = clean(card?.extract || card?.body || card?.description || '', 1600);
-    return full.slice(0, 150).replace(/\\s+\\S*$/, '') + (full.length > 150 ? '… Read in Omni Phi.' : ' · Explore in Omni Phi.');
+    return full.slice(0, 150).replace(/\s+\S*$/, '') + (full.length > 150 ? '… Read in Omni Phi.' : ' · Explore in Omni Phi.');
   }
 
   OmniPhi.shareCard = async function shareExactCard(card) {
