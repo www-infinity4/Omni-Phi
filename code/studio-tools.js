@@ -103,7 +103,7 @@
     const compact=await compactSiteImage(asset.src);
     asset={...asset,src:compact,siteOptimized:true};
     refreshPreview();
-    $('assetFeedback').textContent='Optimized artwork added to this site's preview. Review it in the complete site before publishing. A provider-hosted URL is preferable for long-term sharing.';
+    $('assetFeedback').textContent="Optimized artwork added to this site's preview. Review it in the complete site before publishing. A provider-hosted URL is preferable for long-term sharing.";
    }catch(error){$('assetFeedback').textContent='Artwork kept in the asset preview: '+error.message}
    finally{btn.disabled=false}
   });
