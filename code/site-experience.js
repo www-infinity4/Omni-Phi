@@ -207,6 +207,21 @@
   // the teaser as the full story or pretend a short source extract is complete.
   ensureStoryReaders(doc);
   const gathered=candidates(context,videos);
+  // Any valid generated website can receive a video collection. Do not
+  // silently discard selected videos just because an older template lacks
+  // the special #video/.rail markup.
+  if(gathered.length && !doc.querySelector('#video .rail')){
+    const main=doc.querySelector('main');
+    if(main){
+      const section=doc.createElement('section');
+      section.id='video';
+      section.style.cssText='margin:35px 0 15px;padding:20px 0';
+      const heading=doc.createElement('h2');heading.textContent='Watch';
+      heading.style.cssText='font-size:clamp(23px,4vw,34px);margin:0 0 16px';
+      const rail=doc.createElement('div');rail.className='rail';
+      section.append(heading,rail);main.append(section);
+    }
+  }
   const videoArea=doc.querySelector('#video .rail');
   if(videoArea&&gathered.length){
    videoArea.replaceChildren();
