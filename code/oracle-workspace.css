@@ -140,3 +140,5 @@ body.build-takeover #buildPreviewBar{display:flex;flex:0 0 auto;gap:12px;align-i
 #buildPreviewBar>div{display:flex;gap:8px;flex-shrink:0}
 #buildPreviewBar[data-role=error]{background:#fff1ef}
 @media(max-width:600px){body.build-takeover #buildPreviewBar{align-items:flex-start;flex-direction:column;gap:8px}#buildPreviewBar .button{min-height:36px;font-size:11px;padding:7px 12px}}
+
+body.build-takeover #sourceToggle,body.build-takeover #fullToggle{display:none}
