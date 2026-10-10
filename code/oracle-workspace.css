@@ -94,3 +94,35 @@ body.full .masthead{min-height:60px}
 #videoSelections button{min-height:34px;border-radius:999px;color:#fff;background:#60377e;border:1px solid #8462a1}
 body.full .media-studio{display:none}
 @media(max-width:600px){.media-studio{padding:14px}.media-launch{width:100%}.media-launch button{flex:1}}
+
+/* Oracle Octaves: warm white cards, restrained gold, readable conversation. */
+:root{color-scheme:light;--bg:#faf8f4;--panel:#fff;--panel2:#f7f3ed;--edge:#e6dfd5;--text:#25232a;--muted:#69636d;--gold:#8c6227;--purple:#70528a;--green:#258568}
+body{background:radial-gradient(ellipse at 95% 0,#f3e5cb 0,transparent 45%),var(--bg);color:var(--text)}
+.shell{width:min(1440px,100%)}
+.masthead{border-color:var(--edge)}.brand-mark{background:linear-gradient(135deg,#faebce,#f1e9f6);color:#795936;box-shadow:0 5px 18px #9a79581a}.brand strong{color:#322836}.brand small{color:#8c6227}
+.toplinks a{background:#fff;color:#524355;border-color:#dfd3e4}.toplinks a:hover{background:#f4edf7}
+.project-actions{color:#66586d}.state-dot{background:#458b73;box-shadow:none}
+.workspace{grid-template-columns:minmax(0,1fr) minmax(300px,350px)}
+.canvas-panel,.oracle-panel,.companion,.activity,.media-studio,.workshop-panel,.conversation-panel{background:#fff;border:1px solid var(--edge);box-shadow:0 12px 38px #4a362008;border-radius:22px}
+.canvas-top{border-color:var(--edge);background:#fdfcf9}.browser-title{color:#706573}.canvas-frame{background:#eeeae4;padding:8px}.canvas-foot{color:#736b76;border-color:var(--edge)}
+.tool-btn{background:#fff;color:#5f4a6b;border-color:#ded2e5}.tool-btn[aria-pressed=true]{background:#f6e5c6;color:#715127;border-color:#d9bd90}
+.oracle-title h2{color:#332d38}.oracle-sun{background:#fcf1dd;color:#8c6227;box-shadow:0 7px 18px #bd974b17}
+.oracle-panel label,.media-lab label{color:#55495c}.oracle-panel input,.oracle-panel textarea,.oracle-panel select,.workshop-panel input,.workshop-panel textarea,.media-search input,.media-search select,.media-lab input,.media-lab textarea,.media-lab select{width:100%;padding:11px 13px;background:#fdfcfb;color:#302839;border:1px solid #dcd3e0;border-radius:12px;max-width:100%}
+.oracle-panel input::placeholder,.oracle-panel textarea::placeholder{color:#938993}
+.button.primary{background:linear-gradient(125deg,#f8e4ba,#f0e5f4);color:#493347;box-shadow:0 5px 16px #a0785518;border-color:#ddc69e}.button.secondary{background:#faf7fc;color:#61456e;border-color:#ddd0e4}
+.quick-ideas button{background:#fff8ee;color:#745429;border-color:#e6d2ad}.builder-link{background:#fbf8fc;color:#66516f;border-color:#dfd3e5}.oracle-divider{background:var(--edge)}
+.notice{background:#faf6ef;color:#6d5b48;border-color:#c6a264}.notice.success{color:#356953;background:#f1f8f4}.notice.error{color:#923d43;background:#fff4f3}
+.loading{background:#fffdf8f5;color:#473c4b;border-color:#e3cfab;box-shadow:0 6px 22px #77542518}.loading small{color:#746879}.spinner{border-color:#917139;border-top-color:transparent}
+.source-panel{border-color:var(--edge)}#htmlSource{background:#f8f6f9;color:#41334c;border-color:#dfd6e4}
+.activity ol{color:#6b606e}.activity li time{color:#917139}.site-foot{color:#867c89}.media-lab{background:#fcfaf6;border-color:#e5dace}.media-lab p{color:#736679}
+#videoSelections p{border-color:#eee5f0}#videoSelections button{color:#644a74;background:#f9f4fc;border-color:#e0d2e8}
+.conversation-panel,.workshop-panel{margin-top:16px;padding:22px}.conversation-panel header{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}.conversation-panel h2,.workshop-panel h2{margin:5px 0 10px;font-size:23px;letter-spacing:-.025em}.conversation-panel header p{font-size:11px;color:#877386;overflow-wrap:anywhere}
+.conversation{display:grid;gap:12px;max-height:530px;overflow:auto;padding:12px 0}.conversation-message{max-width:94%;padding:16px 18px;border:1px solid #e8dfed;border-radius:17px;background:#fcfafc}.conversation-message strong{font-size:11px;color:#80638a;letter-spacing:.05em}.conversation-message p{margin:7px 0 0;font-size:14px;line-height:1.7;color:#514959;white-space:pre-wrap;overflow-wrap:anywhere}.conversation-message.user{justify-self:end;background:#fcf4e6;border-color:#ecdbbc}.conversation-message.user strong{color:#927341}.conversation-message.error{border-color:#eac7c7;background:#fff9f8}
+.component-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:12px}.component-card{border:1px solid #e6daed;border-radius:17px;padding:17px;background:#fefcff}.component-card h3{font-size:16px;margin:0 0 8px}.component-card p,.workshop-panel>p,.workshop-panel details p{font-size:13px;color:#716477;line-height:1.65}.component-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.component-controls select{border-radius:999px;background:#fff;border:1px solid #ded1e5;color:#5e4c68;padding:8px 12px;max-width:100%}.unresolved{color:#996634!important}
+.workshop-panel details,.media-search{padding:15px 0;border-top:1px solid var(--edge)}summary{cursor:pointer;font-weight:750;color:#59415f;min-height:36px}.workshop-panel label,.media-search label{display:block;font-size:12px;font-weight:750;margin:12px 0 6px}.import-options{display:grid;grid-template-columns:1fr 1fr;gap:12px}.file-item{background:#fcfafc;border:1px solid #e2d9e8;color:#654973;border-radius:9px;padding:8px 10px;font-size:12px;margin:4px;overflow-wrap:anywhere;max-width:100%}#importSource{height:260px;font:12px/1.5 ui-monospace,monospace;margin-top:12px}#sandboxPreview{width:100%;height:600px;border:1px solid #e2d5e9;border-radius:15px;background:#fff}
+.media-result{padding:15px;border:1px solid #e6dbe9;border-radius:15px;margin:12px 0}.media-result a{color:#705288;font-weight:750}.media-result p{color:#786a80;font-size:13px;line-height:1.6}#stopBuild{width:100%;margin-top:8px}
+body.full .conversation-panel,body.full .workshop-panel{display:none}
+.oracle-panel .artwork-toggle{display:flex;gap:8px;align-items:flex-start;font-size:11px;font-weight:500;line-height:1.5}.oracle-panel .artwork-toggle input{width:16px;height:16px;flex-shrink:0;margin:1px 0 0;padding:0}
+@media(max-width:900px){.workspace{grid-template-columns:1fr}.oracle-panel{position:static}.conversation-panel,.workshop-panel{padding:17px}}
+@media(max-width:600px){.import-options{grid-template-columns:1fr}.conversation-message{max-width:100%;padding:13px}.component-controls .button{font-size:11px}.canvas-frame{min-height:350px}}
+
