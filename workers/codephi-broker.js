@@ -70,7 +70,16 @@ async function importRepo(request,env,data){
  if(!out.length)throw Error('No supported source files found in this folder.');
  return {ok:true,repository:repo,commit:commit.sha,files:out,totalEligible:files.length,partial:out.length<files.length||!!tree.truncated,readOnly:true};
 }
-async function search(data){const q=clip(data.query,350),category=['general','images','videos'].includes(data.category)?data.category:'general';if(!q)throw Error('Enter a search topic.');const u=new URL('https://orange-brook-a2ac.marvaseater.workers.dev/search');u.search=new URLSearchParams({q,categories:category,format:'json'});const found=await get(u);return {ok:true,results:(found.results||[]).slice(0,24).map(x=>({title:clip(x.title,200),url:clip(x.url,1600),extract:clip(x.content,1500),image:clip(x.img_src||x.thumbnail_src,1600),engine:clip(x.engine,60)}))};}
+async function search(data){
+ const q=clip(data.query,350),category=['general','images','videos'].includes(data.category)?data.category:'general';if(!q)throw Error('Enter a search topic.');
+ let primaryError='';
+ try{const u=new URL('https://orange-brook-a2ac.marvaseater.workers.dev/search');u.search=new URLSearchParams({q,categories:category,format:'json'});const found=await get(u);const results=(found.results||[]).slice(0,24).map(x=>({title:clip(x.title,200),url:clip(x.url,1600),extract:clip(x.content,1500),image:clip(x.img_src||x.thumbnail_src,1600),engine:clip(x.engine,60)}));if(results.length)return {ok:true,results,provider:'Phi source search'};primaryError='The primary search returned no results.';}catch(e){primaryError=e.message;}
+ if(category==='videos')throw Error(primaryError+' No verified video candidates are available.');
+ // Infinity/Omni also use Wikipedia as a research source; never mint on this read.
+ const wiki=new URL('https://en.wikipedia.org/w/api.php');wiki.search=new URLSearchParams({action:'query',format:'json',generator:'search',gsrsearch:q,gsrnamespace:'0',gsrlimit:'8',prop:'extracts|pageimages|info',exintro:'1',explaintext:'1',exchars:'1400',piprop:'thumbnail',pithumbsize:'800',inprop:'url'});
+ try{const found=await get(wiki);const results=Object.values(found.query?.pages||{}).sort((a,b)=>(a.index||0)-(b.index||0)).map(x=>({title:clip(x.title,200),url:x.fullurl||'https://en.wikipedia.org/wiki/'+encodeURIComponent(x.title.replace(/ /g,'_')),extract:clip(x.extract,1500),image:x.thumbnail?.source||'',engine:'Wikipedia · Phi research fallback'}));if(results.length)return {ok:true,results,provider:'Wikipedia research fallback',warning:primaryError};}catch{}
+ throw Error(primaryError+' The alternate research source did not return usable content. Your working page is preserved.');
+}
 export default {async fetch(request,env){
  const url=new URL(request.url),path=url.pathname.slice(ROOT.length);
  // The worker is reached through the same-origin service binding only.
