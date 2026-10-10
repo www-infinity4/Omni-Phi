@@ -8,6 +8,9 @@
   <title>Code Phi · Oracle Studio</title>
   <link rel="stylesheet" href="./oracle-workspace.css?v=20261009-rebuild1">
   <script src="./gpt-director.js?v=20261009-workspace1" defer></script>
+  <script src="./site-experience.js?v=20261009-workspace2" defer></script>
+  <script src="https://quantaphi.org/phi-visual-render.js?v=20261009-workspace2" defer></script>
+  <script src="./studio-tools.js?v=20261009-workspace2" defer></script>
   <script src="./repair-engine.js?v=20261009-workspace1" defer></script>
   <script src="./oracle-workspace.js?v=20261009-rebuild2" defer></script>
 </head>
@@ -86,6 +89,37 @@
           <div class="notice" id="statusMessage" role="status" aria-live="polite">Your working website appears in the viewer. Describe a change to make the next version.</div>
         </aside>
       </div>
+      <section id="mediaStudio" class="media-studio" aria-label="Oracle media tools">
+        <header class="media-head"><div><span class="eyebrow">CREATOR TOOLS</span><h2>Media Studio</h2><p>Add new artwork or selected playable video to the actual website preview above.</p></div>
+          <div class="media-launch">
+            <button id="studioArtwork" class="button secondary" type="button">Original artwork</button>
+            <button id="studioVideos" class="button secondary" type="button">Video feed</button>
+          </div>
+        </header>
+        <section id="siteAssetLab" class="media-lab" hidden aria-label="AI artwork generator">
+          <h3>Create an original image for this website</h3>
+          <p>Select a verified image reference or upload one. Image rendering uses the connected Oracle image provider; availability depends on provider capacity.</p>
+          <label for="assetReference">Reference image from this website</label>
+          <select id="assetReference"><option value="">Text-only generation</option></select>
+          <label for="assetFile">Or supply an image file</label>
+          <input type="file" id="assetFile" accept="image/png,image/jpeg,image/webp">
+          <label for="assetPrompt">What should Oracle create?</label>
+          <textarea id="assetPrompt" rows="3" placeholder="Describe the new website illustration. Do not add invented text to the image."></textarea>
+          <button type="button" id="assetGenerate" class="button primary">Generate artwork</button>
+          <p id="assetFeedback" role="status">The resulting image appears here before you add it.</p>
+          <img id="assetResult" alt="Oracle generated artwork preview" hidden>
+          <button id="assetUse" class="button secondary" type="button" disabled>Add artwork to site</button>
+        </section>
+        <section id="siteVideoLab" class="media-lab" hidden aria-label="Video feed selector">
+          <h3>Curate a playable video feed</h3>
+          <p>Use a YouTube, Vimeo, or Internet Archive link. The original service supplies playback.</p>
+          <label for="videoLink">Video URL</label>
+          <input type="url" id="videoLink" placeholder="https://www.youtube.com/watch?v=...">
+          <button id="videoAdd" class="button primary" type="button">Add verified video</button>
+          <p id="videoFeedback" role="status">Selected videos will be connected to this website preview.</p>
+          <div id="videoSelections"></div>
+        </section>
+      </section>
       <section id="infinityPanel" class="companion" hidden>
         <div class="companion-header"><div><span class="eyebrow">CONNECTED BUILDER</span><h2>Infinity Phi website engine</h2><p>Uses the same topic and sends its generated preview back into this viewer.</p></div><button id="builderClose" class="tool-btn" type="button">Close</button></div>
         <iframe id="infinityEngineFrame" title="Infinity Phi companion website builder" loading="lazy" referrerpolicy="strict-origin" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"></iframe>
