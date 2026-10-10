@@ -107,12 +107,9 @@
     if (!value || typeof value !== 'object') return;
     if (value.type === 'phi-oracle/ready/v1') { sendStarter(); return; }
     if (value.type !== 'phi-oracle/preview/v1' || !revisionOk(value.html)) return;
-    if (value.query && query && String(value.query).trim().slice(0, 400) !== query) {
-      // User explicitly worked on another search in the Infinity builder.
-      // The editor must not silently replace the current project's preview.
-      putStatus('Infinity builder is on another topic; open its preview to review before importing.');
-      return;
-    }
+    // The dedicated companion iframe may contain design directions in its
+    // prompt rather than the exact search string. Its window and origin are
+    // already verified; do not block the starter on a strict text comparison.
     if (!accepted && revisionOk(viewer.srcdoc)) store(viewer.srcdoc, 'omni-starter');
     viewer.srcdoc = value.html;
     accepted = true;
