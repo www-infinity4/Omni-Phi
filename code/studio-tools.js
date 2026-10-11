@@ -18,6 +18,41 @@
    return xs.map(x=>({url:safe(x.imageUrl||x.image||x.src||''),title:String(x.title||x.sourceTitle||'Source image').slice(0,80)}))
     .filter(x=>{if(!x.url||seen.has(x.url))return false;seen.add(x.url);return true}).slice(0,45);
   }
+  function currentMediaStar(){
+   const x=context()||{},candidates=[
+    ...(Array.isArray(x.collected)?x.collected:[]),
+    ...(Array.isArray(x.media)?x.media:[]),
+    ...(Array.isArray(x.researchCards)?x.researchCards.filter(item=>item?.collected):[])
+   ];
+   const advisor=root.CodePhiMediaStarSkills;
+   return advisor?.propose({query,collected:candidates,images:currentSources(),videos,title:'My '+(query||'')+' Media Star'})||null;
+  }
+  function refreshMediaStar(){
+   const candidate=currentMediaStar(),hint=$('mediaStarHint'),button=$('mediaStarAdd');
+   if(!hint||!button)return;
+   if(!candidate){hint.textContent='Media Star skill helper unavailable; collected source cards stay unchanged.';button.disabled=true;return}
+   const count=candidate.items.length;
+   hint.textContent=count?count+' genuine image/audio/video source'+(count===1?'':'s')+' found for '+(query||'this site')+'. Add a named Media Star card to the existing preview.':
+    candidate.action==='find_and_collect_media_first'?'Collect or add a genuine galaxy video, image or audio source to enable Media Star.':'Collect real media first; no fake feeds or blank episodes will be created.';
+   button.disabled=!count;
+  }
+  function addMediaStar(){
+   const draft=currentMediaStar();
+   if(!draft||!draft.items.length){refreshMediaStar();return}
+   const html=root.CodePhiMediaStarSkills.buildHtml(draft);
+   const original=viewer.srcdoc||'<!doctype html><html><head><title>My site</title></head><body><main></main></body></html>';
+   const doc=new DOMParser().parseFromString(original,'text/html');
+   if(!doc?.body)throw Error('Site preview document is unavailable.');
+   const child=new DOMParser().parseFromString(html,'text/html').body.firstElementChild;
+   if(!child)throw Error('Media Star could not be assembled.');
+   const existing=doc.querySelector('.phi-media-star-skill[data-phi-media-star-draft="1"]');
+   if(existing)existing.replaceWith(child);
+   else (doc.querySelector('main')||doc.body).appendChild(child);
+   viewer.srcdoc='<!doctype html>'+doc.documentElement.outerHTML;
+   const feedback=$('mediaStarStatus');
+   if(feedback)feedback.textContent='Media Star placed in your Code Phi website preview with '+draft.items.length+' sourced items. Rename and review before saving; no payment was enabled.';
+   const label=$('saveLabel');if(label)label.textContent='Media Star updated in preview · save the website';
+  }
   function refreshSources(){
    const select=$('assetReference');if(!select)return;
    const val=select.value;select.replaceChildren();
@@ -35,6 +70,7 @@
     remove.onclick=()=>{videos=videos.filter(item=>item.url!==v.url);save();refreshVideos();refreshPreview()};
     line.append(label,remove);box.append(line);
    }
+   refreshMediaStar();
   }
   function save(){try{localStorage.setItem(storageKey,JSON.stringify(videos))}catch{}}
   function refreshPreview(){
@@ -114,8 +150,12 @@
    videos=videos.slice(-24);save();refreshVideos();refreshPreview();
    $('videoFeedback').textContent=v.provider+' source added. The finished page will load its official player on demand.';$('videoLink').value='';
   });
-  refreshSources();refreshVideos();
-  return Object.freeze({videos:()=>videos.slice(),asset:()=>asset,refreshSources,refreshPreview});
+  $('mediaStarAdd')?.addEventListener('click',()=>{
+   try{addMediaStar()}catch(error){const status=$('mediaStarStatus');if(status)status.textContent='The current website was preserved. Media Star was not added: '+String(error?.message||error).slice(0,140)}
+  });
+  $('studioVideos')?.addEventListener('click',()=>refreshMediaStar());
+  refreshSources();refreshVideos();refreshMediaStar();
+  return Object.freeze({videos:()=>videos.slice(),asset:()=>asset,refreshSources,refreshPreview,refreshMediaStar});
  }
  root.CodePhiStudioTools=Object.freeze({mount});
 })(window);
