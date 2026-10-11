@@ -11,6 +11,7 @@
   <script src="./site-experience.js?v=20261009-workspace4" defer></script>
   <script src="https://quantaphi.org/phi-visual-render.js?v=20261009-workspace2" defer></script>
   <script src="./media-star-skill.js?v=20261011-mstar1" defer></script>
+  <script src="./widgetphi-library-bridge.js?v=20261011-library1" defer></script>
   <script src="./studio-tools.js?v=20261011-mstar1" defer></script>
   <script src="./repair-engine.js?v=20261009-workspace1" defer></script>
   <script src="./oracle-workspace.js?v=20261010-preview3" defer></script>
@@ -131,6 +132,14 @@
             <button id="studioVideos" class="button secondary" type="button">Video feed</button>
           </div>
         </header>
+        <section id="widgetPhiLibrary" class="media-lab" aria-label="WidgetPhi card library">
+          <h3>WidgetPhi · cards already built</h3>
+          <p>Code Phi searches the Cloudflare card catalog before rebuilding. Choose a card, set your own options, and add it to the current website preview.</p>
+          <label for="widgetPhiSymbols">Stock ticker symbols (when adding a ticker)</label>
+          <input id="widgetPhiSymbols" type="text" value="" placeholder="NASDAQ:AAPL,NASDAQ:MSFT" autocomplete="off">
+          <p id="widgetPhiStatus" role="status">Enter a website topic or instruction to find existing cards.</p>
+          <div id="widgetPhiResults" aria-live="polite"></div>
+        </section>
         <section id="mediaStarPrompt" class="media-lab" aria-label="Media Star skill suggestion">
           <h3>Media Star · your research collection</h3>
           <p id="mediaStarHint">Search or collect real images, video and audio first. Your own sources can become a named Media Star card.</p>
