@@ -11,6 +11,7 @@
   <script src="./site-experience.js?v=20261009-workspace4" defer></script>
   <script src="https://quantaphi.org/phi-visual-render.js?v=20261009-workspace2" defer></script>
   <script src="./media-star-skill.js?v=20261011-mstar1" defer></script>
+  <script src="./shop-phi-skill.js?v=20261011-shop1" defer></script>
   <script src="./widgetphi-library-bridge.js?v=20261011-library1" defer></script>
   <script src="./studio-tools.js?v=20261011-mstar1" defer></script>
   <script src="./repair-engine.js?v=20261009-workspace1" defer></script>
@@ -139,6 +140,18 @@
           <input id="widgetPhiSymbols" type="text" value="" placeholder="NASDAQ:AAPL,NASDAQ:MSFT" autocomplete="off">
           <p id="widgetPhiStatus" role="status">Enter a website topic or instruction to find existing cards.</p>
           <div id="widgetPhiResults" aria-live="polite"></div>
+        </section>
+        <section id="shopPhiComposer" class="media-lab" aria-label="Shop Phi creator-curated store card">
+          <h3>Shop Phi · your curated stores and advertisements</h3>
+          <p>Curate products, advertisements and merchant links you actually choose. The first selection is free; the paid Next button waits for your creator wallet settlement.</p>
+          <label for="shopPhiName">Card name</label>
+          <input id="shopPhiName" type="text" maxlength="100" value="My Curated Store" placeholder="Name your curated card">
+          <label for="shopPhiCreator">Curator display name</label>
+          <input id="shopPhiCreator" type="text" maxlength="100" value="My Picks" placeholder="Your verified creator's display name">
+          <label for="shopPhiSources">Selected products or advertisements (one per line)</label>
+          <textarea id="shopPhiSources" rows="6" maxlength="5000" spellcheck="false" placeholder="Vintage record | https://seller.example/record | Record Store&#10;Ad: Sponsor's special | https://merchant.example/offer | Sponsor Name"></textarea>
+          <button id="shopPhiAdd" class="button secondary" type="button">Add my Shop Phi card</button>
+          <p id="shopPhiStatus" role="status">Your Shop Phi draft is saved locally as you type, when device storage is available. Price and seller claims are not invented.</p>
         </section>
         <section id="mediaStarPrompt" class="media-lab" aria-label="Media Star skill suggestion">
           <h3>Media Star · your research collection</h3>
