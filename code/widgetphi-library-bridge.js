@@ -67,6 +67,10 @@
        }catch(e){notice.textContent=e.message||'Ticker settings are incomplete'}
       });
       row.append(btn);
+     }else if(card.id==='shop-phi'&&card.readyToEmbed){
+      const btn=document.createElement('button');btn.type='button';btn.textContent='Add your curated Shop Phi store';
+      btn.addEventListener('click',()=>document.getElementById('shopPhiComposer')?.scrollIntoView({behavior:'smooth'}));
+      row.append(btn);
      }else if(card.id==='media-star'){
       const btn=document.createElement('button');btn.type='button';btn.textContent='Configure Media Star';
       btn.addEventListener('click',()=>document.getElementById('mediaStarPrompt')?.scrollIntoView({behavior:'smooth'}));
