@@ -6,7 +6,7 @@ const GATEWAY='https://infinity-rogers.marvaseater.workers.dev/v1/chat';
 const tidy=v=>String(v==null?'':v).replace(/\s+/g,' ').trim();
 const clip=(v,n)=>String(v||'').slice(0,n);
 function sources(context){
- const items=[...(context?.all||[]),...(context?.cards||[]),...(context?.images||[]),...(context?.video||[]),...(context?.audio||[])];
+ const items=[...(context?.all||[]),...(context?.cards||[]),...(context?.images||[]),...(context?.video||[]),...(context?.audio||[]),...(context?.collected||[])];
  const seen=new Set(),out=[];
  for(const item of items){
   const url=String(item?.sourceUrl||item?.url||item?.href||'');
@@ -83,6 +83,7 @@ async function compose({query='',tokenId='',direction='',latestDirection='',prev
   'Design with Oracle art direction: polished original editorial composition, functional rounded controls, mobile-first layout, readable short sections, careful image crops and meaningful widgets.',
   'Use actual media and source URLs only when present in the supplied evidence or prior HTML. Never fabricate images, invented quotes, stock market prices or citations.',
   'Preserve already-selected visuals, playable provider embeds, working widgets, podcast cards, hyperlinks, IDs used by WidgetPhi and previous user-approved changes. The Quant data personalizes design but is not itself a visitor-facing debug panel.',
+  'Media Star creation skill: when the user approves adding a curated card, preserve the original website and source provenance, reuse the actual collected images, audio and video provided in evidence, and make the card owner-renamable. Prefer official YouTube/Vimeo/Spotify players or original provider links (including X Spaces) over an arbitrary Internet Archive fallback. Never invent a playable file or remove an existing working card. StarCoin price is a proposal until a creator-specific server ledger produces a signed debit/payout/entitlement receipt; do not put a fake unlocked Next button or wallet charge in generated HTML.',
   'Make interactive components functional with accessible text and obvious fallback states. Keep CSS and JavaScript self-contained; no external JS libraries, paid APIs, invented AI renders or fake Wallet credits.',
   'For a site that contains stories, provide each story with a distinct readable original narrative organized as paragraphs. Do not stop at headline and teaser. Use <details class="phi-full-story"><summary>Read full story</summary>...</details> or an equally functional in-page reader for EVERY story card. Keep visible previews brief and the complete source-grounded narrative within the expanded section. When evidence is only a short source extract, label it accurately and link to the credited original rather than inventing an entire historical account.',
   'Give generated sites clear sections based on the actual Quant, source evidence, selected extracts and comparisons; do not dump all research about an element or subject into one unstructured paragraph. Separate related entities into subsections and preserve uncertainty where source evidence is insufficient.',
