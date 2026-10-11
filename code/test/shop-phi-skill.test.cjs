@@ -36,3 +36,12 @@ test('Composer is actually mounted within Code Phi and protects local typing dra
  assert.match(code,/localStorage\.getItem/);
  assert.match(code,/viewer\.srcdoc=/);
 });
+
+test('Shop Phi correctly distinguishes editorial merchant links from sponsored ads',()=>{
+ const api=skill();
+ const source=api.build({items:api.parse('Independent shop | https://example.org/shop | Shop')});
+ assert.match(source,/rel="noopener noreferrer"/);
+ assert.doesNotMatch(source,/rel="noopener noreferrer sponsored"/);
+ const advert=api.build({items:api.parse('Ad: Merch special | https://example.org/ads | Ad Buyer')});
+ assert.match(advert,/rel="noopener noreferrer sponsored"/);
+});

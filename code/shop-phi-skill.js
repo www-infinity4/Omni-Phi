@@ -32,7 +32,7 @@ function build({name='My Curated Store',creator='My Picks',items=[]}={}){
  '<p>These are the creator’s choices—not advertisements targeted from your personal shopping history.</p>'+
  '<article style="background:white;padding:15px;border-radius:14px;border:1px solid #d9be8a">'+
  '<small>'+esc(disclosure)+'</small><h3>'+esc(first.title)+'</h3><p>Source: '+esc(first.seller)+'</p>'+
- '<a href="'+esc(first.url)+'" target="_blank" rel="noopener noreferrer sponsored" style="display:inline-block;background:#ebc959;color:#33250e;padding:10px 14px;border-radius:10px">Open original shop ↗</a></article>'+
+ '<a href="'+esc(first.url)+'" target="_blank" rel="'+(first.sponsored?'noopener noreferrer sponsored':'noopener noreferrer')+'" style="display:inline-block;background:#ebc959;color:#33250e;padding:10px 14px;border-radius:10px">Open original shop ↗</a></article>'+
  '<button type="button" disabled style="margin-top:12px;padding:12px;border:1px solid #a18d62;border-radius:10px">Next curator pick · 1 StarCoin (wallet connection pending)</button>'+
  '<p style="font-size:12px">One curated pick is free. This draft cannot charge or reveal further paid picks. Sponsored and affiliate offers require disclosure and verified seller sources.</p>'+
  '</section>';
@@ -46,7 +46,7 @@ function mount(){
   if(prior){name.value=prior.name||'';creator.value=prior.creator||'';lines.value=prior.lines||''}
  }catch{}
  function save(){
-  try{localStorage.setItem(key,JSON.stringify({name:name.value.slice(0,140),creator:creator.value.slice(0,140),lines:lines.value.slice(0,5000)}));
+  try{localStorage.setItem(key,JSON.stringify({name:name.value.slice(0,140),creator:creator.value.slice(0,140),lines:lines.value.slice(0,20000)}));
    note.textContent='Shop Phi draft saved on this device as you type. No StarCoins charged.';
   }catch{note.textContent='Preview edits are available, but device storage could not save this draft.'}
  }
