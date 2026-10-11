@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'code/media-star-skill.js'
+      - 'code/gpt-director.js'
+      - 'code/test/gpt-director-media-star.test.cjs'
       - 'code/studio-tools.js'
       - 'code/index.html'
       - 'code/test/media-star-skill.test.cjs'
@@ -11,6 +13,8 @@ on:
     branches: [main]
     paths:
       - 'code/media-star-skill.js'
+      - 'code/gpt-director.js'
+      - 'code/test/gpt-director-media-star.test.cjs'
       - 'code/studio-tools.js'
       - 'code/index.html'
       - 'code/test/media-star-skill.test.cjs'
@@ -27,4 +31,5 @@ jobs:
       - run: |
           node --check code/media-star-skill.js
           node --check code/studio-tools.js
-          node --test code/test/media-star-skill.test.cjs
+          node --check code/gpt-director.js
+          node --test code/test/media-star-skill.test.cjs code/test/gpt-director-media-star.test.cjs
