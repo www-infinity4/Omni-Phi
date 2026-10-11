@@ -46,7 +46,7 @@ function mount(){
   if(prior){name.value=prior.name||'';creator.value=prior.creator||'';lines.value=prior.lines||''}
  }catch{}
  function save(){
-  try{localStorage.setItem(key,JSON.stringify({name:name.value.slice(0,140),creator:creator.value.slice(0,140),lines:lines.value.slice(0,5000)}));
+  try{localStorage.setItem(key,JSON.stringify({name:name.value.slice(0,140),creator:creator.value.slice(0,140),lines:lines.value.slice(0,20000)}));
    note.textContent='Shop Phi draft saved on this device as you type. No StarCoins charged.';
   }catch{note.textContent='Preview edits are available, but device storage could not save this draft.'}
  }
