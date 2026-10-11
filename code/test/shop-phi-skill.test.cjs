@@ -18,7 +18,7 @@ test('Shop Phi Code Phi input creates exactly user-chosen merchandise and sponso
 test('Shop Phi cannot create fake advertiser endorsement or unsafe source',()=>{
  const s=skill();
  assert.throws(()=>s.parse('Ad: Special | https://example.org/product'),/must name the advertiser/);
- assert.throws(()=>s.parse('Unsafe | javascript:alert(1)'),/Source URL must be a real https/);
+ assert.throws(()=>s.parse('Unsafe | javascript:alert(1)'),/original HTTPS merchant/);
  assert.throws(()=>s.parse('Local | https://localhost/item'),/original HTTPS/);
  const x=s.build({name:'<script>alert(1)</script>',items:s.parse('Curated mug | https://example.org/mug')});
  assert.doesNotMatch(x,/<script>alert/);
