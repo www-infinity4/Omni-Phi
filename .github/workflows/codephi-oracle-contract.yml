@@ -1,0 +1,27 @@
+name: Code Phi Oracle build contract
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'code/design-pipeline.js'
+      - 'code/design-pipeline.test.cjs'
+      - '.github/workflows/codephi-oracle-contract.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'code/design-pipeline.js'
+      - 'code/design-pipeline.test.cjs'
+      - '.github/workflows/codephi-oracle-contract.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check code/design-pipeline.js
+      - run: node --test code/design-pipeline.test.cjs
