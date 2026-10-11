@@ -16,5 +16,5 @@ test('Oracle Media Star directions do not allow fake paid checkout or fabricated
  assert.match(script,/Media Star creation skill:/);
  assert.match(script,/creator-specific server ledger/);
  assert.match(script,/source provenance/);
- assert.match(script,/Do not claim.*AI repair/);
+ assert.match(script,/do not claim AI repair/i);
 });
