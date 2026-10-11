@@ -1,0 +1,30 @@
+name: Code Phi Media Star skill
+on:
+  pull_request:
+    paths:
+      - 'code/media-star-skill.js'
+      - 'code/studio-tools.js'
+      - 'code/index.html'
+      - 'code/test/media-star-skill.test.cjs'
+      - '.github/workflows/codephi-media-star.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'code/media-star-skill.js'
+      - 'code/studio-tools.js'
+      - 'code/index.html'
+      - 'code/test/media-star-skill.test.cjs'
+permissions:
+  contents: read
+jobs:
+  codephi-media:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: |
+          node --check code/media-star-skill.js
+          node --check code/studio-tools.js
+          node --test code/test/media-star-skill.test.cjs
