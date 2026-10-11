@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const script=fs.readFileSync('music-quant-cloud.js','utf8');
 function fixture(mismatch=false){
- const memory=new Map([['infinity_unified_wallet_v1',JSON.stringify({currentWalletId:'selected-wallet',wallets:{'selected-wallet':{balances:{MUSIC_QUANT:0}}}})]),queries=[],stored=[];
+ const memory=new Map([['infinity_unified_wallet_v1',JSON.stringify({currentWalletId:'selected-wallet',wallets:{'selected-wallet':{balances:{MUSIC_QUANT:0}}}})]]),queries=[],stored=[];
  const notes=Array.from({length:5},(_,i)=>({name:'C',midi:60,onsetMs:i*100,holdMs:100,group:i}));
  const mk=id=>({id,kind:'playable',notes,createdAt:'2026-10-11T23:00:00.000Z'});
  const pages=[{ok:true,wallet_id:'qw_authenticated',balance:3,has_more:true,quants:[mk('mq_one'),mk('mq_two')]},{ok:true,wallet_id:mismatch?'qw_another':'qw_authenticated',balance:3,has_more:false,quants:[mk('mq_three')]}];
