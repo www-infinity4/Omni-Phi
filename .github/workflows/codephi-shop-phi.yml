@@ -1,0 +1,29 @@
+name: Code Phi Shop Phi creator cards
+on:
+  pull_request:
+    paths:
+      - 'code/shop-phi-skill.js'
+      - 'code/index.html'
+      - 'code/widgetphi-library-bridge.js'
+      - 'code/test/shop-phi-skill.test.cjs'
+      - '.github/workflows/codephi-shop-phi.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'code/shop-phi-skill.js'
+      - 'code/index.html'
+      - 'code/widgetphi-library-bridge.js'
+permissions:
+  contents: read
+jobs:
+  source-curation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: |
+          node --check code/shop-phi-skill.js
+          node --check code/widgetphi-library-bridge.js
+          node --test code/test/shop-phi-skill.test.cjs
