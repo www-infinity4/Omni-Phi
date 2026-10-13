@@ -131,6 +131,20 @@
   $('studioArtwork')?.addEventListener('click',()=>{$('siteAssetLab').hidden=false;$('siteAssetLab').scrollIntoView({behavior:'smooth',block:'center'});refreshSources()});
   $('studioVideos')?.addEventListener('click',()=>{$('siteVideoLab').hidden=false;$('siteVideoLab').scrollIntoView({behavior:'smooth',block:'center'});refreshVideos()});
   $('studioPodcast')?.addEventListener('click',()=>{$('podcastMaker').hidden=false;$('podcastMaker').scrollIntoView({behavior:'smooth',block:'center'})});
+  let uploadVersion=0;
+  $('assetFile')?.addEventListener('change',async()=>{
+   const version=++uploadVersion,status=$('assetFeedback'),file=$('assetFile').files?.[0];
+   asset=null;$('assetUse').disabled=true;$('assetResult').style.display='none';
+   if(!file){status.textContent='Choose an image or describe new artwork.';return}
+   try{
+    if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size>10e6)throw Error('Upload a PNG/JPG/WebP image under 10 MB.');
+    const src=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(Error('The selected image could not be read.'));r.readAsDataURL(file)});
+    if(version!==uploadVersion)return;
+    const img=$('assetResult');img.src=src;img.style.display='block';
+    asset={src,title:file.name,description:'User supplied image',renderer:'upload'};$('assetUse').disabled=false;
+    status.textContent='Image loaded: '+file.name+'. Add it to your site, or describe changes and Generate artwork.';
+   }catch(error){if(version!==uploadVersion)return;$('assetFile').value='';status.textContent=error.message}
+  });
   $('assetGenerate')?.addEventListener('click',()=>void generate());
   $('assetUse')?.addEventListener('click',async()=>{
    if(!asset)return;
