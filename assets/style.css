@@ -610,7 +610,7 @@ button { -webkit-tap-highlight-color: transparent; }
 /* Oracle Octaves daylight layer — preserve functional search, images, links and wallet.
    The original cosmic artwork becomes a subtle accent instead of a dark screen. */
 :root{color-scheme:light;--oracle-paper:#f7f4f0;--oracle-surface:#fff;--oracle-ink:#312722;--oracle-muted:#736a64;--oracle-line:#e5ddd6;--oracle-red:#b83b32;--oracle-gold:#d6a34a}
-html:has(body.cosmic-index){background:var(--oracle-paper)}
+body.cosmic-index::before{opacity:0}
 body.cosmic-index{background:var(--oracle-paper);color:var(--oracle-ink)}
 body.cosmic-index .cosmic-art{opacity:.10;pointer-events:none;filter:grayscale(.55);mix-blend-mode:multiply}
 body.cosmic-index .cosmic-brand{text-shadow:none}
