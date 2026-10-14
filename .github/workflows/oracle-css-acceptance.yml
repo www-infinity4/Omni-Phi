@@ -1,0 +1,42 @@
+name: Oracle Octaves visual CSS acceptance
+on:
+  pull_request:
+    paths:
+      - 'assets/index-v3.css'
+      - 'assets/style.css'
+      - '.github/workflows/oracle-css-acceptance.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'assets/index-v3.css'
+      - 'assets/style.css'
+      - '.github/workflows/oracle-css-acceptance.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Existing Code Phi integration regressions
+        run: |
+          node --test code/design-pipeline.test.cjs code/site-experience.test.cjs
+      - name: Oracle design tokens and Android input continuity
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const css=fs.readFileSync('assets/index-v3.css','utf8');
+          const html=fs.readFileSync('index.html','utf8');
+          if(!html.includes('id="infinityBalancePill"')||!html.includes('search-submit')||!html.includes('search-input'))throw Error('Omni search or wallet controls absent');
+          if(css.includes('Oracle Octaves daylight layer')){
+            for(const token of ['#f7f4f0','#312722','#b83b32','#e5ddd6','min-height:44px']){
+              if(!css.includes(token))throw Error('Oracle style token absent: '+token);
+            }
+          }
+          NODE
