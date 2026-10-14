@@ -605,3 +605,41 @@ button { -webkit-tap-highlight-color: transparent; }
 .drawer-back{visibility:hidden}
 
 .drawer-nav[hidden],[data-wallet-panel][hidden]{display:none!important}
+
+
+/* Oracle Octaves daylight layer — preserve functional search, images, links and wallet.
+   The original cosmic artwork becomes a subtle accent instead of a dark screen. */
+:root{color-scheme:light;--oracle-paper:#f7f4f0;--oracle-surface:#fff;--oracle-ink:#312722;--oracle-muted:#736a64;--oracle-line:#e5ddd6;--oracle-red:#b83b32;--oracle-gold:#d6a34a}
+html:has(body.cosmic-index){background:var(--oracle-paper)}
+body.cosmic-index{background:var(--oracle-paper);color:var(--oracle-ink)}
+body.cosmic-index .cosmic-art{opacity:.10;pointer-events:none;filter:grayscale(.55);mix-blend-mode:multiply}
+body.cosmic-index .cosmic-brand{text-shadow:none}
+body.cosmic-index .cosmic-brand :is(h1,p,small){color:var(--oracle-ink);text-shadow:none}
+body.cosmic-index .cosmic-brand p{color:var(--oracle-muted)}
+body.cosmic-index .cosmic-menu{border:1px solid var(--oracle-line);background:var(--oracle-surface);box-shadow:0 9px 25px #31272220}
+body.cosmic-index .cosmic-menu span{background:var(--oracle-red);box-shadow:none}
+body.cosmic-index .cosmic-modes .mode-button{min-height:64px;color:var(--oracle-ink);border:1px solid var(--oracle-line);border-radius:18px;background:var(--oracle-surface);box-shadow:0 10px 27px #31272218;font-weight:700}
+body.cosmic-index .cosmic-modes .mode-button.active{background:#f5e9e5;border-color:var(--oracle-red);color:#8e2b25;box-shadow:0 6px 18px #b83b321c}
+body.cosmic-index .cosmic-modes .mode-button[data-mode=images]{border-color:#b9d6ee}
+body.cosmic-index .cosmic-modes .mode-button[data-mode=create]{border-color:#d2bcea}
+body.cosmic-index .cosmic-modes :is(b,span,small,i){color:inherit}
+body.cosmic-index .search-shell{min-height:85px;border:1px solid var(--oracle-line);border-radius:20px;background:var(--oracle-surface);box-shadow:0 12px 36px #31272220}
+body.cosmic-index .search-icon{color:var(--oracle-red);filter:none}
+body.cosmic-index .search-input{min-height:44px;color:var(--oracle-ink);background:transparent;outline-offset:3px}
+body.cosmic-index .search-input::placeholder{color:#766963}
+body.cosmic-index .search-submit{min-height:56px;color:#fff;border:1px solid #8e2b25;background:var(--oracle-red);box-shadow:0 5px 14px #b83b3230}
+body.cosmic-index .query-count{color:var(--oracle-muted)}
+body.cosmic-index .suggestion-panel{background:#fff;border:1px solid var(--oracle-line);box-shadow:0 12px 24px #31272215}
+body.cosmic-index .suggestion{min-height:44px;color:var(--oracle-ink);background:#fff;border-color:var(--oracle-line)}
+body.cosmic-index .suggestion:hover,body.cosmic-index .suggestion:focus-visible{background:#f5efea;outline:3px solid #236b83;outline-offset:-3px}
+body.cosmic-index .suggestion :is(svg,b){color:var(--oracle-red)}
+body.cosmic-index .suggestion-head{color:var(--oracle-muted)}
+body.cosmic-index .infinity-balance-pill{color:#fff;background:#48313b;border:1px solid #48313b;box-shadow:0 5px 20px #31272218}
+body.cosmic-index .infinity-balance-pill b{color:#ffe2a6}
+body.cosmic-index :is(button,a,textarea,input):focus-visible{outline:3px solid #236b83;outline-offset:3px}
+@media(max-width:700px){
+ body.cosmic-index .cosmic-modes .mode-button{min-height:58px}
+ body.cosmic-index .search-shell{min-height:82px}
+ body.cosmic-index .cosmic-brand{width:94%}
+}
+@media(prefers-reduced-motion:reduce){body.cosmic-index *,body.cosmic-index *::before,body.cosmic-index *::after{transition:none!important;animation:none!important}}
