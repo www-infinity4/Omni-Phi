@@ -1,0 +1,26 @@
+name: Code Phi Android WebView compatibility
+on:
+  pull_request:
+    paths:
+      - 'code/workshop-orchestrator.js'
+      - 'code/workshop-orchestrator.test.cjs'
+      - '.github/workflows/codephi-android-webview.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'code/workshop-orchestrator.js'
+      - 'code/workshop-orchestrator.test.cjs'
+      - '.github/workflows/codephi-android-webview.yml'
+permissions:
+  contents: read
+jobs:
+  webview-compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check code/workshop-orchestrator.js
+      - run: node --test code/workshop-orchestrator.test.cjs
