@@ -8,7 +8,21 @@
  const API='/api/codephi',escape=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let components=[],imports=[],conversation=[],building=false,epoch=0,base='',projectKey='',model='',installing=false;
  const safeURL=s=>{try{const u=new URL(s);return u.protocol==='https:'&&!u.username&&!u.password?u.href:''}catch{return''}};
- async function request(path,data){if(path==='/ai')data={...data,personalContext:data.personalContext||window.CodePhiPersonalSkills?.context()||{},provider:$('aiProvider').value};const r=await fetch(API+path,{method:data?'POST':'GET',headers:data?{'Content-Type':'application/json'}:{},body:data?JSON.stringify(data):undefined,credentials:'same-origin',signal:AbortSignal.timeout(100000)});const v=await r.json();if(!r.ok||!v.ok)throw Error(v.error||'Connection returned HTTP '+r.status);return v;}
+ async function request(path,data){
+  // Older Android WebViews do not implement AbortSignal.timeout(). Keep this
+  // request cancelable without requiring that newer static API.
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),100000);
+  try{
+    if(path==='/ai')data={...data,personalContext:data.personalContext||window.CodePhiPersonalSkills?.context()||{},provider:$('aiProvider').value};
+    const r=await fetch(API+path,{method:data?'POST':'GET',headers:data?{'Content-Type':'application/json'}:{},body:data?JSON.stringify(data):undefined,credentials:'same-origin',signal:controller.signal});
+    const v=await r.json();
+    if(!r.ok||!v.ok)throw Error(v.error||'Connection returned HTTP '+r.status);
+    return v;
+  }catch(error){
+    if(controller.signal.aborted)throw Error('The website builder request timed out. The last working preview was preserved.');
+    throw error;
+  }finally{clearTimeout(timeout)}
+ }
  function talk(text,role='oracle'){const p=document.createElement('article');p.className='conversation-message '+role;const label=document.createElement('strong');label.textContent=role==='user'?'You':role==='error'?'Needs attention':'Oracle';const copy=document.createElement('p');copy.textContent=text;p.append(label,copy);$('oracleConversation').append(p);conversation.push({role,text});conversation=conversation.slice(-30);if(document.body.classList.contains('build-takeover')){window.CodePhiBuildPreview?.notify(text,role);}else p.scrollIntoView({block:'nearest',behavior:'smooth'});}
  function save(){try{localStorage.setItem(projectKey,JSON.stringify({base,components:components.slice(-20),imports:imports.slice(0,24),conversation}));}catch{host.announce('The preview is working, but device storage is full. Export the website to keep this version.','error');}}
  function adoptDocument(html){const d=new DOMParser().parseFromString(html,'text/html'),out=[];for(const node of d.querySelectorAll('[data-codephi-workshop]')){const f=node.querySelector('iframe[data-component]');if(!f)continue;let meta={};try{meta=JSON.parse(node.dataset.componentMeta||'{}')}catch{}const previous=components.find(c=>c.id===f.dataset.component);out.push({...previous,...meta,id:f.dataset.component,html:f.srcdoc,height:parseInt(f.style.height)||650});node.remove();}d.querySelector('#codephi-frame-runtime')?.remove();components=out;const manifest=d.querySelector('#codephi-workshop-manifest');manifest?.remove();base='<!doctype html>'+d.documentElement.outerHTML;}
